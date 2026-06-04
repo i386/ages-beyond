@@ -30,7 +30,6 @@ public:
 	static void freeStatics();
 
 	void AI_init();
-	void AI_initMemory(); // K-Mod. (needs game map to be initialized first)
 	void AI_uninit();
 	void AI_reset(bool bConstructor);
 
@@ -45,30 +44,15 @@ public:
 	int AI_countFinancialTrouble() const;
 	int AI_countMilitaryWeight(CvArea* pArea) const;
 
-	int AI_estimateTotalYieldRate(YieldTypes eYield) const; // K-Mod
-
-	bool AI_deduceCitySite(const CvCity* pCity) const; // K-Mod
-
 	bool AI_isAnyCapitalAreaAlone() const;
 	bool AI_isPrimaryArea(CvArea* pArea) const;
 	bool AI_hasCitiesInPrimaryArea(TeamTypes eTeam) const;
-	bool AI_hasSharedPrimaryArea(TeamTypes eTeam) const; // K-Mod
 	AreaAITypes AI_calculateAreaAIType(CvArea* pArea, bool bPreparingTotal = false) const;
 
 	int AI_calculateAdjacentLandPlots(TeamTypes eTeam) const;
 	int AI_calculateCapitalProximity(TeamTypes eTeam) const;
 	int AI_calculatePlotWarValue(TeamTypes eTeam) const;
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      07/10/08                                jdog5000      */
-/*                                                                                              */
-/* General AI                                                                                   */
-/************************************************************************************************/
-	int AI_calculateBonusWarValue(TeamTypes eTeam) const;
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
 
-	bool AI_haveSeenCities(TeamTypes eTeam, bool bPrimaryAreaOnly = false, int iMinimum = 1) const; // K-Mod
 	bool AI_isWarPossible() const;
 	bool AI_isLandTarget(TeamTypes eTeam) const;
 	bool AI_isAllyLandTarget(TeamTypes eTeam) const;
@@ -80,17 +64,8 @@ public:
 
 	int AI_chooseElection(const VoteSelectionData& kVoteSelectionData) const;
 
-	// K-Mod
-	int AI_warSpoilsValue(TeamTypes eTarget, WarPlanTypes eWarPlan) const;
-	int AI_warCommitmentCost(TeamTypes eTarget, WarPlanTypes eWarPlan) const;
-	int AI_warDiplomacyCost(TeamTypes eTarget) const;
-	// K-Mod end
-
-	//int AI_startWarVal(TeamTypes eTeam) const;
-	int AI_startWarVal(TeamTypes eTarget, WarPlanTypes eWarPlan) const; // K-Mod
+	int AI_startWarVal(TeamTypes eTeam) const;
 	int AI_endWarVal(TeamTypes eTeam) const;
-
-	int CvTeamAI::AI_knownTechValModifier(TechTypes eTech) const; // K-Mod
 
 	int AI_techTradeVal(TechTypes eTech, TeamTypes eTeam) const;
 	DenialTypes AI_techTrade(TechTypes eTech, TeamTypes eTeam) const;
@@ -103,27 +78,6 @@ public:
 
 	int AI_surrenderTradeVal(TeamTypes eTeam) const;
 	DenialTypes AI_surrenderTrade(TeamTypes eTeam, int iPowerMultiplier = 100) const;
-
-	// bbai
-	int AI_countMembersWithStrategy(int iStrategy) const; // K-Mod
-	bool AI_isAnyMemberDoVictoryStrategy( int iVictoryStrategy ) const;
-	bool AI_isAnyMemberDoVictoryStrategyLevel4() const;
-	bool AI_isAnyMemberDoVictoryStrategyLevel3() const;
-
-	int AI_getWarSuccessRating() const; // K-Mod
-
-	int AI_getEnemyPowerPercent( bool bConsiderOthers = false ) const;
-	int AI_getAirPower() const; // K-Mod
-	int AI_getRivalAirPower( ) const;
-	bool AI_refusePeace(TeamTypes ePeaceTeam) const; // K-Mod. (refuse peace when we need war for conquest victory.)
-	bool AI_refuseWar(TeamTypes eWarTeam) const; // K-Mod. (is war an acceptable side effect for event choices, vassal deals, etc)
-	bool AI_acceptSurrender( TeamTypes eSurrenderTeam ) const;
-	bool AI_isOkayVassalTarget( TeamTypes eTeam ) const;
-
-	void AI_getWarRands( int &iMaxWarRand, int &iLimitedWarRand, int &iDogpileWarRand ) const;
-	void AI_getWarThresholds( int &iMaxWarThreshold, int &iLimitedWarThreshold, int &iDogpileWarThreshold ) const;
-	int AI_getTotalWarOddsTimes100( ) const;
-	// bbai end
 
 	int AI_makePeaceTradeVal(TeamTypes ePeaceTeam, TeamTypes eTeam) const;
 	DenialTypes AI_makePeaceTrade(TeamTypes ePeaceTeam, TeamTypes eTeam) const;
@@ -186,14 +140,13 @@ public:
 	bool AI_isChosenWar(TeamTypes eIndex) const;
 	bool AI_isSneakAttackPreparing(TeamTypes eIndex) const;
 	bool AI_isSneakAttackReady(TeamTypes eIndex) const;
-	bool AI_isSneakAttackReady() const; // K-Mod (any team)
 	void AI_setWarPlan(TeamTypes eIndex, WarPlanTypes eNewValue, bool bWar = true);
 
 	int AI_teamCloseness(TeamTypes eIndex, int iMaxDistance = -1) const;
 	
 	bool AI_performNoWarRolls(TeamTypes eTeam);
 	
-	int AI_getAttitudeWeight(TeamTypes eTeam) const;
+	int AI_getAttitudeWeight(TeamTypes eTeam);
 	
 	int AI_getLowestVictoryCountdown() const;
 
@@ -203,17 +156,6 @@ public:
 	
 	virtual void read(FDataStreamBase* pStream);
 	virtual void write(FDataStreamBase* pStream);
-
-	// K-Mod. Strength Memory - a very basic and rough reminder-map of how strong the enemy presence is on each plot.
-public:
-	int AI_getStrengthMemory(int x, int y) const;
-	inline int AI_getStrengthMemory(const CvPlot* pPlot) { return AI_getStrengthMemory(pPlot->getX_INLINE(), pPlot->getY_INLINE()); }
-	void AI_setStrengthMemory(int x, int y, int value);
-	inline void AI_setStrengthMemory(const CvPlot* pPlot, int value) { AI_setStrengthMemory(pPlot->getX_INLINE(), pPlot->getY_INLINE(), value); }
-protected:
-	std::vector<int> m_aiStrengthMemory;
-	void AI_updateStrengthMemory(); // exponentially dimishes memory, and clears obviously obsolete memory.
-	// K-Mod end
 
 protected:
 

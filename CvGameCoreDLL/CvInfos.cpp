@@ -1010,10 +1010,8 @@ m_bRiverTrade(false),
 m_piDomainExtraMoves(NULL), 
 m_piFlavorValue(NULL), 
 m_piPrereqOrTechs(NULL),
-m_piPrereqAndTechs(NULL),
-m_piCommerceModifier(NULL), // K-Mod
-m_piSpecialistExtraCommerce(NULL), // K-Mod
-m_pbCommerceFlexible(NULL),
+m_piPrereqAndTechs(NULL), 
+m_pbCommerceFlexible(NULL), 
 m_pbTerrainTrade(NULL)
 {
 }
@@ -1031,8 +1029,6 @@ CvTechInfo::~CvTechInfo()
 	SAFE_DELETE_ARRAY(m_piFlavorValue);
 	SAFE_DELETE_ARRAY(m_piPrereqOrTechs);
 	SAFE_DELETE_ARRAY(m_piPrereqAndTechs);
-	SAFE_DELETE_ARRAY(m_piCommerceModifier); // K-Mod
-	SAFE_DELETE_ARRAY(m_piSpecialistExtraCommerce); // K-Mod
 	SAFE_DELETE_ARRAY(m_pbCommerceFlexible);
 	SAFE_DELETE_ARRAY(m_pbTerrainTrade);
 }
@@ -1276,33 +1272,6 @@ int CvTechInfo::getPrereqAndTechs(int i) const
 	return m_piPrereqAndTechs ? m_piPrereqAndTechs[i] : -1;
 }
 
-// K-Mod
-int CvTechInfo::getCommerceModifier(int i) const
-{
-	FAssertMsg(m_piCommerceModifier, "Tech info not initialised");
-	FASSERT_BOUNDS(0, NUM_COMMERCE_TYPES, i, "CvTechInfo::getCommerceModifier");
-
-	return m_piCommerceModifier ? m_piCommerceModifier[i] : 0;
-}
-
-int* CvTechInfo::getCommerceModifierArray() const
-{
-	return m_piCommerceModifier;
-}
-
-int CvTechInfo::getSpecialistExtraCommerce(int i) const
-{
-	FAssertMsg(m_piSpecialistExtraCommerce, "Tech info not initialised");
-	FASSERT_BOUNDS(0, NUM_COMMERCE_TYPES, i, "CvTechInfo::getSpecialistExtraCommerce");
-	return m_piSpecialistExtraCommerce ? m_piSpecialistExtraCommerce[i] : 0;
-}
-
-int* CvTechInfo::getSpecialistExtraCommerceArray() const
-{
-	return m_piSpecialistExtraCommerce;
-}
-// K-Mod end
-
 bool CvTechInfo::isCommerceFlexible(int i) const
 {
 	FAssertMsg(i < NUM_COMMERCE_TYPES, "Index out of bounds");
@@ -1376,21 +1345,6 @@ void CvTechInfo::read(FDataStreamBase* stream)
 	m_piPrereqAndTechs = new int[GC.getNUM_AND_TECH_PREREQS()];
 	stream->Read(GC.getNUM_AND_TECH_PREREQS(), m_piPrereqAndTechs);
 
-	// K-Mod
-	if (uiFlag >= 2)
-	{
-		SAFE_DELETE_ARRAY(m_piCommerceModifier)
-		m_piCommerceModifier = new int[NUM_COMMERCE_TYPES];
-		stream->Read(NUM_COMMERCE_TYPES, m_piCommerceModifier);
-	}
-	if (uiFlag >= 1)
-	{
-		SAFE_DELETE_ARRAY(m_piSpecialistExtraCommerce)
-		m_piSpecialistExtraCommerce = new int[NUM_COMMERCE_TYPES];
-		stream->Read(NUM_COMMERCE_TYPES, m_piSpecialistExtraCommerce);
-	}
-	// K-Mod end
-
 	SAFE_DELETE_ARRAY(m_pbCommerceFlexible);
 	m_pbCommerceFlexible = new bool[NUM_COMMERCE_TYPES];
 	stream->Read(NUM_COMMERCE_TYPES, m_pbCommerceFlexible);
@@ -1408,7 +1362,7 @@ void CvTechInfo::write(FDataStreamBase* stream)
 {
 	CvInfoBase::write(stream);
 
-	uint uiFlag=2;
+	uint uiFlag=0;
 	stream->Write(uiFlag);		// flag for expansion
 
 	stream->Write(m_iAdvisorType);
@@ -1453,8 +1407,6 @@ void CvTechInfo::write(FDataStreamBase* stream)
 	stream->Write(GC.getNumFlavorTypes(), m_piFlavorValue);
 	stream->Write(GC.getNUM_OR_TECH_PREREQS(), m_piPrereqOrTechs);
 	stream->Write(GC.getNUM_AND_TECH_PREREQS(), m_piPrereqAndTechs);
-	stream->Write(NUM_COMMERCE_TYPES, m_piCommerceModifier); // K-Mod. uiFlag >= 2
-	stream->Write(NUM_COMMERCE_TYPES, m_piSpecialistExtraCommerce); // K-Mod. uiFlag >= 1
 	stream->Write(NUM_COMMERCE_TYPES, m_pbCommerceFlexible);
 	stream->Write(GC.getNumTerrainInfos(), m_pbTerrainTrade);
 
@@ -1515,28 +1467,6 @@ bool CvTechInfo::read(CvXMLLoadUtility* pXML)
 	pXML->GetChildXmlValByName(&m_bRiverTrade, "bRiverTrade");
 	pXML->GetChildXmlValByName(&m_iGridX, "iGridX");
 	pXML->GetChildXmlValByName(&m_iGridY, "iGridY");
-
-	// K-Mod
-	if (gDLL->getXMLIFace()->SetToChildByTagName(pXML->GetXML(),"CommerceModifiers"))
-	{
-		pXML->SetCommerce(&m_piCommerceModifier);
-		gDLL->getXMLIFace()->SetToParent(pXML->GetXML());
-	}
-	else
-	{
-		pXML->InitList(&m_piCommerceModifier, NUM_COMMERCE_TYPES);
-	}
-
-	if (gDLL->getXMLIFace()->SetToChildByTagName(pXML->GetXML(),"SpecialistExtraCommerces"))
-	{
-		pXML->SetCommerce(&m_piSpecialistExtraCommerce);
-		gDLL->getXMLIFace()->SetToParent(pXML->GetXML());
-	}
-	else
-	{
-		pXML->InitList(&m_piSpecialistExtraCommerce, NUM_COMMERCE_TYPES);
-	}
-	// K-Mod end
 
 	if (gDLL->getXMLIFace()->SetToChildByTagName(pXML->GetXML(),"CommerceFlexible"))
 	{
@@ -1647,7 +1577,6 @@ m_iLayerAnimationPath(ANIMATIONPATH_NONE),
 m_iPrereqPromotion(NO_PROMOTION),
 m_iPrereqOrPromotion1(NO_PROMOTION),
 m_iPrereqOrPromotion2(NO_PROMOTION),
-m_iPrereqOrPromotion3(NO_PROMOTION), // K-Mod
 m_iTechPrereq(NO_TECH),
 m_iStateReligionPrereq(NO_RELIGION),
 m_iVisibilityChange(0),
@@ -1753,21 +1682,6 @@ void CvPromotionInfo::setPrereqOrPromotion2(int i)
 {
 	m_iPrereqOrPromotion2 = i;
 }
-/*
-** K-Mod, 7/jan/11, karadoc
-*/
-int CvPromotionInfo::getPrereqOrPromotion3() const			
-{
-	return m_iPrereqOrPromotion3;
-}
-
-void CvPromotionInfo::setPrereqOrPromotion3(int i)				
-{
-	m_iPrereqOrPromotion3 = i;
-}
-/*
-** K-Mod end
-*/
 
 int CvPromotionInfo::getTechPrereq() const	
 {
@@ -2051,11 +1965,10 @@ void CvPromotionInfo::read(FDataStreamBase* stream)
 	uint uiFlag=0;
 	stream->Read(&uiFlag);		// flag for expansion
 	
-	stream->Read(&m_iLayerAnimationPath);
-	stream->Read(&m_iPrereqPromotion);
-	stream->Read(&m_iPrereqOrPromotion1);
-	stream->Read(&m_iPrereqOrPromotion2);
-	stream->Read(&m_iPrereqOrPromotion3); // K-Mod
+	stream->Read(&m_iLayerAnimationPath);			
+	stream->Read(&m_iPrereqPromotion);			
+	stream->Read(&m_iPrereqOrPromotion1);			
+	stream->Read(&m_iPrereqOrPromotion2);			
 
 	stream->Read(&m_iTechPrereq);							
 	stream->Read(&m_iStateReligionPrereq);							
@@ -2146,11 +2059,10 @@ void CvPromotionInfo::write(FDataStreamBase* stream)
 	uint uiFlag = 0;
 	stream->Write(uiFlag);		// flag for expansion
 
-	stream->Write(m_iLayerAnimationPath);
-	stream->Write(m_iPrereqPromotion);
-	stream->Write(m_iPrereqOrPromotion1);
-	stream->Write(m_iPrereqOrPromotion2);
-	stream->Write(m_iPrereqOrPromotion3); // K-Mod
+	stream->Write(m_iLayerAnimationPath);			
+	stream->Write(m_iPrereqPromotion);			
+	stream->Write(m_iPrereqOrPromotion1);			
+	stream->Write(m_iPrereqOrPromotion2);			
 
 	stream->Write(m_iTechPrereq);							
 	stream->Write(m_iStateReligionPrereq);							
@@ -2293,14 +2205,6 @@ bool CvPromotionInfo::readPass2(CvXMLLoadUtility* pXML)
 	m_iPrereqOrPromotion1 = GC.getInfoTypeForString(szTextVal);
 	pXML->GetChildXmlValByName(szTextVal, "PromotionPrereqOr2");
 	m_iPrereqOrPromotion2 = GC.getInfoTypeForString(szTextVal);
-/*
-** K-Mod, 7/jan/11, karadoc
-*/
-	pXML->GetChildXmlValByName(szTextVal, "PromotionPrereqOr3");
-	m_iPrereqOrPromotion3 = GC.getInfoTypeForString(szTextVal);
-/*
-** K-Mod end
-*/
 
 	return true;
 }
@@ -3142,8 +3046,6 @@ m_iUnitMeleeWaveSize(0),
 m_iUnitRangedWaveSize(0),
 m_iNumUnitNames(0),
 m_iCommandType(NO_COMMAND),
-m_bFemale(false), // BUG - Female Great People
-m_iLeaderExperience(0),
 m_bAnimal(false),
 m_bFoodProduction(false),
 m_bNoBadGoodies(false),
@@ -3182,7 +3084,6 @@ m_bLineOfSight(false),
 m_bHiddenNationality(false),
 m_bAlwaysHostile(false),
 m_bNoRevealMap(false),
-m_iLeaderPromotion(NO_PROMOTION),
 m_fUnitMaxSpeed(0.0f),
 m_fUnitPadTime(0.0f),
 m_pbUpgradeUnitClass(NULL),
@@ -3645,25 +3546,6 @@ int CvUnitInfo::getNumUnitNames() const
 {
 	return m_iNumUnitNames;
 }
-
-// BUG - Female Great People - start
-bool CvUnitInfo::isFemale() const
-{
-	return m_bFemale;
-}
-
-/*
- * Find the equivalent female unit type by appending "_FEMALE" to this unit's type.
- * Returns -1 if there is no such unit.
- *
- * Ideally this would be done in a second pass while reading the XML and saved.
- */
-int CvUnitInfo::getFemaleUnitType() const
-{
-	CvString szFemaleUnitType = m_szType + "_FEMALE";
-	return GC.getInfoTypeForString(szFemaleUnitType.GetCString(), true);
-}
-// BUG - Female Great People - end
 
 bool CvUnitInfo::isAnimal() const				
 {
@@ -4358,9 +4240,6 @@ void CvUnitInfo::read(FDataStreamBase* stream)
 	stream->Read(&m_iNumUnitNames);
 	stream->Read(&m_iCommandType);
 
-// BUG - Female Great People - start
-	stream->Read(&m_bFemale);
-// BUG - Female Great People - end
 	stream->Read(&m_bAnimal);
 	stream->Read(&m_bFoodProduction);
 	stream->Read(&m_bNoBadGoodies);
@@ -4575,7 +4454,7 @@ void CvUnitInfo::write(FDataStreamBase* stream)
 {
 	CvHotkeyInfo::write(stream);
 
-	uint uiFlag=1;
+	uint uiFlag=0;
 	stream->Write(uiFlag);		// flag for expansion
 
 	stream->Write(m_iAIWeight);
@@ -4657,9 +4536,6 @@ void CvUnitInfo::write(FDataStreamBase* stream)
 	stream->Write(m_iNumUnitNames);
 	stream->Write(m_iCommandType);
 
-// BUG - Female Great People - start
-	stream->Write(m_bFemale);
-// BUG - Female Great People - end
 	stream->Write(m_bAnimal);
 	stream->Write(m_bFoodProduction);
 	stream->Write(m_bNoBadGoodies);
@@ -4802,9 +4678,6 @@ bool CvUnitInfo::read(CvXMLLoadUtility* pXML)
 	pXML->GetChildXmlValByName(szTextVal, "Advisor");
 	m_iAdvisorType = pXML->FindInInfoClass(szTextVal);
 
-// BUG - Female Great People - start
-	pXML->GetChildXmlValByName(&m_bFemale, "bFemale");
-// BUG - Female Great People - end
 	pXML->GetChildXmlValByName(&m_bAnimal, "bAnimal");
 	pXML->GetChildXmlValByName(&m_bFoodProduction, "bFood");
 	pXML->GetChildXmlValByName(&m_bNoBadGoodies, "bNoBadGoodies");
@@ -5391,7 +5264,6 @@ m_iDistanceMaintenanceModifier(0),
 m_iNumCitiesMaintenanceModifier(0),
 m_iCorporationMaintenanceModifier(0),
 m_iExtraHealth(0),
-m_iExtraHappiness(0), // K-Mod
 m_iFreeExperience(0),
 m_iWorkerSpeedModifier(0),
 m_iImprovementUpgradeRateModifier(0),
@@ -5417,8 +5289,7 @@ m_iStateReligionBuildingProductionModifier(0),
 m_iStateReligionFreeExperience(0),
 m_iExpInBorderModifier(0),
 m_bMilitaryFoodProduction(false),
-//m_bNoUnhealthyPopulation(false), //...
-m_iUnhealthyPopulationModifier(0), // K-Mod
+m_bNoUnhealthyPopulation(false),
 m_bBuildingOnlyHealthy(false),
 m_bNoForeignTrade(false),
 m_bNoCorporations(false),
@@ -5659,22 +5530,10 @@ bool CvCivicInfo::isMilitaryFoodProduction() const
 	return m_bMilitaryFoodProduction;
 }
 
-/*
-** K-Mod, 27/dec/10, karadoc
-** replaced NoUnhealthyPopulation with UnhealthyPopulationModifier
-*/
-/* original bts code
 bool CvCivicInfo::isNoUnhealthyPopulation() const
 {
 	return m_bNoUnhealthyPopulation;
-}*/
-int CvCivicInfo::getUnhealthyPopulationModifier() const
-{
-	return m_iUnhealthyPopulationModifier;
 }
-/*
-** K-Mod end
-*/
 
 bool CvCivicInfo::isBuildingOnlyHealthy() const
 {
@@ -5860,8 +5719,6 @@ void CvCivicInfo::read(FDataStreamBase* stream)
 	stream->Read(&m_iNumCitiesMaintenanceModifier);					
 	stream->Read(&m_iCorporationMaintenanceModifier);					
 	stream->Read(&m_iExtraHealth);
-	if (uiFlag >= 2)
-		stream->Read(&m_iExtraHappiness);
 	stream->Read(&m_iFreeExperience);
 	stream->Read(&m_iWorkerSpeedModifier);
 	stream->Read(&m_iImprovementUpgradeRateModifier);
@@ -5870,15 +5727,8 @@ void CvCivicInfo::read(FDataStreamBase* stream)
 	stream->Read(&m_iBaseFreeMilitaryUnits);								
 	stream->Read(&m_iFreeUnitsPopulationPercent);						
 	stream->Read(&m_iFreeMilitaryUnitsPopulationPercent);			
-	stream->Read(&m_iGoldPerUnit);
-	stream->Read(&m_iGoldPerMilitaryUnit);
-	// K-Mod
-	if (uiFlag < 1)
-	{
-		m_iGoldPerUnit *= 100;
-		m_iGoldPerMilitaryUnit *= 100;
-	}
-	// K-Mod end
+	stream->Read(&m_iGoldPerUnit);												
+	stream->Read(&m_iGoldPerMilitaryUnit);									
 	stream->Read(&m_iHappyPerMilitaryUnit);
 	stream->Read(&m_iLargestCityHappiness);
 	stream->Read(&m_iWarWearinessModifier);
@@ -5895,8 +5745,7 @@ void CvCivicInfo::read(FDataStreamBase* stream)
 	stream->Read(&m_iExpInBorderModifier);
 
 	stream->Read(&m_bMilitaryFoodProduction);
-	//stream->Read(&m_bNoUnhealthyPopulation);
-	stream->Read(&m_iUnhealthyPopulationModifier); // K-Mod
+	stream->Read(&m_bNoUnhealthyPopulation);
 	stream->Read(&m_bBuildingOnlyHealthy);								
 	stream->Read(&m_bNoForeignTrade);
 	stream->Read(&m_bNoCorporations);
@@ -5977,7 +5826,7 @@ void CvCivicInfo::write(FDataStreamBase* stream)
 {
 	CvInfoBase::write(stream);
 
-	uint uiFlag=2;
+	uint uiFlag=0;
 	stream->Write(uiFlag);		// flag for expansion
 
 	stream->Write(m_iCivicOptionType);
@@ -5992,7 +5841,6 @@ void CvCivicInfo::write(FDataStreamBase* stream)
 	stream->Write(m_iNumCitiesMaintenanceModifier);					
 	stream->Write(m_iCorporationMaintenanceModifier);					
 	stream->Write(m_iExtraHealth);
-	stream->Write(m_iExtraHappiness); // K-Mod, uiFlag >= 2
 	stream->Write(m_iFreeExperience);
 	stream->Write(m_iWorkerSpeedModifier);
 	stream->Write(m_iImprovementUpgradeRateModifier);
@@ -6019,8 +5867,7 @@ void CvCivicInfo::write(FDataStreamBase* stream)
 	stream->Write(m_iExpInBorderModifier);
 
 	stream->Write(m_bMilitaryFoodProduction);
-	//stream->Write(m_bNoUnhealthyPopulation);
-	stream->Write(m_iUnhealthyPopulationModifier); // K-Mod
+	stream->Write(m_bNoUnhealthyPopulation);
 	stream->Write(m_bBuildingOnlyHealthy);								
 	stream->Write(m_bNoForeignTrade);
 	stream->Write(m_bNoCorporations);
@@ -6084,7 +5931,6 @@ bool CvCivicInfo::read(CvXMLLoadUtility* pXML)
 	pXML->GetChildXmlValByName(&m_iNumCitiesMaintenanceModifier, "iNumCitiesMaintenanceModifier");
 	pXML->GetChildXmlValByName(&m_iCorporationMaintenanceModifier, "iCorporationMaintenanceModifier");
 	pXML->GetChildXmlValByName(&m_iExtraHealth, "iExtraHealth");
-	pXML->GetChildXmlValByName(&m_iExtraHappiness, "iExtraHappiness"); // K-Mod
 	pXML->GetChildXmlValByName(&m_iFreeExperience, "iFreeExperience");
 	pXML->GetChildXmlValByName(&m_iWorkerSpeedModifier, "iWorkerSpeedModifier");
 	pXML->GetChildXmlValByName(&m_iImprovementUpgradeRateModifier, "iImprovementUpgradeRateModifier");
@@ -6098,8 +5944,7 @@ bool CvCivicInfo::read(CvXMLLoadUtility* pXML)
 	pXML->GetChildXmlValByName(&m_iHappyPerMilitaryUnit, "iHappyPerMilitaryUnit");
 	pXML->GetChildXmlValByName(&m_bMilitaryFoodProduction, "bMilitaryFoodProduction");
 	pXML->GetChildXmlValByName(&m_iMaxConscript, "iMaxConscript");
-	//pXML->GetChildXmlValByName(&m_bNoUnhealthyPopulation, "bNoUnhealthyPopulation");
-	pXML->GetChildXmlValByName(&m_iUnhealthyPopulationModifier, "iUnhealthyPopulationModifier"); // K-Mod
+	pXML->GetChildXmlValByName(&m_bNoUnhealthyPopulation, "bNoUnhealthyPopulation");
 	pXML->GetChildXmlValByName(&m_bBuildingOnlyHealthy, "bBuildingOnlyHealthy");
 	pXML->GetChildXmlValByName(&m_iLargestCityHappiness, "iLargestCityHappiness");
 	pXML->GetChildXmlValByName(&m_iWarWearinessModifier, "iWarWearinessModifier");
@@ -6621,8 +6466,7 @@ m_bGovernmentCenter(false),
 m_bGoldenAge(false),
 m_bMapCentering(false),
 m_bNoUnhappiness(false),
-//m_bNoUnhealthyPopulation(false),
-m_iUnhealthyPopulationModifier(0), // K-Mod
+m_bNoUnhealthyPopulation(false),
 m_bBuildingOnlyHealthy(false),			
 m_bNeverCapture(false),					
 m_bNukeImmune(false),					
@@ -6667,20 +6511,7 @@ m_pbCommerceFlexible(NULL),
 m_pbCommerceChangeOriginalOwner(NULL),
 m_pbBuildingClassNeededInCity(NULL),
 m_ppaiSpecialistYieldChange(NULL),
-/************************************************************************************************/
-/* UNOFFICIAL_PATCH                       06/27/10                    Afforess & jdog5000       */
-/*                                                                                              */
-/* Efficiency                                                                                   */
-/************************************************************************************************/
-/* original bts code
 m_ppaiBonusYieldModifier(NULL)
-*/
-m_ppaiBonusYieldModifier(NULL),
-m_bAnySpecialistYieldChange(false),
-m_bAnyBonusYieldModifier(false)
-/************************************************************************************************/
-/* UNOFFICIAL_PATCH                        END                                                  */
-/************************************************************************************************/
 {
 }
 
@@ -7269,22 +7100,10 @@ bool CvBuildingInfo::isNoUnhappiness() const
 	return m_bNoUnhappiness;
 }
 
-/*
-** K-Mod, 27/dec/10, karadoc
-** replaced NoUnhealthyPopulation with UnhealthyPopulationModifier
-*/
-/* original bts code
 bool CvBuildingInfo::isNoUnhealthyPopulation() const
 {
 	return m_bNoUnhealthyPopulation;
-}*/
-int CvBuildingInfo::getUnhealthyPopulationModifier() const
-{
-	return m_iUnhealthyPopulationModifier;
 }
-/*
-** K-Mod end
-*/
 
 bool CvBuildingInfo::isBuildingOnlyHealthy() const
 {
@@ -7691,24 +7510,6 @@ int* CvBuildingInfo::getSpecialistYieldChangeArray(int i) const
 	return m_ppaiSpecialistYieldChange[i];
 }
 
-/************************************************************************************************/
-/* UNOFFICIAL_PATCH                       06/27/10                    Afforess & jdog5000       */
-/*                                                                                              */
-/* Efficiency                                                                                   */
-/************************************************************************************************/
-bool CvBuildingInfo::isAnySpecialistYieldChange() const
-{
-	return m_bAnySpecialistYieldChange;
-}
-
-bool CvBuildingInfo::isAnyBonusYieldModifier() const
-{
-	return m_bAnyBonusYieldModifier;
-}
-/************************************************************************************************/
-/* UNOFFICIAL_PATCH                        END                                                  */
-/************************************************************************************************/
-
 int CvBuildingInfo::getBonusYieldModifier(int i, int j) const
 {
 	FAssertMsg(i < GC.getNumBonusInfos(), "Index out of bounds");
@@ -7886,8 +7687,7 @@ void CvBuildingInfo::read(FDataStreamBase* stream)
 	stream->Read(&m_bGoldenAge);
 	stream->Read(&m_bMapCentering);
 	stream->Read(&m_bNoUnhappiness);
-	//stream->Read(&m_bNoUnhealthyPopulation);
-	stream->Read(&m_iUnhealthyPopulationModifier); // K-Mod
+	stream->Read(&m_bNoUnhealthyPopulation);
 	stream->Read(&m_bBuildingOnlyHealthy);
 	stream->Read(&m_bNeverCapture);
 	stream->Read(&m_bNukeImmune);
@@ -8061,27 +7861,6 @@ void CvBuildingInfo::read(FDataStreamBase* stream)
 		stream->Read(NUM_YIELD_TYPES, m_ppaiSpecialistYieldChange[i]);
 	}
 
-/************************************************************************************************/
-/* UNOFFICIAL_PATCH                       06/27/10                    Afforess & jdog5000       */
-/*                                                                                              */
-/* Efficiency                                                                                   */
-/************************************************************************************************/
-	m_bAnySpecialistYieldChange = false;
-	for(i=0;(!m_bAnySpecialistYieldChange) && i<GC.getNumSpecialistInfos();i++)
-	{
-		for(int j=0; j < NUM_YIELD_TYPES; j++ )
-		{
-			if( m_ppaiSpecialistYieldChange[i][j] != 0 )
-			{
-				m_bAnySpecialistYieldChange = true;
-				break;
-			}
-		}
-	}
-/************************************************************************************************/
-/* UNOFFICIAL_PATCH                        END                                                  */
-/************************************************************************************************/
-
 	if (m_ppaiBonusYieldModifier != NULL)
 	{
 		for(i=0;i<GC.getNumBonusInfos();i++)
@@ -8097,27 +7876,6 @@ void CvBuildingInfo::read(FDataStreamBase* stream)
 		m_ppaiBonusYieldModifier[i]  = new int[NUM_YIELD_TYPES];
 		stream->Read(NUM_YIELD_TYPES, m_ppaiBonusYieldModifier[i]);
 	}
-
-/************************************************************************************************/
-/* UNOFFICIAL_PATCH                       06/27/10                    Afforess & jdog5000       */
-/*                                                                                              */
-/* Efficiency                                                                                   */
-/************************************************************************************************/
-	m_bAnyBonusYieldModifier = false;
-	for(i=0;(!m_bAnyBonusYieldModifier) && i<GC.getNumBonusInfos();i++)
-	{
-		for(int j=0; j < NUM_YIELD_TYPES; j++ )
-		{
-			if( m_ppaiBonusYieldModifier[i][j] != 0 )
-			{
-				m_bAnyBonusYieldModifier = true;
-				break;
-			}
-		}
-	}
-/************************************************************************************************/
-/* UNOFFICIAL_PATCH                        END                                                  */
-/************************************************************************************************/
 }
 
 //
@@ -8234,8 +7992,7 @@ void CvBuildingInfo::write(FDataStreamBase* stream)
 	stream->Write(m_bGoldenAge);
 	stream->Write(m_bMapCentering);
 	stream->Write(m_bNoUnhappiness);
-	//stream->Write(m_bNoUnhealthyPopulation);
-	stream->Write(m_iUnhealthyPopulationModifier); // K-Mod
+	stream->Write(m_bNoUnhealthyPopulation);
 	stream->Write(m_bBuildingOnlyHealthy);
 	stream->Write(m_bNeverCapture);
 	stream->Write(m_bNukeImmune);
@@ -8488,8 +8245,7 @@ bool CvBuildingInfo::read(CvXMLLoadUtility* pXML)
 	pXML->GetChildXmlValByName(&m_bAllowsNukes, "bAllowsNukes");
 	pXML->GetChildXmlValByName(&m_bMapCentering, "bMapCentering");
 	pXML->GetChildXmlValByName(&m_bNoUnhappiness, "bNoUnhappiness");
-	//pXML->GetChildXmlValByName(&m_bNoUnhealthyPopulation, "bNoUnhealthyPopulation");
-	pXML->GetChildXmlValByName(&m_iUnhealthyPopulationModifier, "iUnhealthyPopulationModifier"); // K-Mod
+	pXML->GetChildXmlValByName(&m_bNoUnhealthyPopulation, "bNoUnhealthyPopulation");
 	pXML->GetChildXmlValByName(&m_bBuildingOnlyHealthy, "bBuildingOnlyHealthy");
 	pXML->GetChildXmlValByName(&m_bNeverCapture, "bNeverCapture");
 	pXML->GetChildXmlValByName(&m_bNukeImmune, "bNukeImmune");
@@ -8774,12 +8530,6 @@ bool CvBuildingInfo::read(CvXMLLoadUtility* pXML)
 	pXML->SetVariableListTagPair(&m_piPrereqNumOfBuildingClass, "PrereqBuildingClasses", sizeof(GC.getBuildingClassInfo((BuildingClassTypes)0)), GC.getNumBuildingClassInfos());
 	pXML->SetVariableListTagPair(&m_pbBuildingClassNeededInCity, "BuildingClassNeededs", sizeof(GC.getBuildingClassInfo((BuildingClassTypes)0)), GC.getNumBuildingClassInfos());
 
-/************************************************************************************************/
-/* UNOFFICIAL_PATCH                       06/27/10                    Afforess & jdog5000       */
-/*                                                                                              */
-/* Efficiency                                                                                   */
-/************************************************************************************************/
-	m_bAnySpecialistYieldChange = false;
 	pXML->Init2DIntList(&m_ppaiSpecialistYieldChange, GC.getNumSpecialistInfos(), NUM_YIELD_TYPES);
 	if (gDLL->getXMLIFace()->SetToChildByTagName(pXML->GetXML(),"SpecialistYieldChanges"))
 	{
@@ -8813,18 +8563,6 @@ bool CvBuildingInfo::read(CvXMLLoadUtility* pXML)
 				}
 			}
 
-			for(int ii=0;(!m_bAnySpecialistYieldChange) && ii<GC.getNumSpecialistInfos();ii++)
-			{
-				for(int ij=0; ij < NUM_YIELD_TYPES; ij++ )
-				{
-					if( m_ppaiSpecialistYieldChange[ii][ij] != 0 )
-					{
-						m_bAnySpecialistYieldChange = true;
-						break;
-					}
-				}
-			}
-
 			// set the current xml node to it's parent node
 			gDLL->getXMLIFace()->SetToParent(pXML->GetXML());
 		}
@@ -8832,16 +8570,7 @@ bool CvBuildingInfo::read(CvXMLLoadUtility* pXML)
 		// set the current xml node to it's parent node
 		gDLL->getXMLIFace()->SetToParent(pXML->GetXML());
 	}
-/************************************************************************************************/
-/* UNOFFICIAL_PATCH                        END                                                  */
-/************************************************************************************************/
 
-/************************************************************************************************/
-/* UNOFFICIAL_PATCH                       06/27/10                    Afforess & jdog5000       */
-/*                                                                                              */
-/* Efficiency                                                                                   */
-/************************************************************************************************/
-	m_bAnyBonusYieldModifier = false;
 	pXML->Init2DIntList(&m_ppaiBonusYieldModifier, GC.getNumBonusInfos(), NUM_YIELD_TYPES);
 	if (gDLL->getXMLIFace()->SetToChildByTagName(pXML->GetXML(),"BonusYieldModifiers"))
 	{
@@ -8876,18 +8605,6 @@ bool CvBuildingInfo::read(CvXMLLoadUtility* pXML)
 				}
 			}
 
-			for(int ii=0;(!m_bAnyBonusYieldModifier) && ii<GC.getNumBonusInfos(); ii++)
-			{
-				for(int ij=0; ij < NUM_YIELD_TYPES; ij++ )
-				{
-					if( m_ppaiBonusYieldModifier[ii][ij] != 0 )
-					{
-						m_bAnyBonusYieldModifier = true;
-						break;
-					}
-				}
-			}
-
 			// set the current xml node to it's parent node
 			gDLL->getXMLIFace()->SetToParent(pXML->GetXML());
 		}
@@ -8895,9 +8612,6 @@ bool CvBuildingInfo::read(CvXMLLoadUtility* pXML)
 		// set the current xml node to it's parent node
 		gDLL->getXMLIFace()->SetToParent(pXML->GetXML());
 	}
-/************************************************************************************************/
-/* UNOFFICIAL_PATCH                        END                                                  */
-/************************************************************************************************/
 
 	pXML->SetVariableListTagPair(&m_piFlavorValue, "Flavors", GC.getFlavorTypes(), GC.getNumFlavorTypes());
 	pXML->SetVariableListTagPair(&m_piImprovementFreeSpecialist, "ImprovementFreeSpecialists", sizeof(GC.getImprovementInfo((ImprovementTypes)0)), GC.getNumImprovementInfos());
@@ -9923,8 +9637,7 @@ m_bTargetScore(false),
 m_bEndScore(false),
 m_bConquest(false),
 m_bDiploVote(false),
-m_bPermanent(false),
-m_bTotalVictory(false) // Karadoc, mastery victory
+m_bPermanent(false)
 {
 }
 
@@ -10026,7 +9739,6 @@ bool CvVictoryInfo::read(CvXMLLoadUtility* pXML)
 	pXML->GetChildXmlValByName(&m_bConquest, "bConquest");
 	pXML->GetChildXmlValByName(&m_bDiploVote, "bDiploVote");
 	pXML->GetChildXmlValByName(&m_bPermanent, "bPermanent");
-	pXML->GetChildXmlValByName(&m_bTotalVictory, "bTotalVictory"); // Karadoc, mastery victory
 	pXML->GetChildXmlValByName(&m_iPopulationPercentLead, "iPopulationPercentLead");
 	pXML->GetChildXmlValByName(&m_iLandPercent, "iLandPercent");
 	pXML->GetChildXmlValByName(&m_iMinLandPercent, "iMinLandPercent");
@@ -12954,7 +12666,6 @@ m_iGrowthProbability(0),
 m_iDefenseModifier(0),
 m_iAdvancedStartRemoveCost(0),
 m_iTurnDamage(0),
-m_iWarmingDefense(0), // K-Mod
 m_bNoCoast(false),				
 m_bNoRiver(false),					
 m_bNoAdjacent(false),			
@@ -13035,11 +12746,6 @@ int CvFeatureInfo::getAdvancedStartRemoveCost() const
 int CvFeatureInfo::getTurnDamage() const			
 {
 	return m_iTurnDamage; 
-}
-
-int CvFeatureInfo::getWarmingDefense() const			//GWMod new xml field M.A.
-{
-	return m_iWarmingDefense; 
 }
 
 bool CvFeatureInfo::isNoCoast() const	
@@ -13235,7 +12941,6 @@ bool CvFeatureInfo::read(CvXMLLoadUtility* pXML)
 	pXML->GetChildXmlValByName(&m_iDefenseModifier, "iDefense");
 	pXML->GetChildXmlValByName(&m_iAdvancedStartRemoveCost, "iAdvancedStartRemoveCost");
 	pXML->GetChildXmlValByName(&m_iTurnDamage, "iTurnDamage");
-	pXML->GetChildXmlValByName(&m_iWarmingDefense, "iWarmingDefense"); // K-Mod
 	pXML->GetChildXmlValByName(&m_iAppearanceProbability, "iAppearance");
 	pXML->GetChildXmlValByName(&m_iDisappearanceProbability, "iDisappearance");
 	pXML->GetChildXmlValByName(&m_iGrowthProbability, "iGrowth");
@@ -13941,19 +13646,6 @@ m_iNoTechTradeThreshold(0),
 m_iTechTradeKnownPercent(0),
 m_iMaxGoldTradePercent(0),
 m_iMaxGoldPerTurnTradePercent(0),
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      03/21/10                                jdog5000      */
-/*                                                                                              */
-/* Victory Strategy AI                                                                          */
-/************************************************************************************************/
-m_iCultureVictoryWeight(0),
-m_iSpaceVictoryWeight(0),
-m_iConquestVictoryWeight(0),
-m_iDominationVictoryWeight(0),
-m_iDiplomacyVictoryWeight(0),
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
 m_iMaxWarRand(0),
 m_iMaxWarNearbyPowerRatio(0),
 m_iMaxWarDistantPowerRatio(0),
@@ -14124,39 +13816,6 @@ int CvLeaderHeadInfo::getMaxGoldPerTurnTradePercent() const
 {
 	return m_iMaxGoldPerTurnTradePercent; 
 }
-
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      03/21/10                                jdog5000      */
-/*                                                                                              */
-/* Victory Strategy AI                                                                          */
-/************************************************************************************************/
-int CvLeaderHeadInfo::getCultureVictoryWeight() const
-{
-	return m_iCultureVictoryWeight;
-}
-
-int CvLeaderHeadInfo::getSpaceVictoryWeight() const
-{
-	return m_iSpaceVictoryWeight;
-}
-
-int CvLeaderHeadInfo::getConquestVictoryWeight() const
-{
-	return m_iConquestVictoryWeight;
-}
-
-int CvLeaderHeadInfo::getDominationVictoryWeight() const
-{
-	return m_iDominationVictoryWeight;
-}
-
-int CvLeaderHeadInfo::getDiplomacyVictoryWeight() const
-{
-	return m_iDiplomacyVictoryWeight;
-}
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
 
 int CvLeaderHeadInfo::getMaxWarRand() const
 {
@@ -14603,22 +14262,6 @@ void CvLeaderHeadInfo::read(FDataStreamBase* stream)
 	stream->Read(&m_iTechTradeKnownPercent);
 	stream->Read(&m_iMaxGoldTradePercent);
 	stream->Read(&m_iMaxGoldPerTurnTradePercent);
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      03/21/10                                jdog5000      */
-/*                                                                                              */
-/* Victory Strategy AI                                                                          */
-/************************************************************************************************/
-	if( uiFlag > 0 )
-	{
-		stream->Read(&m_iCultureVictoryWeight);
-		stream->Read(&m_iSpaceVictoryWeight);
-		stream->Read(&m_iConquestVictoryWeight);
-		stream->Read(&m_iDominationVictoryWeight);
-		stream->Read(&m_iDiplomacyVictoryWeight);
-	}
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
 	stream->Read(&m_iMaxWarRand);
 	stream->Read(&m_iMaxWarNearbyPowerRatio);
 	stream->Read(&m_iMaxWarDistantPowerRatio);
@@ -14743,16 +14386,7 @@ void CvLeaderHeadInfo::write(FDataStreamBase* stream)
 {
 	CvInfoBase::write(stream);
 
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      03/21/10                                jdog5000      */
-/*                                                                                              */
-/*                                                                                              */
-/************************************************************************************************/
-	uint uiFlag=1;
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
-
+	uint uiFlag=0;
 	stream->Write(uiFlag);		// flag for expansion
 
 	stream->Write(m_iWonderConstructRand);
@@ -14766,19 +14400,6 @@ void CvLeaderHeadInfo::write(FDataStreamBase* stream)
 	stream->Write(m_iTechTradeKnownPercent);
 	stream->Write(m_iMaxGoldTradePercent);
 	stream->Write(m_iMaxGoldPerTurnTradePercent);
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      03/21/10                                jdog5000      */
-/*                                                                                              */
-/* Victory Strategy AI                                                                          */
-/************************************************************************************************/
-	stream->Write(m_iCultureVictoryWeight);
-	stream->Write(m_iSpaceVictoryWeight);
-	stream->Write(m_iConquestVictoryWeight);
-	stream->Write(m_iDominationVictoryWeight);
-	stream->Write(m_iDiplomacyVictoryWeight);
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
 	stream->Write(m_iMaxWarRand);
 	stream->Write(m_iMaxWarNearbyPowerRatio);
 	stream->Write(m_iMaxWarDistantPowerRatio);
@@ -14890,19 +14511,6 @@ bool CvLeaderHeadInfo::read(CvXMLLoadUtility* pXML)
 	pXML->GetChildXmlValByName(&m_iTechTradeKnownPercent, "iTechTradeKnownPercent");
 	pXML->GetChildXmlValByName(&m_iMaxGoldTradePercent, "iMaxGoldTradePercent");
 	pXML->GetChildXmlValByName(&m_iMaxGoldPerTurnTradePercent, "iMaxGoldPerTurnTradePercent");
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      03/21/10                                jdog5000      */
-/*                                                                                              */
-/* Victory Strategy AI                                                                          */
-/************************************************************************************************/
-	pXML->GetChildXmlValByName(&m_iCultureVictoryWeight, "iCultureVictoryWeight", 0);
-	pXML->GetChildXmlValByName(&m_iSpaceVictoryWeight, "iSpaceVictoryWeight", 0);
-	pXML->GetChildXmlValByName(&m_iConquestVictoryWeight, "iConquestVictoryWeight", 0);
-	pXML->GetChildXmlValByName(&m_iDominationVictoryWeight, "iDominationVictoryWeight", 0);
-	pXML->GetChildXmlValByName(&m_iDiplomacyVictoryWeight, "iDiplomacyVictoryWeight", 0);
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
 	pXML->GetChildXmlValByName(&m_iMaxWarRand, "iMaxWarRand");
 	pXML->GetChildXmlValByName(&m_iMaxWarNearbyPowerRatio, "iMaxWarNearbyPowerRatio");
 	pXML->GetChildXmlValByName(&m_iMaxWarDistantPowerRatio, "iMaxWarDistantPowerRatio");
@@ -17718,7 +17326,6 @@ m_fTrailLength(0.0f),
 m_fTrailTaper(0.0f),
 m_fTrailFadeStartTime(0.0f),
 m_fTrailFadeFalloff(0.0f),
-m_fBattleDistance(0.0f),
 m_fRangedDeathTime(0.0f),
 m_fExchangeAngle(0.0f),
 m_bSmoothMove(false),
@@ -18651,15 +18258,6 @@ m_iTrainPercent(0),
 m_iConstructPercent(0),
 m_iCreatePercent(0),
 m_iResearchPercent(0),
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      08/21/09                                jdog5000      */
-/*                                                                                              */
-/* Tech Diffusion                                                                               */
-/************************************************************************************************/
-m_iTechCostModifier(0),
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
 m_iBuildPercent(0),
 m_iImprovementPercent(0),
 m_iGreatPeoplePercent(0),
@@ -18747,19 +18345,6 @@ int CvEraInfo::getResearchPercent() const
 {
 	return m_iResearchPercent; 
 }
-
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      08/21/09                                jdog5000      */
-/*                                                                                              */
-/* Tech Diffusion                                                                               */
-/************************************************************************************************/
-int CvEraInfo::getTechCostModifier() const
-{
-	return m_iTechCostModifier; 
-}
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
 
 int CvEraInfo::getBuildPercent() const
 {
@@ -18871,15 +18456,6 @@ bool CvEraInfo::read(CvXMLLoadUtility* pXML)
 	pXML->GetChildXmlValByName(&m_iConstructPercent, "iConstructPercent");
 	pXML->GetChildXmlValByName(&m_iCreatePercent, "iCreatePercent");
 	pXML->GetChildXmlValByName(&m_iResearchPercent, "iResearchPercent");
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      08/21/09                                jdog5000      */
-/*                                                                                              */
-/* Tech Diffusion                                                                               */
-/************************************************************************************************/
-	pXML->GetChildXmlValByName(&m_iTechCostModifier, "iTechCostModifier");
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
 	pXML->GetChildXmlValByName(&m_iBuildPercent, "iBuildPercent");
 	pXML->GetChildXmlValByName(&m_iImprovementPercent, "iImprovementPercent");
 	pXML->GetChildXmlValByName(&m_iGreatPeoplePercent, "iGreatPeoplePercent");
@@ -19044,8 +18620,6 @@ m_iWaterHeight(0),
 m_fTextureScaleX(0.0f),
 m_fTextureScaleY(0.0f),
 m_fZScale(0.0f),
-m_fPeakScale(0.0f),
-m_fHillScale(0.0f),
 m_bUseTerrainShader(false),
 m_bUseLightmap(false),
 m_bRandomMap(false)
@@ -19278,8 +18852,7 @@ void CvGameText::setText(const wchar* szText)
 	m_szText = szText; 
 }
 
-// K-Mod. I've rewritten most of this function to change the way we find the appropriate language.
-bool CvGameText::read(CvXMLLoadUtility* pXML, const std::string& language_name)
+bool CvGameText::read(CvXMLLoadUtility* pXML)
 {
 	CvString szTextVal;
 	CvWString wszTextVal;
@@ -19291,79 +18864,57 @@ bool CvGameText::read(CvXMLLoadUtility* pXML, const std::string& language_name)
 	gDLL->getXMLIFace()->SetToChild(pXML->GetXML()); // Move down to Child level
 	pXML->GetXmlVal(m_szType);		// TAG
 
-	//static const int iMaxNumLanguages = GC.getDefineINT("MAX_NUM_LANGUAGES");
-	//int iNumLanguages = NUM_LANGUAGES ? NUM_LANGUAGES : iMaxNumLanguages + 1;
+	static const int iMaxNumLanguages = GC.getDefineINT("MAX_NUM_LANGUAGES");
+	int iNumLanguages = NUM_LANGUAGES ? NUM_LANGUAGES : iMaxNumLanguages + 1;
 
-	// K-Mod
-	bool bValid = false;
-	if (!language_name.empty())
+	int j=0;
+	for (j = 0; j < iNumLanguages; j++)
 	{
-		FAssert(getNumLanguages() > 0);
-		if (gDLL->getXMLIFace()->LocateFirstSiblingNodeByTagName(pXML->GetXML(), const_cast<TCHAR*>(language_name.c_str()))) // again, a big wtf to the original devs for not making the argument const.
-		{
-			bValid = true;
-		}
-		else
-		{
-			// if the language string is set, but we can't find it, use language #0.
-			if (pXML->SkipToNextVal() && gDLL->getXMLIFace()->NextSibling(pXML->GetXML()))
-				bValid = true;
-		}
-	}
-	else
-	{
-		// otherwise, if the language string has not been set, just count until we get to our language number.
-		// Note: if the langauge_name isn't set, the maybe the number of language isn't set either. (in the original code, it was determined here.)
-		// So lets set it now.
-		int iNumLanguages = getNumLanguages();
-		if (iNumLanguages <= 0)
-		{
-			iNumLanguages = std::min(gDLL->getXMLIFace()->GetNumSiblings(pXML->GetXML()), GC.getDefineINT("MAX_NUM_LANGUAGES"));
-			setNumLanguages(iNumLanguages);
-		}
+		pXML->SkipToNextVal();	// skip comments
 
-		for (int j = 0; j < iNumLanguages; j++)
+		if (!gDLL->getXMLIFace()->NextSibling(pXML->GetXML()) || j == iMaxNumLanguages)
 		{
-			if (!pXML->SkipToNextVal() || !gDLL->getXMLIFace()->NextSibling(pXML->GetXML()))
-				break;
-
-			if (j == GAMETEXT.getCurrentLanguage()) // Only add appropriate language Text 
+			NUM_LANGUAGES = j;
+			break;
+		}
+		if (j == GAMETEXT.getCurrentLanguage()) // Only add appropriate language Text 
+		{
+			// TEXT
+			if (pXML->GetChildXmlValByName(wszTextVal, "Text"))
 			{
-				bValid = true;
+				setText(wszTextVal);
+			}
+			else
+			{
+				pXML->GetXmlVal(wszTextVal);
+				setText(wszTextVal);
+				if (NUM_LANGUAGES > 0)
+				{
+					break;
+				}
+			}
+
+			// GENDER
+			if (pXML->GetChildXmlValByName(wszTextVal, "Gender"))
+			{
+				setGender(wszTextVal);
+			}
+
+			// PLURAL
+			if (pXML->GetChildXmlValByName(wszTextVal, "Plural"))
+			{
+				setPlural(wszTextVal);
+			}
+			if (NUM_LANGUAGES > 0)
+			{
 				break;
 			}
-		}
-	}
-	// K-Mod. the setting of the text, moved from above.
-	if (bValid)
-	{
-		// TEXT
-		if (pXML->GetChildXmlValByName(wszTextVal, "Text"))
-		{
-			setText(wszTextVal);
-		}
-		else
-		{
-			pXML->GetXmlVal(wszTextVal);
-			setText(wszTextVal);
-		}
-
-		// GENDER
-		if (pXML->GetChildXmlValByName(wszTextVal, "Gender"))
-		{
-			setGender(wszTextVal);
-		}
-
-		// PLURAL
-		if (pXML->GetChildXmlValByName(wszTextVal, "Plural"))
-		{
-			setPlural(wszTextVal);
 		}
 	}
 
 	gDLL->getXMLIFace()->SetToParent(pXML->GetXML()); // Move back up to Parent
 
-	return bValid;
+	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -22707,38 +22258,7 @@ bool CvEventInfo::readPass2(CvXMLLoadUtility* pXML)
 //  PURPOSE :   Default constructor
 //
 //------------------------------------------------------------------------------------------------------
-CvEspionageMissionInfo::CvEspionageMissionInfo() :
-	m_iCost(0),
-	m_bIsPassive(false),
-	m_bIsTwoPhases(false),
-	m_bTargetsCity(false),
-	m_bSelectPlot(false),
-	m_iTechPrereq(NO_TECH),
-	m_iVisibilityLevel(0),
-	m_bInvestigateCity(false),
-	m_bSeeDemographics(false),
-	m_bNoActiveMissions(false),
-	m_bSeeResearch(false),
-	m_bDestroyImprovement(false),
-	m_iDestroyBuildingCostFactor(0),
-	m_iDestroyUnitCostFactor(0),
-	m_iDestroyProjectCostFactor(0),
-	m_iDestroyProductionCostFactor(0),
-	m_iBuyUnitCostFactor(0),
-	m_iBuyCityCostFactor(0),
-	m_iStealTreasuryTypes(0),
-	m_iCityInsertCultureAmountFactor(0),
-	m_iCityInsertCultureCostFactor(0),
-	m_iCityPoisonWaterCounter(0),
-	m_iCityUnhappinessCounter(0),
-	m_iCityRevoltCounter(0),
-	m_iBuyTechCostFactor(0),
-	m_iSwitchCivicCostFactor(0),
-	m_iSwitchReligionCostFactor(0),
-	m_iPlayerAnarchyCounter(0),
-	m_iCounterespionageNumTurns(0),
-	m_iCounterespionageMod(0),
-	m_iDifficultyMod(0)
+CvEspionageMissionInfo::CvEspionageMissionInfo()
 {
 }
 

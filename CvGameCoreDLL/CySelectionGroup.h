@@ -53,15 +53,6 @@ public:
 	bool isInvisible(int /*TeamTypes*/ eTeam);	
 	int countNumUnitAIType(UnitAITypes eUnitAI);
 	bool hasWorker();
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      11/30/08                                jdog5000      */
-/*                                                                                              */
-/* General AI                                                                                   */
-/************************************************************************************************/
-	bool isStranded();
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
 
 	bool at(int iX, int iY);
 	bool atPlot(CyPlot* pPlot);
@@ -85,6 +76,7 @@ public:
 	CyPlot* getPathFirstPlot();
 	CyPlot* getPathEndTurnPlot();
 	bool generatePath(CyPlot* pFromPlot, CyPlot* pToPlot, int iFlags, bool bReuse, int* piPathTurns);
+	void resetPath();
 	int getNumUnits();
 	void clearMissionQueue();
 	int getLengthMissionQueue();

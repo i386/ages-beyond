@@ -25,31 +25,6 @@ CyPlayer::CyPlayer(CvPlayer* pPlayer) : m_pPlayer(pPlayer)
 {
 }
 
-/************************************************************************************************/
-/* CHANGE_PLAYER                         08/27/08                                 jdog5000      */
-/*                                                                                              */
-/*                                                                                              */
-/************************************************************************************************/
-void CyPlayer::changeLeader( int /*LeaderHeadTypes*/ eNewLeader )
-{
-	if( m_pPlayer )
-		m_pPlayer->changeLeader( (LeaderHeadTypes)eNewLeader );
-}
-
-void CyPlayer::changeCiv( int /*CivilizationTypes*/ eNewCiv )
-{
-	if( m_pPlayer )
-		m_pPlayer->changeCiv( (CivilizationTypes)eNewCiv );
-}
-void CyPlayer::setIsHuman( bool bNewValue )
-{
-	if( m_pPlayer )
-		m_pPlayer->setIsHuman( bNewValue );
-}
-/************************************************************************************************/
-/* CHANGE_PLAYER                          END                                                   */
-/************************************************************************************************/
-
 int CyPlayer::startingPlotRange()
 {
 	return m_pPlayer ? m_pPlayer->startingPlotRange() : -1;
@@ -259,6 +234,16 @@ int CyPlayer::countCityFeatures(int /*FeatureTypes*/ eFeature)
 int CyPlayer::countNumBuildings(int /*BuildingTypes*/ eBuilding)
 {
 	return m_pPlayer ? m_pPlayer->countNumBuildings((BuildingTypes) eBuilding) : -1;
+}
+
+int CyPlayer::countPotentialForeignTradeCities(CyArea* pIgnoreArea)
+{
+	return m_pPlayer ? m_pPlayer->countPotentialForeignTradeCities(pIgnoreArea->getArea()) : -1;
+}
+
+int CyPlayer::countPotentialForeignTradeCitiesConnected()
+{
+	return m_pPlayer ? m_pPlayer->countPotentialForeignTradeCitiesConnected() : -1;
 }
 
 int CyPlayer::countNumCitiesConnectedToCapital()
@@ -521,10 +506,9 @@ int CyPlayer::calculatePreInflatedCosts()
 	return m_pPlayer ? m_pPlayer->calculatePreInflatedCosts() : -1;
 }
 
-//int CyPlayer::calculateInflationRate()
-int CyPlayer::getInflationRate()
+int CyPlayer::calculateInflationRate()
 {
-	return m_pPlayer ? m_pPlayer->getInflationRate() : -1;
+	return m_pPlayer ? m_pPlayer->calculateInflationRate() : -1;
 }
 
 int CyPlayer::calculateInflatedCosts()
@@ -552,26 +536,10 @@ int CyPlayer::calculateResearchModifier(int /*TechTypes*/ eTech)
 	return m_pPlayer ? m_pPlayer->calculateResearchModifier((TechTypes)eTech) : -1;
 }
 
-/*
-** K-Mod, 18/dec/10, karadoc
-*/
-int CyPlayer::calculatePollution(int iTypes) const
-{
-	return m_pPlayer ? m_pPlayer->calculatePollution(iTypes) : 0;
-}
-
-int CyPlayer::getGwPercentAnger() const
-{
-	return m_pPlayer ? m_pPlayer->getGwPercentAnger() : 0;
-}
-/*
-** K-Mod end
-*/
-
-/* int CyPlayer::calculateBaseNetResearch()
+int CyPlayer::calculateBaseNetResearch()
 {
 	return m_pPlayer ? m_pPlayer->calculateBaseNetResearch() : -1;
-} */
+}
 
 bool CyPlayer::isResearch()
 {
@@ -607,18 +575,6 @@ int CyPlayer::getResearchTurnsLeft(int /*TechTypes*/ eTech, bool bOverflow)
 {
 	return m_pPlayer ? m_pPlayer->getResearchTurnsLeft((TechTypes)eTech, bOverflow) : -1;
 }
-
-// K-Mod
-bool CyPlayer::canSeeResearch(int /*PlayerTypes*/ ePlayer) const
-{
-	return m_pPlayer ? m_pPlayer->canSeeResearch((PlayerTypes)ePlayer) : false;
-}
-
-bool CyPlayer::canSeeDemographics(int /*PlayerTypes*/ ePlayer) const
-{
-	return m_pPlayer ? m_pPlayer->canSeeDemographics((PlayerTypes)ePlayer) : false;
-}
-// K-Mod end
 
 bool CyPlayer::isCivic(int /*CivicTypes*/ eCivic)
 {
@@ -1182,22 +1138,10 @@ int CyPlayer::getOverflowResearch()
 	return m_pPlayer ? m_pPlayer->getOverflowResearch() : 0;
 }
 
-/*
-** K-Mod, 27/dec/10, karadoc
-** replaced NoUnhealthyPopulation with UnhealthyPopulationModifier
-*/
-/* original bts code
 bool CyPlayer::isNoUnhealthyPopulation()
 {
 	return m_pPlayer ? m_pPlayer->isNoUnhealthyPopulation() : false;
-}*/
-int CyPlayer::getUnhealthyPopulationModifier()
-{
-	return m_pPlayer ? m_pPlayer->getUnhealthyPopulationModifier() : 0;
 }
-/*
-** K-Mod end
-*/
 
 bool CyPlayer::getExpInBorderModifier()
 {

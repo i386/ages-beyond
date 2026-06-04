@@ -15,9 +15,8 @@ class CvPlot;
 class CvArea;
 class CvUnitInfo;
 class CvSelectionGroup;
-//class FAStarNode;
+class FAStarNode;
 class CvArtInfoUnit;
-class KmodPathFinder;
 
 struct DllExport CombatDetails					// Exposed to Python
 {
@@ -97,23 +96,21 @@ public:
 	bool canDoCommand(CommandTypes eCommand, int iData1, int iData2, bool bTestVisible = false, bool bTestBusy = true);	// Exposed to Python
 	void doCommand(CommandTypes eCommand, int iData1, int iData2);																// Exposed to Python
 
-	//FAStarNode* getPathLastNode() const; // disabled by K-Mod
+	FAStarNode* getPathLastNode() const;
 	CvPlot* getPathEndTurnPlot() const;																																						// Exposed to Python
-	bool generatePath(const CvPlot* pToPlot, int iFlags = 0, bool bReuse = false, int* piPathTurns = NULL, int iMaxPath = -1) const; // Exposed to Python (K-Mod added iMaxPath)
-	KmodPathFinder& getPathFinder() const; // K-Mod
+	bool generatePath(const CvPlot* pToPlot, int iFlags = 0, bool bReuse = false, int* piPathTurns = NULL) const;	// Exposed to Python
 
 	bool canEnterTerritory(TeamTypes eTeam, bool bIgnoreRightOfPassage = false) const;						// Exposed to Python
 	bool canEnterArea(TeamTypes eTeam, const CvArea* pArea, bool bIgnoreRightOfPassage = false) const;						// Exposed to Python
 	TeamTypes getDeclareWarMove(const CvPlot* pPlot) const;															// Exposed to Python
-	bool canMoveInto(const CvPlot* pPlot, bool bAttack = false, bool bDeclareWar = false, bool bIgnoreLoad = false, bool bAssumeVisible = true) const; // K-Mod added bAssumeVisible. Exposed to Python
+	bool canMoveInto(const CvPlot* pPlot, bool bAttack = false, bool bDeclareWar = false, bool bIgnoreLoad = false) const;	// Exposed to Python
 	bool canMoveOrAttackInto(const CvPlot* pPlot, bool bDeclareWar = false) const;								// Exposed to Python
-	// bool canMoveThrough(const CvPlot* pPlot, bool bDeclareWar = false) const; // disabled by K-Mod (was exposed to Python)
+	bool canMoveThrough(const CvPlot* pPlot) const;																								// Exposed to Python
 	void attack(CvPlot* pPlot, bool bQuick);
 	void attackForDamage(CvUnit *pDefender, int attackerDamageChange, int defenderDamageChange);
 	void fightInterceptor(const CvPlot* pPlot, bool bQuick);
 	void move(CvPlot* pPlot, bool bShow);
-	// K-Mod added bForceMove and bGroup
-	bool jumpToNearestValidPlot(bool bGroup = false, bool bForceMove = false); // Exposed to Python
+	bool jumpToNearestValidPlot();																																// Exposed to Python
 
 	bool canAutomate(AutomateTypes eAutomate) const;																							// Exposed to Python
 	void automate(AutomateTypes eAutomate);
@@ -148,8 +145,7 @@ public:
 	bool canHeal(const CvPlot* pPlot) const;																											// Exposed to Python
 	bool canSentry(const CvPlot* pPlot) const;																										// Exposed to Python
 
-	//int healRate(const CvPlot* pPlot) const;
-	int healRate(const CvPlot* pPlot, bool bLocation = true, bool bUnits = true) const; // K-Mod
+	int healRate(const CvPlot* pPlot) const;
 	int healTurns(const CvPlot* pPlot) const;
 	void doHeal();
 
@@ -240,8 +236,8 @@ public:
 
 	bool canEspionage(const CvPlot* pPlot, bool bTestVisible = false) const;
 	bool espionage(EspionageMissionTypes eMission, int iData);
-	bool testSpyIntercepted(PlayerTypes eTargetPlayer, bool bMission, int iModifier); // (K-Mod added bMission)
-	int getSpyInterceptPercent(TeamTypes eTargetTeam, bool bMission) const; // (K-Mod added bMission)
+	bool testSpyIntercepted(PlayerTypes eTargetPlayer, int iModifier = 0);
+	int getSpyInterceptPercent(TeamTypes eTargetTeam) const;
 	bool isIntruding() const;
 
 	bool canGoldenAge(const CvPlot* pPlot, bool bTestVisible = false) const;																// Exposed to Python
@@ -268,8 +264,7 @@ public:
 	bool hasUpgrade(UnitTypes eUnit, bool bSearch = false) const;
 	CvCity* getUpgradeCity(bool bSearch = false) const;
 	CvCity* getUpgradeCity(UnitTypes eUnit, bool bSearch = false, int* iSearchValue = NULL) const;
-	//void upgrade(UnitTypes eUnit);
-	CvUnit* upgrade(UnitTypes eUnit); // K-Mod
+	void upgrade(UnitTypes eUnit);
 
 	HandicapTypes getHandicapType() const;																// Exposed to Python		
 	CivilizationTypes getCivilizationType() const;							// Exposed to Python								
@@ -302,9 +297,6 @@ public:
 	DllExport BuildTypes getBuildType() const;														// Exposed to Python
 	int workRate(bool bMax) const;															// Exposed to Python
 
-// BUG - Female Great People - start
-	bool isFemale() const;																	// Exposed to Python
-// BUG - Female Great People - end
 	bool isAnimal() const;																								// Exposed to Python
 	bool isNoBadGoodies() const;																					// Exposed to Python
 	bool isOnlyDefensive() const;																					// Exposed to Python
@@ -418,7 +410,7 @@ public:
 	bool isFull() const;																															// Exposed to Python
 	int cargoSpaceAvailable(SpecialUnitTypes eSpecialCargo = NO_SPECIALUNIT, DomainTypes eDomainCargo = NO_DOMAIN) const;	// Exposed to Python
 	bool hasCargo() const;																									// Exposed to Python
-	//bool canCargoAllMove() const; // disabled by K-Mod (was exposed to Python)
+	bool canCargoAllMove() const;																											// Exposed to Python
 	bool canCargoEnterArea(TeamTypes eTeam, const CvArea* pArea, bool bIgnoreRightOfPassage) const;
 	int getUnitAICargo(UnitAITypes eUnitAI) const;																		// Exposed to Python
 
@@ -667,7 +659,6 @@ public:
 
 	DllExport CvUnit* getCombatUnit() const;
 	void setCombatUnit(CvUnit* pUnit, bool bAttacking = false);
-	bool showSeigeTower(CvUnit* pDefender) const; // K-Mod
 
 	CvUnit* getTransportUnit() const;																							// Exposed to Python
 	bool isCargo() const;																													// Exposed to Python
@@ -767,8 +758,7 @@ public:
 	virtual void AI_uninit() = 0;
 	virtual void AI_reset(UnitAITypes eUnitAI = NO_UNITAI) = 0;
 	virtual bool AI_update() = 0;
-	//virtual bool AI_follow() = 0;
-	virtual bool AI_follow(bool bFirst = true) = 0; // K-Mod
+	virtual bool AI_follow() = 0;
 	virtual void AI_upgrade() = 0;
 	virtual void AI_promote() = 0;
 	virtual int AI_groupFirstVal() = 0;
@@ -779,16 +769,6 @@ public:
 	virtual UnitAITypes AI_getUnitAIType() const = 0;																				// Exposed to Python
 	virtual void AI_setUnitAIType(UnitAITypes eNewValue) = 0;
     virtual int AI_sacrificeValue(const CvPlot* pPlot) const = 0;
-
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      04/05/10                                jdog5000      */
-/*                                                                                              */
-/* Unit AI                                                                                      */
-/************************************************************************************************/
-	virtual bool AI_load(UnitAITypes eUnitAI, MissionAITypes eMissionAI, UnitAITypes eTransportedUnitAI = NO_UNITAI, int iMinCargo = -1, int iMinCargoSpace = -1, int iMaxCargoSpace = -1, int iMaxCargoOurUnitAI = -1, int iFlags = 0, int iMaxPath = MAX_INT, int iMaxTransportPath = MAX_INT) = 0;
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
 
 protected:
 
@@ -893,8 +873,7 @@ protected:
 	bool canAirStrike(const CvPlot* pPlot) const;
 	bool airStrike(CvPlot* pPlot);
 
-	//int planBattle( CvBattleDefinition & kBattleDefinition ) const;
-	int planBattle(CvBattleDefinition& kBattle, const std::vector<int>& combat_log) const; // K-Mod
+	int planBattle( CvBattleDefinition & kBattleDefinition ) const;
 	int computeUnitsToDie( const CvBattleDefinition & kDefinition, bool bRanged, BattleUnitTypes iUnit ) const;
 	bool verifyRoundsValid( const CvBattleDefinition & battleDefinition ) const;
 	void increaseBattleRounds( CvBattleDefinition & battleDefinition ) const;
@@ -903,24 +882,9 @@ protected:
 	void getDefenderCombatValues(CvUnit& kDefender, const CvPlot* pPlot, int iOurStrength, int iOurFirepower, int& iTheirOdds, int& iTheirStrength, int& iOurDamage, int& iTheirDamage, CombatDetails* pTheirDetails = NULL) const;
 
 	bool isCombatVisible(const CvUnit* pDefender) const;
-	//void resolveCombat(CvUnit* pDefender, CvPlot* pPlot, CvBattleDefinition& kBattle);
-	void resolveCombat(CvUnit* pDefender, CvPlot* pPlot, bool bVisible); // K-Mod
+	void resolveCombat(CvUnit* pDefender, CvPlot* pPlot, CvBattleDefinition& kBattle);
 	void resolveAirCombat(CvUnit* pInterceptor, CvPlot* pPlot, CvAirMissionDefinition& kBattle);
 	void checkRemoveSelectionAfterAttack();
-
-// Lead From Behind by UncutDragon. Edited for K-Mod
-public:
-	bool isBetterDefenderThan(const CvUnit* pDefender, const CvUnit* pAttacker, int* pBestDefenderRank) const;
-	virtual void LFBgetBetterAttacker(CvUnit** ppAttacker, const CvPlot* pPlot, bool bPotentialEnemy, int& iAIAttackOdds, int& iAttackerValue) = 0;
-	int LFBgetAttackerRank(const CvUnit* pDefender, int& iUnadjustedRank) const;
-	int LFBgetDefenderRank(const CvUnit* pAttacker) const;
-//protected: // unprotected by K-Mod. (I want to use the LFB value for some AI stuff)
-	int LFBgetDefenderOdds(const CvUnit* pAttacker) const;
-	int LFBgetValueAdjustedOdds(int iOdds, bool bDefender) const;
-	int LFBgetRelativeValueRating() const;
-	int LFGgetDefensiveValueAdjustment() const; // K-Mod
-	bool LFBisBetterDefenderThan(const CvUnit* pDefender, const CvUnit* pAttacker, int* pBestDefenderRank) const;
-	int LFBgetDefenderCombatOdds(const CvUnit* pAttacker) const;
 };
 
 #endif

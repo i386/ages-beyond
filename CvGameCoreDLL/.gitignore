@@ -1,0 +1,23 @@
+# Local/editor noise
+.DS_Store
+*.suo
+*.user
+*.ncb
+
+# Visual C++ build outputs
+Debug/
+Release/
+Final Debug/
+Final Release/
+build/
+*.obj
+*.pch
+*.pdb
+*.idb
+*.ilk
+*.exp
+*.manifest
+*.res
+
+# GitHub workflow staging output
+artifacts/

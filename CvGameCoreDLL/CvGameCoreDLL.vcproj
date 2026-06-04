@@ -1,79 +1,274 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9.00"
+	Version="7.10"
 	Name="CvGameCoreDLL"
-	ProjectGUID="{29299FB8-F6C4-4054-A054-470F4E36D57B}"
-	Keyword="MakeFileProj"
-	TargetFrameworkVersion="196613"
-	>
+	ProjectGUID="{E323AF8E-688B-4ED7-BA84-269D8F3AAE2D}"
+	RootNamespace="CvGameCoreDLL"
+	SccProjectName="Perforce Project"
+	SccAuxPath=""
+	SccLocalPath=".."
+	SccProvider="MSSCCI:Perforce SCM"
+	Keyword="Win32Proj">
 	<Platforms>
 		<Platform
-			Name="Win32"
-		/>
+			Name="Win32"/>
 	</Platforms>
-	<ToolFiles>
-	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="0"
-			>
+			OutputDirectory="Debug"
+			IntermediateDirectory="Debug"
+			ConfigurationType="2"
+			CharacterSet="2">
 			<Tool
-				Name="VCNMakeTool"
-				BuildCommandLine="nmake Debug"
-				ReBuildCommandLine="nmake Debug_clean&#x0D;&#x0A;nmake Debug"
-				CleanCommandLine="nmake Debug_clean"
-				Output=""
-				PreprocessorDefinitions="WIN32;_DEBUG;_USRDLL;KMOD_PATH_FINDER;FASSERT_ENABLE"
-				IncludeSearchPath=""
-				ForcedIncludes=""
-				AssemblySearchPath=""
-				ForcedUsingAssemblies=""
-				CompileAsManaged=""
-			/>
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				OptimizeForProcessor="3"
+				AdditionalIncludeDirectories="&quot;Boost-1.32.0\include&quot;;Python24\include"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;CVGAMECOREDLL_EXPORTS"
+				MinimalRebuild="FALSE"
+				ExceptionHandling="TRUE"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="3"
+				BufferSecurityCheck="FALSE"
+				EnableFunctionLevelLinking="TRUE"
+				RuntimeTypeInfo="TRUE"
+				UsePrecompiledHeader="3"
+				PrecompiledHeaderThrough="CvGameCoreDLL.h"
+				ProgramDataBaseFileName="$(IntDir)/vc70.pdb"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="FALSE"
+				DebugInformationFormat="4"
+				CallingConvention="0"
+				ShowIncludes="FALSE"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="boost_python-vc71-mt-gd-1_32.lib winmm.lib"
+				OutputFile="../Beyond the Sword/Assets/CvGameCoreDLL_DEBUG.dll"
+				LinkIncremental="2"
+				AdditionalLibraryDirectories="Python24\libs;&quot;boost-1.32.0\libs\&quot;"
+				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile="$(OutDir)/CvGameCoreDLL_DEBUG.pdb"
+				SubSystem="2"
+				LargeAddressAware="2"
+				ImportLibrary="$(OutDir)/CvGameCoreDLL.lib"
+				TargetMachine="1"/>
+			<Tool
+				Name="VCMIDLTool"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="0"
-			>
+			OutputDirectory="Release"
+			IntermediateDirectory="Release"
+			ConfigurationType="2"
+			CharacterSet="2">
 			<Tool
-				Name="VCNMakeTool"
-				BuildCommandLine="nmake Release"
-				ReBuildCommandLine="nmake Release_clean&#x0D;&#x0A;nmake Release"
-				CleanCommandLine="nmake Release_clean"
-				Output=""
-				PreprocessorDefinitions="WIN32;NDEBUG;_USRDLL;KMOD_PATH_FINDER"
-				IncludeSearchPath=""
-				ForcedIncludes=""
-				AssemblySearchPath=""
-				ForcedUsingAssemblies=""
-				CompileAsManaged=""
-			/>
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				GlobalOptimizations="TRUE"
+				EnableIntrinsicFunctions="TRUE"
+				OmitFramePointers="TRUE"
+				OptimizeForProcessor="3"
+				AdditionalIncludeDirectories="&quot;Boost-1.32.0\include&quot;;Python24\include"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;CVGAMECOREDLL_EXPORTS"
+				MinimalRebuild="FALSE"
+				ExceptionHandling="TRUE"
+				RuntimeLibrary="2"
+				BufferSecurityCheck="FALSE"
+				EnableFunctionLevelLinking="TRUE"
+				RuntimeTypeInfo="TRUE"
+				UsePrecompiledHeader="3"
+				PrecompiledHeaderThrough="CvGameCoreDLL.h"
+				ProgramDataBaseFileName="$(IntDir)/vc70.pdb"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="FALSE"
+				DebugInformationFormat="3"
+				CallingConvention="0"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="boost_python-vc71-mt-1_32.lib  winmm.lib"
+				OutputFile="../Beyond the Sword/Assets/CvGameCoreDLL_RELEASE.dll"
+				LinkIncremental="1"
+				AdditionalLibraryDirectories="Python24\libs;&quot;boost-1.32.0\libs\&quot;"
+				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile="$(OutDir)/CvGameCoreDLL_RELEASE.pdb"
+				SubSystem="2"
+				LargeAddressAware="2"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				ImportLibrary="$(OutDir)/CvGameCoreDLL.lib"
+				TargetMachine="1"/>
+			<Tool
+				Name="VCMIDLTool"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 		<Configuration
-			Name="Profile|Win32"
+			Name="Final Release|Win32"
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="0"
-			>
+			ConfigurationType="2"
+			CharacterSet="2">
 			<Tool
-				Name="VCNMakeTool"
-				BuildCommandLine="nmake Profile"
-				ReBuildCommandLine="nmake Profile_clean&#x0D;&#x0A;nmake Profile"
-				CleanCommandLine="nmake Profile_clean"
-				Output=""
-				PreprocessorDefinitions="WIN32;NDEBUG;_USRDLL;FP_PROFILE_ENABLE;USE_INTERNAL_PROFILER;KMOD_PATH_FINDER"
-				IncludeSearchPath=""
-				ForcedIncludes=""
-				AssemblySearchPath=""
-				ForcedUsingAssemblies=""
-				CompileAsManaged=""
-			/>
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				GlobalOptimizations="TRUE"
+				EnableIntrinsicFunctions="TRUE"
+				OmitFramePointers="TRUE"
+				OptimizeForProcessor="3"
+				AdditionalIncludeDirectories="&quot;Boost-1.32.0\include&quot;;Python24\include"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;CVGAMECOREDLL_EXPORTS;FINAL_RELEASE"
+				MinimalRebuild="FALSE"
+				ExceptionHandling="TRUE"
+				RuntimeLibrary="2"
+				BufferSecurityCheck="FALSE"
+				EnableFunctionLevelLinking="TRUE"
+				RuntimeTypeInfo="TRUE"
+				UsePrecompiledHeader="3"
+				PrecompiledHeaderThrough="CvGameCoreDLL.h"
+				ProgramDataBaseFileName="$(IntDir)/vc70.pdb"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="FALSE"
+				DebugInformationFormat="3"
+				CallingConvention="0"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="boost_python-vc71-mt-1_32.lib  winmm.lib"
+				OutputFile="../Beyond the Sword/Assets/CvGameCoreDLL.dll"
+				LinkIncremental="1"
+				AdditionalLibraryDirectories="Python24\libs;&quot;boost-1.32.0\libs\&quot;"
+				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile="$(OutDir)/CvGameCoreDLL.pdb"
+				SubSystem="2"
+				LargeAddressAware="2"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				ImportLibrary="$(OutDir)/CvGameCoreDLL.lib"
+				TargetMachine="1"/>
+			<Tool
+				Name="VCMIDLTool"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+		</Configuration>
+		<Configuration
+			Name="Final Debug|Win32"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="2"
+			CharacterSet="2">
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				OptimizeForProcessor="3"
+				AdditionalIncludeDirectories="&quot;Boost-1.32.0\include&quot;;Python24\include"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;CVGAMECOREDLL_EXPORTS"
+				MinimalRebuild="FALSE"
+				ExceptionHandling="TRUE"
+				BasicRuntimeChecks="0"
+				RuntimeLibrary="2"
+				BufferSecurityCheck="FALSE"
+				EnableFunctionLevelLinking="TRUE"
+				RuntimeTypeInfo="TRUE"
+				UsePrecompiledHeader="3"
+				PrecompiledHeaderThrough="CvGameCoreDLL.h"
+				ProgramDataBaseFileName="$(IntDir)/vc70.pdb"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="FALSE"
+				DebugInformationFormat="4"
+				CallingConvention="0"
+				ShowIncludes="FALSE"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="boost_python-vc71-mt-1_32.lib winmm.lib msvcprt.lib"
+				OutputFile="../Beyond the Sword/Assets/CvGameCoreDLL.dll"
+				LinkIncremental="2"
+				AdditionalLibraryDirectories="Python24\libs;&quot;boost-1.32.0\libs\&quot;"
+				IgnoreDefaultLibraryNames="msvcprtd.lib"
+				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile="$(OutDir)/CvGameCoreDLL_DEBUG.pdb"
+				SubSystem="2"
+				LargeAddressAware="2"
+				ImportLibrary="$(OutDir)/CvGameCoreDLL.lib"
+				TargetMachine="1"/>
+			<Tool
+				Name="VCMIDLTool"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 	</Configurations>
 	<References>
@@ -81,842 +276,1176 @@
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
-			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
-			>
-			<File
-				RelativePath=".\_precompile.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\BetterBTSAI.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvArea.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvArtFileMgr.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvBugOptions.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvCity.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvCityAI.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvDeal.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvDiploParameters.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvDLLButtonPopup.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvDLLEntity.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvDLLPython.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvDllPythonEvents.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvDllTranslator.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvDLLWidgetData.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvEventReporter.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvFractal.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvGame.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvGameAI.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvGameCoreDLL.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvGameCoreUtils.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvGameInterface.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvGameTextMgr.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvGlobals.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvHallOfFameInfo.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvInfos.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvInfoWater.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvInitCore.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvMap.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvMapGenerator.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvMessageControl.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvMessageData.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvPlayer.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvPlayerAI.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvPlot.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvPlotGroup.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvPopupInfo.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvPopupReturn.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvRandom.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvReplayInfo.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvReplayMessage.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvSelectionGroup.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvSelectionGroupAI.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvStatistics.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvStructs.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvTalkingHeadMessage.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvTeam.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvTeamAI.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvTextScreens.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvUnit.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvUnitAI.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvXMLLoadUtility.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvXMLLoadUtilityGet.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvXMLLoadUtilityInit.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CvXMLLoadUtilitySet.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyArea.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyAreaInterface.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyArgsList.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyArtFileMgr.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyArtFileMgrInterface.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyCity.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyCityInterface1.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyDeal.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyEnumsInterface.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyGame.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyGameCoreUtils.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyGameCoreUtilsInterface.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyGameInterface.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyGameTextMgr.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyGameTextMgrInterface.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyGlobalContext.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyGlobalContextInterface1.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyGlobalContextInterface2.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyGlobalContextInterface3.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyGlobalContextInterface4.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyHallOfFameInfo.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyHallOfFameInterface.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyInfoInterface1.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyInfoInterface2.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyInfoInterface3.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyMap.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyMapGenerator.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyMapGeneratorInterface.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyMapInterface.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyMessageControl.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyMessageControlInterface.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyPlayer.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyPlayerInterface1.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyPlayerInterface2.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyPlot.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyPlotInterface1.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyRandomInterface.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyReplayInfo.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CySelectionGroup.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CySelectionGroupInterface.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyStructsInterface1.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyTeam.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyTeamInterface.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyUnit.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CyUnitInterface1.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\FAssert.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\FDialogTemplate.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\KmodPathFinder.cpp"
-				>
+			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
+			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
+			<File
+				RelativePath=".\_precompile.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="1"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="1"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="1"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="1"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\CvArea.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\CvArtFileMgr.cpp">
+			</File>
+			<File
+				RelativePath=".\CvCity.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\CvCityAI.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\CvDeal.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\CvDiploParameters.cpp">
+			</File>
+			<File
+				RelativePath=".\CvDLLButtonPopup.cpp">
+			</File>
+			<File
+				RelativePath=".\CvDLLEntity.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\CvDLLPython.cpp">
+			</File>
+			<File
+				RelativePath=".\CvDllPythonEvents.cpp">
+			</File>
+			<File
+				RelativePath=".\CvDllTranslator.cpp">
+			</File>
+			<File
+				RelativePath=".\CvDLLWidgetData.cpp">
+			</File>
+			<File
+				RelativePath=".\CvEventReporter.cpp">
+			</File>
+			<File
+				RelativePath=".\CvFractal.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\CvGame.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\CvGameAI.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\CvGameCoreDLL.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\CvGameCoreUtils.cpp">
+			</File>
+			<File
+				RelativePath=".\CvGameInterface.cpp">
+			</File>
+			<File
+				RelativePath=".\CvGameTextMgr.cpp">
+			</File>
+			<File
+				RelativePath=".\CvGlobals.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\CvHallOfFameInfo.cpp">
+			</File>
+			<File
+				RelativePath=".\CvInfos.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\CvInfoWater.cpp">
+			</File>
+			<File
+				RelativePath=".\CvInitCore.cpp">
+			</File>
+			<File
+				RelativePath=".\CvMap.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\CvMapGenerator.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\CvMessageControl.cpp">
+			</File>
+			<File
+				RelativePath=".\CvMessageData.cpp">
+			</File>
+			<File
+				RelativePath=".\CvPlayer.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\CvPlayerAI.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\CvPlot.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\CvPlotGroup.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\CvPopupInfo.cpp">
+			</File>
+			<File
+				RelativePath=".\CvPopupReturn.cpp">
+			</File>
+			<File
+				RelativePath=".\CvRandom.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\CvReplayInfo.cpp">
+			</File>
+			<File
+				RelativePath=".\CvReplayMessage.cpp">
+			</File>
+			<File
+				RelativePath=".\CvSelectionGroup.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\CvSelectionGroupAI.cpp">
+			</File>
+			<File
+				RelativePath=".\CvStatistics.cpp">
+			</File>
+			<File
+				RelativePath=".\CvStructs.cpp">
+			</File>
+			<File
+				RelativePath=".\CvTalkingHeadMessage.cpp">
+			</File>
+			<File
+				RelativePath=".\CvTeam.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\CvTeamAI.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\CvUnit.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\CvUnitAI.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="3"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\CvXMLLoadUtility.cpp">
+			</File>
+			<File
+				RelativePath=".\CvXMLLoadUtilityGet.cpp">
+			</File>
+			<File
+				RelativePath=".\CvXMLLoadUtilityInit.cpp">
+			</File>
+			<File
+				RelativePath=".\CvXMLLoadUtilitySet.cpp">
+			</File>
+			<File
+				RelativePath=".\FAssert.cpp">
+			</File>
+			<File
+				RelativePath=".\FDialogTemplate.cpp">
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
-			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
-			>
+			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
 			<File
-				RelativePath=".\AI_Defines.h"
-				>
+				RelativePath=".\AI_Defines.h">
 			</File>
 			<File
-				RelativePath=".\BetterBTSAI.h"
-				>
+				RelativePath=".\CvArea.h">
 			</File>
 			<File
-				RelativePath=".\CvArea.h"
-				>
+				RelativePath=".\CvArtFileMgr.h">
 			</File>
 			<File
-				RelativePath=".\CvArtFileMgr.h"
-				>
+				RelativePath=".\CvCity.h">
 			</File>
 			<File
-				RelativePath=".\CvBugOptions.h"
-				>
+				RelativePath=".\CvCityAI.h">
 			</File>
 			<File
-				RelativePath=".\CvCity.h"
-				>
+				RelativePath=".\CvDeal.h">
 			</File>
 			<File
-				RelativePath=".\CvCityAI.h"
-				>
+				RelativePath=".\CvDefines.h">
 			</File>
 			<File
-				RelativePath=".\CvDeal.h"
-				>
+				RelativePath=".\CvDiploParameters.h">
 			</File>
 			<File
-				RelativePath=".\CvDefines.h"
-				>
+				RelativePath=".\CvDLLButtonPopup.h">
 			</File>
 			<File
-				RelativePath=".\CvDiploParameters.h"
-				>
+				RelativePath=".\CvDLLDataStreamIFaceBase.h">
 			</File>
 			<File
-				RelativePath=".\CvDLLButtonPopup.h"
-				>
+				RelativePath=".\CvDLLEngineIFaceBase.h">
 			</File>
 			<File
-				RelativePath=".\CvDLLDataStreamIFaceBase.h"
-				>
+				RelativePath=".\CvDLLEntity.h">
 			</File>
 			<File
-				RelativePath=".\CvDLLEngineIFaceBase.h"
-				>
+				RelativePath=".\CvDLLEntityIFaceBase.h">
 			</File>
 			<File
-				RelativePath=".\CvDLLEntity.h"
-				>
+				RelativePath=".\CvDLLFAStarIFaceBase.h">
 			</File>
 			<File
-				RelativePath=".\CvDLLEntityIFaceBase.h"
-				>
+				RelativePath=".\CvDLLFlagEntityIFaceBase.h">
 			</File>
 			<File
-				RelativePath=".\CvDLLEventReporterIFaceBase.h"
-				>
+				RelativePath=".\CvDLLIniParserIFaceBase.h">
 			</File>
 			<File
-				RelativePath=".\CvDLLFAStarIFaceBase.h"
-				>
+				RelativePath=".\CvDLLInterfaceIFaceBase.h">
 			</File>
 			<File
-				RelativePath=".\CvDLLFlagEntityIFaceBase.h"
-				>
+				RelativePath=".\CvDLLPlotBuilderIFaceBase.h">
 			</File>
 			<File
-				RelativePath=".\CvDLLIniParserIFaceBase.h"
-				>
+				RelativePath=".\CvDllPythonEvents.h">
 			</File>
 			<File
-				RelativePath=".\CvDLLInterfaceIFaceBase.h"
-				>
+				RelativePath=".\CvDLLPythonIFaceBase.h">
 			</File>
 			<File
-				RelativePath=".\CvDLLPlotBuilderIFaceBase.h"
-				>
+				RelativePath=".\CvDLLSymbolIFaceBase.h">
 			</File>
 			<File
-				RelativePath=".\CvDllPythonEvents.h"
-				>
+				RelativePath=".\CvDllTranslator.h">
 			</File>
 			<File
-				RelativePath=".\CvDLLPythonIFaceBase.h"
-				>
+				RelativePath=".\CvDLLUtilityIFaceBase.h">
 			</File>
 			<File
-				RelativePath=".\CvDLLSymbolIFaceBase.h"
-				>
+				RelativePath=".\CvDLLWidgetData.h">
 			</File>
 			<File
-				RelativePath=".\CvDllTranslator.h"
-				>
+				RelativePath=".\CvDLLXMLIFaceBase.h">
 			</File>
 			<File
-				RelativePath=".\CvDLLUtilityIFaceBase.h"
-				>
+				RelativePath=".\CvEnums.h">
 			</File>
 			<File
-				RelativePath=".\CvDLLWidgetData.h"
-				>
+				RelativePath=".\CvEventReporter.h">
 			</File>
 			<File
-				RelativePath=".\CvDLLXMLIFaceBase.h"
-				>
+				RelativePath=".\CvFractal.h">
 			</File>
 			<File
-				RelativePath=".\CvEnums.h"
-				>
+				RelativePath=".\CvGame.h">
 			</File>
 			<File
-				RelativePath=".\CvEventReporter.h"
-				>
+				RelativePath=".\CvGameAI.h">
 			</File>
 			<File
-				RelativePath=".\CvFractal.h"
-				>
+				RelativePath=".\CvGameCoreDLL.h">
 			</File>
 			<File
-				RelativePath=".\CvGame.h"
-				>
+				RelativePath=".\CvGameCoreDLLDefNew.h">
 			</File>
 			<File
-				RelativePath=".\CvGameAI.h"
-				>
+				RelativePath=".\CvGameCoreDLLUndefNew.h">
 			</File>
 			<File
-				RelativePath=".\CvGameCoreDLL.h"
-				>
+				RelativePath=".\CvGameCoreUtils.h">
 			</File>
 			<File
-				RelativePath=".\CvGameCoreDLLDefNew.h"
-				>
+				RelativePath=".\CvGameTextMgr.h">
 			</File>
 			<File
-				RelativePath=".\CvGameCoreDLLUndefNew.h"
-				>
+				RelativePath=".\CvGlobals.h">
 			</File>
 			<File
-				RelativePath=".\CvGameCoreUtils.h"
-				>
+				RelativePath=".\CvHallOfFameInfo.h">
 			</File>
 			<File
-				RelativePath=".\CvGameTextMgr.h"
-				>
+				RelativePath=".\CvInfos.h">
 			</File>
 			<File
-				RelativePath=".\CvGlobals.h"
-				>
+				RelativePath=".\CvInfoWater.h">
 			</File>
 			<File
-				RelativePath=".\CvHallOfFameInfo.h"
-				>
+				RelativePath=".\CvInitCore.h">
 			</File>
 			<File
-				RelativePath=".\CvInfos.h"
-				>
+				RelativePath=".\CvMap.h">
 			</File>
 			<File
-				RelativePath=".\CvInfoWater.h"
-				>
+				RelativePath=".\CvMapGenerator.h">
 			</File>
 			<File
-				RelativePath=".\CvInitCore.h"
-				>
+				RelativePath=".\CvMessageControl.h">
 			</File>
 			<File
-				RelativePath=".\CvMap.h"
-				>
+				RelativePath=".\CvMessageData.h">
 			</File>
 			<File
-				RelativePath=".\CvMapGenerator.h"
-				>
+				RelativePath=".\CvPlayer.h">
 			</File>
 			<File
-				RelativePath=".\CvMessageControl.h"
-				>
+				RelativePath=".\CvPlayerAI.h">
 			</File>
 			<File
-				RelativePath=".\CvMessageData.h"
-				>
+				RelativePath=".\CvPlot.h">
 			</File>
 			<File
-				RelativePath=".\CvPlayer.h"
-				>
+				RelativePath=".\CvPlotGroup.h">
 			</File>
 			<File
-				RelativePath=".\CvPlayerAI.h"
-				>
+				RelativePath=".\CvPopupInfo.h">
 			</File>
 			<File
-				RelativePath=".\CvPlot.h"
-				>
+				RelativePath=".\CvPopupReturn.h">
 			</File>
 			<File
-				RelativePath=".\CvPlotGroup.h"
-				>
+				RelativePath=".\CvRandom.h">
 			</File>
 			<File
-				RelativePath=".\CvPopupInfo.h"
-				>
+				RelativePath=".\CvReplayInfo.h">
 			</File>
 			<File
-				RelativePath=".\CvPopupReturn.h"
-				>
+				RelativePath=".\CvReplayMessage.h">
 			</File>
 			<File
-				RelativePath=".\CvRandom.h"
-				>
+				RelativePath=".\CvSelectionGroup.h">
 			</File>
 			<File
-				RelativePath=".\CvReplayInfo.h"
-				>
+				RelativePath=".\CvSelectionGroupAI.h">
 			</File>
 			<File
-				RelativePath=".\CvReplayMessage.h"
-				>
+				RelativePath=".\CvStatistics.h">
 			</File>
 			<File
-				RelativePath=".\CvSelectionGroup.h"
-				>
+				RelativePath=".\CvString.h">
 			</File>
 			<File
-				RelativePath=".\CvSelectionGroupAI.h"
-				>
+				RelativePath=".\CvStructs.h">
 			</File>
 			<File
-				RelativePath=".\CvStatistics.h"
-				>
+				RelativePath=".\CvTalkingHeadMessage.h">
 			</File>
 			<File
-				RelativePath=".\CvString.h"
-				>
+				RelativePath=".\CvTeam.h">
 			</File>
 			<File
-				RelativePath=".\CvStructs.h"
-				>
+				RelativePath=".\CvTeamAI.h">
 			</File>
 			<File
-				RelativePath=".\CvTalkingHeadMessage.h"
-				>
+				RelativePath=".\CvUnit.h">
 			</File>
 			<File
-				RelativePath=".\CvTeam.h"
-				>
+				RelativePath=".\CvUnitAI.h">
 			</File>
 			<File
-				RelativePath=".\CvTeamAI.h"
-				>
+				RelativePath=".\CvXMLLoadUtility.h">
 			</File>
 			<File
-				RelativePath=".\CvUnit.h"
-				>
+				RelativePath=".\FAssert.h">
 			</File>
 			<File
-				RelativePath=".\CvUnitAI.h"
-				>
+				RelativePath=".\FDialogTemplate.h">
 			</File>
 			<File
-				RelativePath=".\CvXMLLoadUtility.h"
-				>
+				RelativePath=".\FProfiler.h">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Final Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"/>
+				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\CyArea.h"
-				>
+				RelativePath=".\LinkedList.h">
 			</File>
 			<File
-				RelativePath=".\CyArgsList.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CyArtFileMgr.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CyCity.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CyDeal.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CyGame.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CyGameCoreUtils.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CyGameTextMgr.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CyGlobalContext.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CyHallOfFameInfo.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CyMap.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CyMapGenerator.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CyMessageControl.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CyPlayer.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CyPlot.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CyReplayInfo.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CySelectionGroup.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CyTeam.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CyUnit.h"
-				>
-			</File>
-			<File
-				RelativePath=".\FAssert.h"
-				>
-			</File>
-			<File
-				RelativePath=".\FAStarNode.h"
-				>
-			</File>
-			<File
-				RelativePath=".\FDataStreamBase.h"
-				>
-			</File>
-			<File
-				RelativePath=".\FDialogTemplate.h"
-				>
-			</File>
-			<File
-				RelativePath=".\FFreeListArray.h"
-				>
-			</File>
-			<File
-				RelativePath=".\FFreeListArrayBase.h"
-				>
-			</File>
-			<File
-				RelativePath=".\FFreeListTrashArray.h"
-				>
-			</File>
-			<File
-				RelativePath=".\FInputDevice.h"
-				>
-			</File>
-			<File
-				RelativePath=".\FProfiler.h"
-				>
-			</File>
-			<File
-				RelativePath=".\FVariableSystem.h"
-				>
-			</File>
-			<File
-				RelativePath=".\FVariableSystem.inl"
-				>
-			</File>
-			<File
-				RelativePath=".\interfaceDirtyBits.inl"
-				>
-			</File>
-			<File
-				RelativePath=".\KmodPathFinder.h"
-				>
-			</File>
-			<File
-				RelativePath=".\LinkedList.h"
-				>
-			</File>
-			<File
-				RelativePath=".\resource.h"
-				>
+				RelativePath=".\resource.h">
 			</File>
 		</Filter>
 		<Filter
-			Name="Resource Files"
-			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
-			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
-			>
+			Name="CyPython"
+			Filter="">
 			<File
-				RelativePath=".\CvGameCoreDLL.rc"
-				>
+				RelativePath=".\CyArgsList.cpp">
 			</File>
+			<File
+				RelativePath=".\CyArgsList.h">
+			</File>
+			<Filter
+				Name="Source"
+				Filter="cpp">
+				<File
+					RelativePath=".\CyArea.cpp">
+				</File>
+				<File
+					RelativePath=".\CyAreaInterface.cpp">
+				</File>
+				<File
+					RelativePath=".\CyArtFileMgr.cpp">
+				</File>
+				<File
+					RelativePath=".\CyArtFileMgrInterface.cpp">
+				</File>
+				<File
+					RelativePath=".\CyCityInterface1.cpp">
+				</File>
+				<File
+					RelativePath=".\CyEnumsInterface.cpp">
+				</File>
+				<File
+					RelativePath=".\CyGameCoreUtils.cpp">
+				</File>
+				<File
+					RelativePath=".\CyGameCoreUtilsInterface.cpp">
+				</File>
+				<File
+					RelativePath=".\CyGameInterface.cpp">
+				</File>
+				<File
+					RelativePath=".\CyGameTextMgr.cpp">
+				</File>
+				<File
+					RelativePath=".\CyGameTextMgrInterface.cpp">
+				</File>
+				<File
+					RelativePath=".\CyGlobalContext.cpp">
+				</File>
+				<File
+					RelativePath=".\CyGlobalContextInterface1.cpp">
+				</File>
+				<File
+					RelativePath=".\CyGlobalContextInterface2.cpp">
+				</File>
+				<File
+					RelativePath=".\CyGlobalContextInterface3.cpp">
+				</File>
+				<File
+					RelativePath=".\CyGlobalContextInterface4.cpp">
+				</File>
+				<File
+					RelativePath=".\CyHallOfFameInfo.cpp">
+				</File>
+				<File
+					RelativePath=".\CyHallOfFameInterface.cpp">
+				</File>
+				<File
+					RelativePath=".\CyInfoInterface1.cpp">
+				</File>
+				<File
+					RelativePath=".\CyInfoInterface2.cpp">
+				</File>
+				<File
+					RelativePath=".\CyInfoInterface3.cpp">
+				</File>
+				<File
+					RelativePath=".\CyMap.cpp">
+				</File>
+				<File
+					RelativePath=".\CyMapGenerator.cpp">
+				</File>
+				<File
+					RelativePath=".\CyMapGeneratorInterface.cpp">
+				</File>
+				<File
+					RelativePath=".\CyMapInterface.cpp">
+				</File>
+				<File
+					RelativePath=".\CyMessageControl.cpp">
+				</File>
+				<File
+					RelativePath=".\CyMessageControlInterface.cpp">
+				</File>
+				<File
+					RelativePath=".\CyPlayer.cpp">
+				</File>
+				<File
+					RelativePath=".\CyPlayerInterface1.cpp">
+				</File>
+				<File
+					RelativePath=".\CyPlayerInterface2.cpp">
+				</File>
+				<File
+					RelativePath=".\CyPlot.cpp">
+				</File>
+				<File
+					RelativePath=".\CyPlotInterface1.cpp">
+				</File>
+				<File
+					RelativePath=".\CyRandomInterface.cpp">
+				</File>
+				<File
+					RelativePath=".\CyReplayInfo.cpp">
+				</File>
+				<File
+					RelativePath=".\CySelectionGroup.cpp">
+				</File>
+				<File
+					RelativePath=".\CySelectionGroupInterface.cpp">
+				</File>
+				<File
+					RelativePath=".\CyStructsInterface1.cpp">
+				</File>
+				<File
+					RelativePath=".\CyTeam.cpp">
+				</File>
+				<File
+					RelativePath=".\CyTeamInterface.cpp">
+				</File>
+				<File
+					RelativePath=".\CyUnit.cpp">
+				</File>
+				<File
+					RelativePath=".\CyUnitInterface1.cpp">
+				</File>
+			</Filter>
+			<Filter
+				Name="Header"
+				Filter="h">
+				<File
+					RelativePath=".\CyArea.h">
+				</File>
+				<File
+					RelativePath=".\CyArtFileMgr.h">
+				</File>
+				<File
+					RelativePath=".\CyCity.cpp">
+				</File>
+				<File
+					RelativePath=".\CyCity.h">
+				</File>
+				<File
+					RelativePath=".\CyDeal.cpp">
+				</File>
+				<File
+					RelativePath=".\CyDeal.h">
+				</File>
+				<File
+					RelativePath=".\CyGame.cpp">
+				</File>
+				<File
+					RelativePath=".\CyGame.h">
+				</File>
+				<File
+					RelativePath=".\CyGameCoreUtils.h">
+				</File>
+				<File
+					RelativePath=".\CyGameTextMgr.h">
+				</File>
+				<File
+					RelativePath=".\CyGlobalContext.h">
+				</File>
+				<File
+					RelativePath=".\CyHallOfFameInfo.h">
+				</File>
+				<File
+					RelativePath=".\CyMap.h">
+				</File>
+				<File
+					RelativePath=".\CyMapGenerator.h">
+				</File>
+				<File
+					RelativePath=".\CyMessageControl.h">
+				</File>
+				<File
+					RelativePath=".\CyPlayer.h">
+				</File>
+				<File
+					RelativePath=".\CyPlot.h">
+				</File>
+				<File
+					RelativePath=".\CyReplayInfo.h">
+				</File>
+				<File
+					RelativePath=".\CySelectionGroup.h">
+				</File>
+				<File
+					RelativePath=".\CyTeam.h">
+				</File>
+				<File
+					RelativePath=".\CyUnit.h">
+				</File>
+			</Filter>
 		</Filter>
+		<File
+			RelativePath=".\CvGameCoreDLL.rc">
+		</File>
 	</Files>
 	<Globals>
 	</Globals>

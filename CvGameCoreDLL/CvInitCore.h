@@ -7,10 +7,6 @@
 
 //#include "CvEnums.h"
 
-/*
-** K-Mod, 8/dec/10, karadoc
-** moved this macro to CvGlobals.h (and modified it)
-*
 #define FASSERT_BOUNDS(lower,upper,index,fnString)\
 	if (index < lower)\
 	{\
@@ -24,9 +20,6 @@
 		sprintf(acOut, "Index in %s expected to be < %d", fnString, upper);\
 		FAssertMsg(index < upper, acOut);\
 	}
-**
-** K-Mod end
-*/
 
 class CvInitCore
 {

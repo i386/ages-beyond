@@ -59,7 +59,7 @@ unsigned short CvRandom::get(unsigned short usNum, const TCHAR* pszLog)
 			if (GC.getGameINLINE().getTurnSlice() > 0)
 			{
 				TCHAR szOut[1024];
-				sprintf(szOut, "Rand = %ul / %hu (%s) on %d\n", getSeed(), usNum, pszLog, GC.getGameINLINE().getTurnSlice());
+				sprintf(szOut, "Rand = %d on %d (%s)\n", getSeed(), GC.getGameINLINE().getTurnSlice(), pszLog);
 				gDLL->messageControlLog(szOut);
 			}
 		}

@@ -130,14 +130,6 @@ void CyGamePythonInterface()
 		.def("getAIAutoPlay", &CyGame::getAIAutoPlay)
 		.def("setAIAutoPlay", &CyGame::setAIAutoPlay)
 
-		.def("getGlobalWarmingIndex", &CyGame::getGlobalWarmingIndex)	// K-Mod
-		.def("getGlobalWarmingChances", &CyGame::getGlobalWarmingChances)	// K-Mod
-		.def("getGwEventTally", &CyGame::getGwEventTally)				// K-Mod
-		.def("calculateGlobalPollution", &CyGame::calculateGlobalPollution) // K-Mod
-		.def("calculateGwLandDefence", &CyGame::calculateGwLandDefence)	// K-Mod
-		.def("calculateGwSustainabilityThreshold", &CyGame::calculateGwSustainabilityThreshold)	// K-Mod
-		.def("calculateGwSeverityRating", &CyGame::calculateGwSeverityRating)	// K-Mod
-
 		.def("isScoreDirty", &CyGame::isScoreDirty, "bool ()")
 		.def("setScoreDirty", &CyGame::setScoreDirty)
 		.def("isCircumnavigated", &CyGame::isCircumnavigated, "bool () - is the globe circumnavigated?")
@@ -189,8 +181,6 @@ void CyGamePythonInterface()
 
 		.def("getProjectCreatedCount", &CyGame::getProjectCreatedCount, "int (ProjectTypes eIndex)")
 		.def("isProjectMaxedOut", &CyGame::isProjectMaxedOut, "bool (ProjectTypes eIndex)")
-
-		.def("countWorldWonders", &CyGame::countWorldWonders, "bool (bool bBuilt, PlayerTypes eBuilder)") // Karadoc
 
 		.def("getForceCivicCount", &CyGame::getForceCivicCount, "int (CivicTypes eIndex)")
 		.def("isForceCivic", &CyGame::isForceCivic, "bool (CivicTypes eIndex)")
@@ -259,18 +249,8 @@ void CyGamePythonInterface()
 		.def("hasSkippedSaveChecksum", &CyGame::hasSkippedSaveChecksum)
 		.def("saveReplay", &CyGame::saveReplay)
 		.def("addPlayer", &CyGame::addPlayer, "void (int eNewPlayer, int eLeader, int eCiv)")
-/********************************************************************************/
-/* 	BETTER_BTS_AI_MOD						8/1/08				jdog5000	*/
-/* 																			*/
-/* 	Debug																	*/
-/********************************************************************************/
-		.def("changeHumanPlayer", &CyGame::changeHumanPlayer, "void ( int /*PlayerTypes*/ eNewHuman )")
-/********************************************************************************/
-/* 	BETTER_BTS_AI_MOD						END								*/
-/********************************************************************************/
 		.def("getCultureThreshold", &CyGame::getCultureThreshold, "int getCultureThreshold(CultureLevelTypes eLevel)")
 
-		.def("getPlotExtraYield", &CyGame::getPlotExtraYield, "int (int iX, int iY, int /*YieldTypes*/ eYield)") // K-Mod
 		.def("setPlotExtraYield", &CyGame::setPlotExtraYield, "void (int iX, int iY, int /*YieldTypes*/ eYield, int iExtraYield)")
 		.def("changePlotExtraCost", &CyGame::changePlotExtraCost, "void (int iX, int iY, int iCost)")
 
@@ -281,7 +261,6 @@ void CyGamePythonInterface()
 
 		.def("isEventActive", &CyGame::isEventActive, "bool (int /*EventTriggerTypes*/ eTrigger)")
 		.def("doControl", &CyGame::doControl, "void (int /*ControlTypes*/ iControl)")
-		.def("getSpaceVictory", &CyGame::getSpaceVictory, "VictoryTypes ()") // K-Mod
 		;
 
 	python::class_<CyDeal>("CyDeal")

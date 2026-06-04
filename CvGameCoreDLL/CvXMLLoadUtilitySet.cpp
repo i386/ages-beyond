@@ -196,34 +196,6 @@ bool CvXMLLoadUtility::SetGlobalDefines()
 		return false;
 	}
 
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      02/21/10                                jdog5000      */
-/*                                                                                              */
-/* XML Options                                                                                  */
-/************************************************************************************************/
-	if (!ReadGlobalDefines("xml\\BBAI_Game_Options_GlobalDefines.xml", cache))
-	{
-		//return false;
-	}
-
-	if (!ReadGlobalDefines("xml\\BBAI_AI_Variables_GlobalDefines.xml", cache))
-	{
-		//return false;
-	}
-
-	if (!ReadGlobalDefines("xml\\TechDiffusion_GlobalDefines.xml", cache))
-	{
-		//return false;
-	}
-
-	if (!ReadGlobalDefines("xml\\LeadFromBehind_GlobalDefines.xml", cache))
-	{
-		//return false;
-	}
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
-
 	if (gDLL->isModularXMLLoading())
 	{
 		std::vector<CvString> aszFiles;
@@ -285,40 +257,7 @@ bool CvXMLLoadUtility::SetPostGlobalsGlobalDefines()
 		SetGlobalDefine("SHALLOW_WATER_TERRAIN", szVal);
 		idx = FindInInfoClass(szVal);
 		GC.getDefinesVarSystem()->SetValue("SHALLOW_WATER_TERRAIN", idx);
-//GWMod Start M.A.
-		SetGlobalDefine("FROZEN_TERRAIN", szVal);
-		idx = FindInInfoClass(szVal);
-		GC.getDefinesVarSystem()->SetValue("FROZEN_TERRAIN", idx);
-		
-		SetGlobalDefine("COLD_TERRAIN", szVal);
-		idx = FindInInfoClass(szVal);
-		GC.getDefinesVarSystem()->SetValue("COLD_TERRAIN", idx);
-		
-		SetGlobalDefine("TEMPERATE_TERRAIN", szVal);
-		idx = FindInInfoClass(szVal);
-		GC.getDefinesVarSystem()->SetValue("TEMPERATE_TERRAIN", idx);
-		
-		SetGlobalDefine("DRY_TERRAIN", szVal);
-		idx = FindInInfoClass(szVal);
-		GC.getDefinesVarSystem()->SetValue("DRY_TERRAIN", idx);
-		
-		SetGlobalDefine("BARREN_TERRAIN", szVal);
-		idx = FindInInfoClass(szVal);
-		GC.getDefinesVarSystem()->SetValue("BARREN_TERRAIN", idx);
 
-		SetGlobalDefine("COLD_FEATURE", szVal);
-		idx = FindInInfoClass(szVal);
-		GC.getDefinesVarSystem()->SetValue("COLD_FEATURE", idx);
-
-		SetGlobalDefine("TEMPERATE_FEATURE", szVal);
-		idx = FindInInfoClass(szVal);
-		GC.getDefinesVarSystem()->SetValue("TEMPERATE_FEATURE", idx);
-
-		SetGlobalDefine("WARM_FEATURE", szVal);
-		idx = FindInInfoClass(szVal);
-		GC.getDefinesVarSystem()->SetValue("WARM_FEATURE", idx);
-
-//GWMod end M.A.
 		SetGlobalDefine("LAND_IMPROVEMENT", szVal);
 		idx = FindInInfoClass(szVal);
 		GC.getDefinesVarSystem()->SetValue("LAND_IMPROVEMENT", idx);
@@ -561,62 +500,6 @@ bool CvXMLLoadUtility::LoadGlobalText()
 
 		gDLL->enumerateFiles(aszFiles, "xml\\text\\*.xml");
 
-		// K-Mod. Text files from mods may not have the same set of language as the base game.
-		// When such a mismatch occurs, we cannot simply rely on "getCurrentLanguage()" to give us the correct text from the mod file. We should instead check the xml tags.
-		// So, before we start loading text, we need to extract the current name of our language tag. This isn't as easy as I'd like. Here's what I'm going to do:
-		// CIV4GameText_Misc1.xml contains the text for the language options dropdown menu in the settings screen; so I'm going to assume that particular text file is
-		// well formed, and I'm going to use it to determine the current language name. (Note: I'd like to use the names from TXT_KEY_LANGUAGE_#, but that text isn't easy to access.)
-		// label text for the currently selected language -- that should correspond to the xml label used for that language.
-		std::string langauge_name;
-		if (LoadCivXml(m_pFXml, "xml\\text\\CIV4GameText_Misc1.xml"))
-		{
-			bool bValid = true;
-			bValid = bValid && gDLL->getXMLIFace()->LocateNode(m_pFXml, "Civ4GameText/TEXT");
-			bValid = bValid && gDLL->getXMLIFace()->SetToChild(m_pFXml);
-
-			if (bValid)
-			{
-				const int& iLanguage = GAMETEXT.getCurrentLanguage();
-				const int iMax = GC.getDefineINT("MAX_NUM_LANGUAGES");
-				int i;
-				for (i = 0; i < iMax; i++)
-				{
-					SkipToNextVal();
-
-					if (!gDLL->getXMLIFace()->NextSibling(m_pFXml))
-						break;
-					if (i == iLanguage)
-					{
-						char buffer[1024]; // no way to determine max tag name size. .. This is really bad; but what can I do about it?
-						if (gDLL->getXMLIFace()->GetLastLocatedNodeTagName(m_pFXml, buffer))
-						{
-							buffer[1023] = 0; // just in case the buffer isn't even terminated!
-							langauge_name.assign(buffer);
-						}
-					}
-				}
-				// this is stupid...
-				// the number of languages is a static private variable which can only be set by a non-static function.
-				CvGameText dummy;
-				dummy.setNumLanguages(i);
-			}
-		}
-
-		// Remove duplicate files. (Both will be loaded from the mod folder anyway, so this will save us some time.)
-		// However, we must not disturb the order of the list, because it is important that the modded files overrule the unmodded files.
-		for(std::vector<CvString>::iterator it = aszFiles.begin(); it != aszFiles.end(); ++it)
-		{
-			std::vector<CvString>::iterator jt = it+1;
-			while (jt != aszFiles.end())
-			{
-				if (it->CompareNoCase(*jt) == 0)
-					jt = aszFiles.erase(jt);
-				else
-					++jt;
-			}
-		}
-		// K-Mod end
-
 		if (gDLL->isModularXMLLoading())
 		{
 			gDLL->enumerateFiles(aszModfiles, "modules\\*_CIV4GameText.xml");
@@ -635,7 +518,7 @@ bool CvXMLLoadUtility::LoadGlobalText()
 			if (bLoaded)
 			{
 				// if the xml is successfully validated
-				SetGameText("Civ4GameText", "Civ4GameText/TEXT", langauge_name);
+				SetGameText("Civ4GameText", "Civ4GameText/TEXT");
 			}
 		}
 
@@ -1343,7 +1226,7 @@ void CvXMLLoadUtility::SetGlobalUnitScales(float* pfLargeScale, float* pfSmallSc
 //  PURPOSE :   Reads game text info from XML and adds it to the translation manager
 //
 //------------------------------------------------------------------------------------------------------
-void CvXMLLoadUtility::SetGameText(const char* szTextGroup, const char* szTagName, const std::string& language_name)
+void CvXMLLoadUtility::SetGameText(const char* szTextGroup, const char* szTagName)
 {
 	PROFILE_FUNC();
 	logMsg("SetGameText %s\n", szTagName);
@@ -1360,8 +1243,7 @@ void CvXMLLoadUtility::SetGameText(const char* szTextGroup, const char* szTagNam
 		for (i=0; i < iNumVals; i++)
 		{
 			CvGameText textInfo;
-			//textInfo.read(this);
-			textInfo.read(this, language_name); // K-Mod
+			textInfo.read(this);
 
 			gDLL->addText(textInfo.getType() /*id*/, textInfo.getText(), textInfo.getGender(), textInfo.getPlural());
 			if (!gDLL->getXMLIFace()->NextSibling(m_pFXml) && i!=iNumVals-1)
@@ -1399,23 +1281,23 @@ void CvXMLLoadUtility::SetGlobalClassInfo(std::vector<T*>& aInfos, const char* s
 		// loop through each tag
 		do
 		{
-			//SkipToNextVal();	// skip to the next non-comment node
+			SkipToNextVal();	// skip to the next non-comment node
 
-			T* pClassInfo = new T;
+				T* pClassInfo = new T;
 
-			FAssert(NULL != pClassInfo);
-			if (NULL == pClassInfo)
-			{
-				break;
-			}
+				FAssert(NULL != pClassInfo);
+				if (NULL == pClassInfo)
+				{
+					break;
+				}
 
-			bool bSuccess = pClassInfo->read(this);
-			FAssert(bSuccess);
-			if (!bSuccess)
-			{
-				delete pClassInfo;
-				break;
-			}
+				bool bSuccess = pClassInfo->read(this);
+				FAssert(bSuccess);
+				if (!bSuccess)
+				{
+					delete pClassInfo;
+					break;
+				}
 
 			int iIndex = -1;
 			if (NULL != pClassInfo->getType())
@@ -1438,8 +1320,7 @@ void CvXMLLoadUtility::SetGlobalClassInfo(std::vector<T*>& aInfos, const char* s
 			}
 
 
-		//} while (gDLL->getXMLIFace()->NextSibling(m_pFXml));
-		} while (gDLL->getXMLIFace()->NextSibling(m_pFXml) && SkipToNextVal()); // K-Mod
+		} while (gDLL->getXMLIFace()->NextSibling(m_pFXml));
 
 		if (bTwoPass)
 		{
@@ -1479,7 +1360,7 @@ void CvXMLLoadUtility::SetDiplomacyInfo(std::vector<CvDiplomacyInfo*>& DiploInfo
 		// loop through each tag
 		do
 		{
-			//SkipToNextVal();	// skip to the next non-comment node
+			SkipToNextVal();	// skip to the next non-comment node
 
 			CvString szType;
 			GetChildXmlValByName(szType, "Type");
@@ -1507,8 +1388,7 @@ void CvXMLLoadUtility::SetDiplomacyInfo(std::vector<CvDiplomacyInfo*>& DiploInfo
 				DiploInfos[iIndex]->read(this);
 			}
 
-		//} while (gDLL->getXMLIFace()->NextSibling(m_pFXml));
-		} while (gDLL->getXMLIFace()->NextSibling(m_pFXml) && SkipToNextVal()); // K-Mod
+		} while (gDLL->getXMLIFace()->NextSibling(m_pFXml));
 	}
 }
 
@@ -2074,8 +1954,7 @@ void CvXMLLoadUtility::SetVariableListTagPair(int **ppiList, const TCHAR* szRoot
 				{
 					for (i=0;i<iNumSibs;i++)
 					{
-						//if (GetChildXmlVal(szTextVal))
-						if (SkipToNextVal() && GetChildXmlVal(szTextVal)) // K-Mod. (without this, a comment in the xml could break this)
+						if (GetChildXmlVal(szTextVal))
 						{
 							iIndexVal = FindInInfoClass(szTextVal);
 
@@ -2144,8 +2023,7 @@ void CvXMLLoadUtility::SetVariableListTagPair(bool **ppbList, const TCHAR* szRoo
 				{
 					for (i=0;i<iNumSibs;i++)
 					{
-						//if (GetChildXmlVal(szTextVal))
-						if (SkipToNextVal() && GetChildXmlVal(szTextVal)) // K-Mod. (without this, a comment in the xml could break this)
+						if (GetChildXmlVal(szTextVal))
 						{
 							iIndexVal = FindInInfoClass(szTextVal);
 							if (iIndexVal != -1)
@@ -2213,8 +2091,7 @@ void CvXMLLoadUtility::SetVariableListTagPair(float **ppfList, const TCHAR* szRo
 				{
 					for (i=0;i<iNumSibs;i++)
 					{
-						//if (GetChildXmlVal(szTextVal))
-						if (SkipToNextVal() && GetChildXmlVal(szTextVal)) // K-Mod. (without this, a comment in the xml could break this)
+						if (GetChildXmlVal(szTextVal))
 						{
 							iIndexVal = FindInInfoClass(szTextVal);
 							if (iIndexVal != -1)
@@ -2282,8 +2159,7 @@ void CvXMLLoadUtility::SetVariableListTagPair(CvString **ppszList, const TCHAR* 
 				{
 					for (i=0;i<iNumSibs;i++)
 					{
-						//if (GetChildXmlVal(szTextVal))
-						if (SkipToNextVal() && GetChildXmlVal(szTextVal)) // K-Mod. (without this, a comment in the xml could break this)
+						if (GetChildXmlVal(szTextVal))
 						{
 							iIndexVal = FindInInfoClass(szTextVal);
 							if (iIndexVal != -1)
@@ -2351,8 +2227,7 @@ void CvXMLLoadUtility::SetVariableListTagPair(int **ppiList, const TCHAR* szRoot
 				{
 					for (i=0;i<iNumSibs;i++)
 					{
-						//if (GetChildXmlVal(szTextVal))
-						if (SkipToNextVal() && GetChildXmlVal(szTextVal)) // K-Mod. (without this, a comment in the xml could break this)
+						if (GetChildXmlVal(szTextVal))
 						{
 							iIndexVal = GC.getTypesEnum(szTextVal);
 							if (iIndexVal != -1)
@@ -2421,8 +2296,7 @@ void CvXMLLoadUtility::SetVariableListTagPairForAudioScripts(int **ppiList, cons
 				{
 					for (i=0;i<iNumSibs;i++)
 					{
-						//if (GetChildXmlVal(szTextVal))
-						if (SkipToNextVal() && GetChildXmlVal(szTextVal)) // K-Mod. (without this, a comment in the xml could break this)
+						if (GetChildXmlVal(szTextVal))
 						{
 							iIndexVal =	GC.getTypesEnum(szTextVal);
 							if (iIndexVal != -1)
@@ -2494,8 +2368,7 @@ void CvXMLLoadUtility::SetVariableListTagPairForAudioScripts(int **ppiList, cons
 				{
 					for (i=0;i<iNumSibs;i++)
 					{
-						//if (GetChildXmlVal(szTextVal))
-						if (SkipToNextVal() && GetChildXmlVal(szTextVal)) // K-Mod. (without this, a comment in the xml could break this)
+						if (GetChildXmlVal(szTextVal))
 						{
 							iIndexVal = FindInInfoClass(szTextVal);
 							if (iIndexVal != -1)
@@ -2567,8 +2440,7 @@ void CvXMLLoadUtility::SetVariableListTagPair(bool **ppbList, const TCHAR* szRoo
 				{
 					for (i=0;i<iNumSibs;i++)
 					{
-						//if (GetChildXmlVal(szTextVal))
-						if (SkipToNextVal() && GetChildXmlVal(szTextVal)) // K-Mod. (without this, a comment in the xml could break this)
+						if (GetChildXmlVal(szTextVal))
 						{
 							iIndexVal =	GC.getTypesEnum(szTextVal);
 							if (iIndexVal != -1)
@@ -2636,8 +2508,7 @@ void CvXMLLoadUtility::SetVariableListTagPair(CvString **ppszList, const TCHAR* 
 				{
 					for (i=0;i<iNumSibs;i++)
 					{
-						//if (GetChildXmlVal(szTextVal))
-						if (SkipToNextVal() && GetChildXmlVal(szTextVal)) // K-Mod. (without this, a comment in the xml could break this)
+						if (GetChildXmlVal(szTextVal))
 						{
 							iIndexVal =	GC.getTypesEnum(szTextVal);
 							if (iIndexVal != -1)

@@ -104,10 +104,10 @@ bool CyUnit::canMoveOrAttackInto(CyPlot* pPlot, bool bDeclareWar)
 	return m_pUnit ? m_pUnit->canMoveOrAttackInto(pPlot->getPlot(), bDeclareWar) : false;
 }
 
-/*bool CyUnit::canMoveThrough(CyPlot* pPlot)
+bool CyUnit::canMoveThrough(CyPlot* pPlot)
 {
 	return m_pUnit ? m_pUnit->canMoveThrough(pPlot->getPlot()) : false;
-}*/
+}
 
 bool CyUnit::jumpToNearestValidPlot()
 {
@@ -564,13 +564,6 @@ int CyUnit::workRate(bool bMax)
 {
 	return m_pUnit ? m_pUnit->workRate(bMax) : -1;
 }
-
-// BUG - Female Great People - start
-bool CyUnit::isFemale()
-{
-	return m_pUnit ? m_pUnit->isFemale() : false;
-}
-// BUG - Female Great People - end
 
 bool CyUnit::isAnimal()
 {
@@ -1046,10 +1039,10 @@ bool CyUnit::hasCargo()
 	return m_pUnit ? m_pUnit->hasCargo() : false;
 }
 
-/* bool CyUnit::canCargoAllMove()
+bool CyUnit::canCargoAllMove()
 {
 	return m_pUnit ? m_pUnit->canCargoAllMove() : false;
-} */
+}
 
 int CyUnit::getUnitAICargo(UnitAITypes eUnitAI)
 {

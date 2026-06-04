@@ -47,7 +47,7 @@ int cyGetPopulationScore(int iPopulation);
 int cyGetLandPlotsScore(int iPopulation);
 int cyGetTechScore(int /*TechTypes*/ eTech);
 int cyGetWonderScore(int /*BuildingClassTypes*/ eWonderClass);
-int /*ImprovementTypes*/ cyFinalImprovementUpgrade(int /*ImprovementTypes*/ eImprovement);
+int /*ImprovementTypes*/ cyFinalImprovementUpgrade(int /*ImprovementTypes*/ eImprovement, int iCount);
 
 int cyGetWorldSizeMaxConscript(int /*CivicTypes*/ eCivic);
 

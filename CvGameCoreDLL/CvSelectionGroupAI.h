@@ -20,34 +20,19 @@ public:
 	void AI_reset();
 
 	void AI_separate();
-	void AI_separateNonAI(UnitAITypes eUnitAI);
-	void AI_separateAI(UnitAITypes eUnitAI);
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      06/02/09                                jdog5000      */
-/*                                                                                              */
-/* General AI                                                                                   */
-/************************************************************************************************/
-	bool AI_separateImpassable();
-	bool AI_separateEmptyTransports();
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
-
+	void AI_seperateNonAI(UnitAITypes eUnitAI);
+	void AI_seperateAI(UnitAITypes eUnitAI);
 
 	bool AI_update();
 
 	int AI_attackOdds(const CvPlot* pPlot, bool bPotentialEnemy) const;
 	CvUnit* AI_getBestGroupAttacker(const CvPlot* pPlot, bool bPotentialEnemy, int& iUnitOdds, bool bForce = false, bool bNoBlitz = false) const;
 	CvUnit* AI_getBestGroupSacrifice(const CvPlot* pPlot, bool bPotentialEnemy, bool bForce = false, bool bNoBlitz = false) const;
-	//int AI_compareStacks(const CvPlot* pPlot, bool bPotentialEnemy, bool bCheckCanAttack = false, bool bCheckCanMove = false) const;
-	//int AI_sumStrength(const CvPlot* pAttackedPlot = NULL, DomainTypes eDomainType = NO_DOMAIN, bool bCheckCanAttack = false, bool bCheckCanMove = false) const;
-	// K-Mod
-	int AI_compareStacks(const CvPlot* pPlot, bool bCheckCanAttack = false) const;
-	int AI_sumStrength(const CvPlot* pAttackedPlot = NULL, DomainTypes eDomainType = NO_DOMAIN, bool bCheckCanAttack = false) const;
-	// K-Mod end
+	int AI_compareStacks(const CvPlot* pPlot, bool bPotentialEnemy, bool bCheckCanAttack = false, bool bCheckCanMove = false) const;
+	int AI_sumStrength(const CvPlot* pAttackedPlot = NULL, DomainTypes eDomainType = NO_DOMAIN, bool bCheckCanAttack = false, bool bCheckCanMove = false) const;
 	void AI_queueGroupAttack(int iX, int iY);
-	inline void AI_cancelGroupAttack() { m_bGroupAttack = false; } // K-Mod (made inline)
-	inline bool AI_isGroupAttack() const { return m_bGroupAttack; } // K-Mod (made inline)
+	void AI_cancelGroupAttack();
+	bool AI_isGroupAttack();
 
 	bool AI_isControlled();
 	bool AI_isDeclareWar(const CvPlot* pPlot = NULL);
@@ -55,10 +40,9 @@ public:
 	CvPlot* AI_getMissionAIPlot();
 
 	bool AI_isForceSeparate();
-	//void AI_makeForceSeparate();
-	inline void AI_setForceSeparate(bool bNewValue = true) { m_bForceSeparate = bNewValue; } // K-Mod
+	void AI_makeForceSeparate();
 
-	MissionAITypes AI_getMissionAIType() const;
+	MissionAITypes AI_getMissionAIType();
 	void AI_setMissionAI(MissionAITypes eNewMissionAI, CvPlot* pNewPlot, CvUnit* pNewUnit);
 	CvUnit* AI_ejectBestDefender(CvPlot* pTargetPlot);
 
@@ -70,7 +54,6 @@ public:
 	void write(FDataStreamBase* pStream);
 
 protected:
-	// K-Mod note: the game will crash if too much data is added here. See CvSelectionGroup.h.
 
 	int m_iMissionAIX;
 	int m_iMissionAIY;

@@ -72,7 +72,7 @@ void CvGameAI::AI_updateAssignWork()
 }
 
 
-int CvGameAI::AI_combatValue(UnitTypes eUnit) const
+int CvGameAI::AI_combatValue(UnitTypes eUnit)
 {
 	int iValue;
 
@@ -86,7 +86,7 @@ int CvGameAI::AI_combatValue(UnitTypes eUnit) const
 	{
 		iValue *= GC.getUnitInfo(eUnit).getCombat();
 
-		iValue *= ((((GC.getUnitInfo(eUnit).getFirstStrikes() * 2) + GC.getUnitInfo(eUnit).getChanceFirstStrikes()) * (GC.getCOMBAT_DAMAGE() / 5)) + 100);
+		iValue *= ((((GC.getUnitInfo(eUnit).getFirstStrikes() * 2) + GC.getUnitInfo(eUnit).getChanceFirstStrikes()) * (GC.getDefineINT("COMBAT_DAMAGE") / 5)) + 100);
 		iValue /= 100;
 	}
 

@@ -356,10 +356,6 @@ public:
 	int getPrereqOrTechs(int i) const;		// Exposed to Python
 	int getPrereqAndTechs(int i) const;		// Exposed to Python
 
-	int getCommerceModifier(int i) const; // K-Mod, Exposed to Python
-	int* getCommerceModifierArray() const; // K-Mod
-	int getSpecialistExtraCommerce(int i) const; // K-Mod, Exposed to Python
-	int* getSpecialistExtraCommerceArray() const; // K-Mod
 	bool isCommerceFlexible(int i) const;	// Exposed to Python
 	bool isTerrainTrade(int i) const;			// Exposed to Python
 
@@ -425,8 +421,6 @@ protected:
 	int* m_piPrereqOrTechs;
 	int* m_piPrereqAndTechs;
 
-	int* m_piCommerceModifier; // K-Mod
-	int* m_piSpecialistExtraCommerce; // K-Mod
 	bool* m_pbCommerceFlexible;
 	bool* m_pbTerrainTrade;
 
@@ -453,16 +447,6 @@ public:
 	void setPrereqOrPromotion1(int i);				// Exposed to Python
 	int getPrereqOrPromotion2() const;				// Exposed to Python
 	void setPrereqOrPromotion2(int i);				// Exposed to Python
-/*
-** K-Mod, 7/jan/11, karadoc
-** note: none of the prereq 'set' functions are 'exposed to python'
-** despite what the above comments say
-*/
-	int getPrereqOrPromotion3() const; // Exposed to Python
-	void setPrereqOrPromotion3(int i);
-/*
-** K-Mod end
-*/
 
 	int getTechPrereq() const;				// Exposed to Python
 	int getStateReligionPrereq() const;				// Exposed to Python
@@ -537,7 +521,6 @@ protected:
 	int m_iPrereqPromotion;
 	int m_iPrereqOrPromotion1;
 	int m_iPrereqOrPromotion2;
-	int m_iPrereqOrPromotion3; // K-Mod
 
 	int m_iTechPrereq;							
 	int m_iStateReligionPrereq;							
@@ -896,10 +879,6 @@ public:
 	int getCommandType() const;								// Exposed to Python
 	void setCommandType(int iNewType);
 
-// BUG - Female Great People - start
-	bool isFemale() const;				// Exposed to Python
-	int getFemaleUnitType() const;
-// BUG - Female Great People - end
 	bool isAnimal() const;				// Exposed to Python
 	bool isFoodProduction() const;				// Exposed to Python
 	bool isNoBadGoodies() const;				// Exposed to Python
@@ -1082,9 +1061,6 @@ protected:
 	int m_iCommandType;
 	int m_iLeaderExperience;
 
-// BUG - Female Great People - start
-	bool m_bFemale;
-// BUG - Female Great People - end
 	bool m_bAnimal;
 	bool m_bFoodProduction;
 	bool m_bNoBadGoodies;
@@ -1334,7 +1310,6 @@ public:
 	int getNumCitiesMaintenanceModifier() const;				// Exposed to Python
 	int getCorporationMaintenanceModifier() const;				// Exposed to Python
 	int getExtraHealth() const;						// Exposed to Python
-	int getExtraHappiness() const { return m_iExtraHappiness; } // K-Mod, Exposed to Python
 	int getFreeExperience() const;				// Exposed to Python
 	int getWorkerSpeedModifier() const;				// Exposed to Python
 	int getImprovementUpgradeRateModifier() const;				// Exposed to Python
@@ -1361,8 +1336,7 @@ public:
 	int getExpInBorderModifier() const;				// Exposed to Python
 
 	bool isMilitaryFoodProduction() const;				// Exposed to Python
-	//bool isNoUnhealthyPopulation() const;				// Exposed to Python
-	int getUnhealthyPopulationModifier() const;	// K-Mod, Exposed to Python
+	bool isNoUnhealthyPopulation() const;				// Exposed to Python
 	bool isBuildingOnlyHealthy() const;				// Exposed to Python
 	bool isNoForeignTrade() const;				// Exposed to Python
 	bool isNoCorporations() const;				// Exposed to Python
@@ -1418,7 +1392,6 @@ protected:
 	int m_iNumCitiesMaintenanceModifier;					
 	int m_iCorporationMaintenanceModifier;					
 	int m_iExtraHealth;
-	int m_iExtraHappiness; // K-Mod
 	int m_iFreeExperience;
 	int m_iWorkerSpeedModifier;
 	int m_iImprovementUpgradeRateModifier;
@@ -1445,8 +1418,7 @@ protected:
 	int m_iExpInBorderModifier;
 
 	bool m_bMilitaryFoodProduction;
-	//bool m_bNoUnhealthyPopulation; // ...
-	int m_iUnhealthyPopulationModifier; // K-Mod
+	bool m_bNoUnhealthyPopulation;
 	bool m_bBuildingOnlyHealthy;
 	bool m_bNoForeignTrade;
 	bool m_bNoCorporations;
@@ -1677,8 +1649,7 @@ public:
 	bool isGoldenAge() const;				// Exposed to Python
 	bool isMapCentering() const;				// Exposed to Python
 	bool isNoUnhappiness() const;				// Exposed to Python
-	//bool isNoUnhealthyPopulation() const;				// Exposed to Python
-	int getUnhealthyPopulationModifier() const;	// K-Mod, Exposed to Python
+	bool isNoUnhealthyPopulation() const;				// Exposed to Python
 	bool isBuildingOnlyHealthy() const;				// Exposed to Python
 	bool isNeverCapture() const;				// Exposed to Python
 	bool isNukeImmune() const;				// Exposed to Python
@@ -1698,7 +1669,7 @@ public:
 
 	int getYieldChange(int i) const;				// Exposed to Python
 	int* getYieldChangeArray() const;
-	int getYieldModifier(int i) const;				// Exposed to Python
+	int getYieldModifier(int i) const;;				// Exposed to Python
 	int* getYieldModifierArray() const;
 	int getPowerYieldModifier(int i) const;				// Exposed to Python
 	int* getPowerYieldModifierArray() const;
@@ -1754,17 +1725,6 @@ public:
 
 	int getBonusYieldModifier(int i, int j) const;				// Exposed to Python
 	int* getBonusYieldModifierArray(int i) const;
-
-/************************************************************************************************/
-/* UNOFFICIAL_PATCH                       06/27/10                    Afforess & jdog5000       */
-/*                                                                                              */
-/* Efficiency                                                                                   */
-/************************************************************************************************/
-	bool isAnySpecialistYieldChange() const;
-	bool isAnyBonusYieldModifier() const;
-/************************************************************************************************/
-/* UNOFFICIAL_PATCH                        END                                                  */
-/************************************************************************************************/
 
 	// Other
 
@@ -1885,8 +1845,7 @@ protected:
 	bool m_bGoldenAge;
 	bool m_bMapCentering;
 	bool m_bNoUnhappiness;
-	//bool m_bNoUnhealthyPopulation; // ...
-	int m_iUnhealthyPopulationModifier; // K-Mod
+	bool m_bNoUnhealthyPopulation;
 	bool m_bBuildingOnlyHealthy;			
 	bool m_bNeverCapture;					
 	bool m_bNukeImmune;					
@@ -1941,16 +1900,7 @@ protected:
 
 	int** m_ppaiSpecialistYieldChange;
 	int** m_ppaiBonusYieldModifier;
-/************************************************************************************************/
-/* UNOFFICIAL_PATCH                       06/27/10                    Afforess & jdog5000       */
-/*                                                                                              */
-/* Efficiency                                                                                   */
-/************************************************************************************************/
-	bool m_bAnySpecialistYieldChange;
-	bool m_bAnyBonusYieldModifier;
-/************************************************************************************************/
-/* UNOFFICIAL_PATCH                        END                                                  */
-/************************************************************************************************/
+
 };
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -2294,7 +2244,6 @@ public:
 	bool isConquest() const;					// Exposed to Python
 	bool isDiploVote() const;					// Exposed to Python
 	DllExport bool isPermanent() const;					// Exposed to Python
-	bool isTotalVictory() const { return m_bTotalVictory; } // Karadoc, Exposed to Python
 
 	const char* getMovie() const;
 
@@ -2318,7 +2267,6 @@ protected:
 	bool m_bConquest;
 	bool m_bDiploVote;
 	bool m_bPermanent;
-	bool m_bTotalVictory; // Karadoc, mastery victory
 
 	CvString m_szMovie;
 
@@ -3167,8 +3115,7 @@ public:
 	int getDefenseModifier() const;						// Exposed to Python
 	int getAdvancedStartRemoveCost() const;						// Exposed to Python
 	int getTurnDamage() const;						// Exposed to Python
-	int getWarmingDefense() const; //GWmod	
-
+	
 	bool isNoCoast() const;						// Exposed to Python
 	bool isNoRiver() const;						// Exposed to Python
 	bool isNoAdjacent() const;				// Exposed to Python
@@ -3219,7 +3166,6 @@ protected:
 	int m_iDefenseModifier;
 	int m_iAdvancedStartRemoveCost;
 	int m_iTurnDamage;
-	int m_iWarmingDefense; //GWMod new xml field M.A.
 	
 	bool m_bNoCoast;				
 	bool m_bNoRiver;					
@@ -3528,19 +3474,6 @@ public:
 	int getTechTradeKnownPercent() const;				// Exposed to Python
 	int getMaxGoldTradePercent() const;				// Exposed to Python
 	int getMaxGoldPerTurnTradePercent() const;				// Exposed to Python
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      03/21/10                                jdog5000      */
-/*                                                                                              */
-/* Victory Strategy AI                                                                          */
-/************************************************************************************************/
-	int getCultureVictoryWeight() const;
-	int getSpaceVictoryWeight() const;
-	int getConquestVictoryWeight() const;
-	int getDominationVictoryWeight() const;
-	int getDiplomacyVictoryWeight() const;
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
 	int getMaxWarRand() const;				// Exposed to Python
 	int getMaxWarNearbyPowerRatio() const;				// Exposed to Python
 	int getMaxWarDistantPowerRatio() const;				// Exposed to Python
@@ -3648,19 +3581,6 @@ protected:
 	int m_iTechTradeKnownPercent;
 	int m_iMaxGoldTradePercent;
 	int m_iMaxGoldPerTurnTradePercent;
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      03/21/10                                jdog5000      */
-/*                                                                                              */
-/* Victory Strategy AI                                                                          */
-/************************************************************************************************/
-	int m_iCultureVictoryWeight;
-	int m_iSpaceVictoryWeight;
-	int m_iConquestVictoryWeight;
-	int m_iDominationVictoryWeight;
-	int m_iDiplomacyVictoryWeight;
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
 	int m_iMaxWarRand;
 	int m_iMaxWarNearbyPowerRatio;
 	int m_iMaxWarDistantPowerRatio;
@@ -5249,15 +5169,6 @@ public:
 	int getConstructPercent() const;			//	Exposed to Python
 	int getCreatePercent() const;					//	Exposed to Python
 	int getResearchPercent() const;				//	Exposed to Python
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      08/21/09                                jdog5000      */
-/*                                                                                              */
-/* Tech Diffusion                                                                               */
-/************************************************************************************************/
-	int getTechCostModifier() const;
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
 	int getBuildPercent() const;					//	Exposed to Python
 	int getImprovementPercent() const;		//	Exposed to Python
 	int getGreatPeoplePercent() const;		//	Exposed to Python
@@ -5296,15 +5207,6 @@ protected:
 	int m_iConstructPercent;
 	int m_iCreatePercent;
 	int m_iResearchPercent;
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      08/21/09                                jdog5000      */
-/*                                                                                              */
-/* Tech Diffusion                                                                               */
-/************************************************************************************************/
-	int m_iTechCostModifier;
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
 	int m_iBuildPercent;
 	int m_iImprovementPercent;
 	int m_iGreatPeoplePercent;
@@ -5489,11 +5391,7 @@ public:
 	DllExport int getNumLanguages() const; // not static for Python access
 	DllExport void setNumLanguages(int iNum); // not static for Python access
 
-	//bool read(CvXMLLoadUtility* pXML);
-	// K-Mod
-	bool read(CvXMLLoadUtility* pXML, const std::string& szLanguageName); // choose which language to load. nullptr means default
-	bool read(CvXMLLoadUtility* pXML) { return read(pXML, ""); }
-	// K-Mod end
+	bool read(CvXMLLoadUtility* pXML);
 
 protected:
 

@@ -23,17 +23,6 @@ public:
 	CvPlayer* getPlayer() { return m_pPlayer;	}	// Call from C++
 	bool isNone() { return (m_pPlayer==NULL); }
 
-/************************************************************************************************/
-/* CHANGE_PLAYER                         08/27/08                                 jdog5000      */
-/*                                                                                              */
-/*                                                                                              */
-/************************************************************************************************/
-	void changeLeader( int /*LeaderHeadTypes*/ eNewLeader );
-	void changeCiv( int /*CivilizationTypes*/ eNewCiv );
-	void setIsHuman( bool bNewValue );
-/************************************************************************************************/
-/* CHANGE_PLAYER                           END                                                  */
-/************************************************************************************************/
 	int startingPlotRange();
 	bool startingPlotWithinRange(CyPlot *pPlot, int /*PlayerTypes*/ ePlayer, int iRange, int iPass);
 
@@ -83,8 +72,8 @@ public:
 	int countUnimprovedBonuses(CyArea* pArea, CyPlot* pFromPlot);
 	int countCityFeatures(int /*FeatureTypes*/ eFeature);
 	int countNumBuildings(int /*BuildingTypes*/ eBuilding);
-	//int countPotentialForeignTradeCities(CyArea* pIgnoreArea);
-	//int countPotentialForeignTradeCitiesConnected();
+	int countPotentialForeignTradeCities(CyArea* pIgnoreArea);
+	int countPotentialForeignTradeCitiesConnected();
 	int countNumCitiesConnectedToCapital();
 
 	bool canContact(int /*PlayerTypes*/ ePlayer);
@@ -146,16 +135,13 @@ public:
 	int calculateUnitCost();
 	int calculateUnitSupply();
 	int calculatePreInflatedCosts();
-	//int calculateInflationRate();
-	int getInflationRate(); // K-Mod
+	int calculateInflationRate();
 	int calculateInflatedCosts();
 	int calculateGoldRate();
 	int calculateTotalCommerce();
 	int calculateResearchRate(int /*TechTypes*/ eTech);
 	int calculateResearchModifier(int /*TechTypes*/ eTech);
-	int calculatePollution(int iTypes) const; // K-Mod
-	int getGwPercentAnger() const; // K-Mod
-	// int calculateBaseNetResearch();
+	int calculateBaseNetResearch();
 	bool isResearch();
 	bool canEverResearch(int /*TechTypes*/ eTech);
 	bool canResearch(int /*TechTypes*/ eTech, bool bTrade);
@@ -163,9 +149,6 @@ public:
 	bool isCurrentResearchRepeat();
 	bool isNoResearchAvailable();
 	int getResearchTurnsLeft(int /*TechTypes*/ eTech, bool bOverflow);
-
-	bool canSeeResearch(int /*PlayerTypes*/ ePlayer) const; // K-Mod
-	bool canSeeDemographics(int /*PlayerTypes*/ ePlayer) const; // K-Mod
 
 	bool isCivic(int /*CivicTypes*/ eCivic);
 	bool canDoCivics(int /*CivicTypes*/ eCivic);
@@ -287,8 +270,7 @@ public:
 
 	int getMaxConscript();
 	int getOverflowResearch();
-	//bool isNoUnhealthyPopulation();
-	int getUnhealthyPopulationModifier(); // K-Mod
+	bool isNoUnhealthyPopulation();
 	bool getExpInBorderModifier();
 	bool isBuildingOnlyHealthy();
 
@@ -478,7 +460,6 @@ public:
 	void AI_updateFoundValues(bool bStartingLoc);
 	int AI_foundValue(int iX, int iY, int iMinUnitRange/* = -1*/, bool bStartingLoc/* = false*/);
 	bool AI_isFinancialTrouble();
-	bool AI_isWillingToTalk(int /*PlayerTypes*/ ePlayer) { return m_pPlayer ? m_pPlayer->AI_isWillingToTalk((PlayerTypes)ePlayer) : false; } // K-Mod
 	bool AI_demandRebukedWar(int /*PlayerTypes*/ ePlayer);
 	AttitudeTypes AI_getAttitude(int /*PlayerTypes*/ ePlayer);
 	int AI_unitValue(int /*UnitTypes*/ eUnit, int /*UnitAITypes*/ eUnitAI, CyArea* pArea);

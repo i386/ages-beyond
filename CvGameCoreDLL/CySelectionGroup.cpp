@@ -159,19 +159,6 @@ bool CySelectionGroup::hasWorker()
 {
 	return m_pSelectionGroup ? m_pSelectionGroup->hasWorker() : false;
 }
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      11/30/08                                jdog5000      */
-/*                                                                                              */
-/* General AI                                                                                   */
-/************************************************************************************************/
-bool CySelectionGroup::isStranded()
-{
-	return m_pSelectionGroup ? m_pSelectionGroup->isStranded() : false;
-}
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
-
 
 bool CySelectionGroup::at(int iX, int iY)
 {
@@ -272,6 +259,12 @@ CyPlot* CySelectionGroup::getPathEndTurnPlot()
 bool CySelectionGroup::generatePath(CyPlot* pFromPlot, CyPlot* pToPlot, int iFlags, bool bReuse, int* piPathTurns)
 {
 	return m_pSelectionGroup ? m_pSelectionGroup->generatePath(pFromPlot->getPlot(), pToPlot->getPlot(), iFlags, bReuse, piPathTurns) : false;
+}
+
+void CySelectionGroup::resetPath()
+{
+	if (m_pSelectionGroup)
+		m_pSelectionGroup->resetPath();
 }
 
 int CySelectionGroup::getNumUnits()

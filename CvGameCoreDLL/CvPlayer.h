@@ -15,7 +15,6 @@
 class CvDiploParameters;
 class CvPopupInfo;
 class CvEventTriggerInfo;
-class CvPlayerRecord; // K-Mod
 
 typedef std::list<CvTalkingHeadMessage> CvMessageQueue;
 typedef std::list<CvPopupInfo*> CvPopupQueue;
@@ -35,33 +34,6 @@ public:
 	DllExport void init(PlayerTypes eID);
 	DllExport void setupGraphical();
 	DllExport void reset(PlayerTypes eID = NO_PLAYER, bool bConstructorCall = false);
-
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      12/30/08                                jdog5000      */
-/*                                                                                              */
-/*                                                                                              */
-/************************************************************************************************/
-	void initInGame(PlayerTypes eID);
-	void resetPlotAndCityData( );
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
-
-/************************************************************************************************/
-/* CHANGE_PLAYER                          12/30/08                                jdog5000      */
-/*                                                                                              */
-/*                                                                                              */
-/************************************************************************************************/
-	void clearTraitBonuses();
-	void addTraitBonuses();
-	void changePersonalityType();
-	void resetCivTypeEffects();
-	void changeLeader( LeaderHeadTypes eNewLeader );
-	void changeCiv( CivilizationTypes eNewCiv );
-	void setIsHuman( bool bNewValue );
-/************************************************************************************************/
-/* CHANGE_PLAYER                           END                                                  */
-/************************************************************************************************/
 
 protected:
 
@@ -96,24 +68,11 @@ public:
 	CvSelectionGroup* cycleSelectionGroups(CvUnit* pUnit, bool bForward, bool bWorkers, bool* pbWrap);
 
 	bool hasTrait(TraitTypes eTrait) const;																																			// Exposed to Python						
-/************************************************************************************************/
-/* AI_AUTO_PLAY_MOD                       07/09/08                                jdog5000      */
-/*                                                                                              */
-/*                                                                                              */
-/************************************************************************************************/
-	void setHumanDisabled( bool newVal );
-	bool isHumanDisabled( );
-/************************************************************************************************/
-/* AI_AUTO_PLAY_MOD                        END                                                  */
-/************************************************************************************************/
 	DllExport bool isHuman() const;																																							// Exposed to Python						
 	DllExport void updateHuman();
 	DllExport bool isBarbarian() const;																																					// Exposed to Python						
 
-	// K-Mod note: I've changed getName, getCivilizationDescription, and getCivilizationShortDescription to only give accurate information if the active player has met this player.
-	// The "key" versions of those functions are unchanged. This is important because getNameKey and so on are used to create messages for the replay.
 	DllExport const wchar* getName(uint uiForm = 0) const;																											// Exposed to Python
-	const wchar* getReplayName(uint uiForm = 0) const; // K-Mod. Player name to be used in replay
 	DllExport const wchar* getNameKey() const;																																	// Exposed to Python
 	DllExport const wchar* getCivilizationDescription(uint uiForm = 0) const;																		// Exposed to Python
 	DllExport const wchar* getCivilizationDescriptionKey() const;																								// Exposed to Python
@@ -162,23 +121,16 @@ public:
 	DllExport bool hasAutoUnit() const;
 	DllExport bool hasBusyUnit() const;
 
-	// K-Mod
-	bool isChoosingFreeTech() const { return m_iChoosingFreeTechCount > 0; }
-	void changeChoosingFreeTechCount(int iChange) { m_iChoosingFreeTechCount += iChange; }
-	// K-Mod end
-
 	DllExport void chooseTech(int iDiscover = 0, CvWString szText = "", bool bFront = false);				// Exposed to Python
 
-	int calculateScore(bool bFinal = false, bool bVictory = false) const;
+	int calculateScore(bool bFinal = false, bool bVictory = false);
 
 	int findBestFoundValue() const;																																				// Exposed to Python
 
 	int upgradeAllPrice(UnitTypes eUpgradeUnit, UnitTypes eFromUnit);
 
-	// note: bbai added bIncludeTraining to the following two functions.
-	int countReligionSpreadUnits(CvArea* pArea, ReligionTypes eReligion, bool bIncludeTraining = false) const;														// Exposed to Python
-	int countCorporationSpreadUnits(CvArea* pArea, CorporationTypes eCorporation, bool bIncludeTraining = false) const;														// Exposed to Python
-
+	int countReligionSpreadUnits(CvArea* pArea, ReligionTypes eReligion) const;														// Exposed to Python
+	int countCorporationSpreadUnits(CvArea* pArea, CorporationTypes eCorporation) const;														// Exposed to Python
 	int countNumCoastalCities() const;																																		// Exposed to Python
 	int countNumCoastalCitiesByArea(CvArea* pArea) const;																									// Exposed to Python
 	int countTotalCulture() const;																																				// Exposed to Python
@@ -187,12 +139,10 @@ public:
 	int countCityFeatures(FeatureTypes eFeature) const;																										// Exposed to Python
 	int countNumBuildings(BuildingTypes eBuilding) const;																									// Exposed to Python
 	DllExport int countNumCitiesConnectedToCapital() const;																								// Exposed to Python
-	/* int countPotentialForeignTradeCities(CvArea* pIgnoreArea = NULL) const;
-	int countPotentialForeignTradeCitiesConnected() const; */ // K-Mod: These functions were used exclusively for AI.  I've moved them to CvPlayerAI.
-	bool doesImprovementConnectBonus(ImprovementTypes eImprovement, BonusTypes eBonus) const; // K-Mod
+	int countPotentialForeignTradeCities(CvArea* pIgnoreArea = NULL) const;																// Exposed to Python
+	int countPotentialForeignTradeCitiesConnected() const;																								// Exposed to Python
 
 	DllExport bool canContact(PlayerTypes ePlayer) const;																									// Exposed to Python
-	bool canContactAndTalk(PlayerTypes ePlayer) const; // K-Mod. this checks willingness to talk on both sides
 	void contact(PlayerTypes ePlayer);																															// Exposed to Python
 	DllExport void handleDiploEvent(DiploEventTypes eDiploEvent, PlayerTypes ePlayer, int iData1, int iData2);
 	bool canTradeWith(PlayerTypes eWhoTo) const;																													// Exposed to Python
@@ -225,8 +175,7 @@ public:
 	void found(int iX, int iY);																																			// Exposed to Python			
 
 	DllExport bool canTrain(UnitTypes eUnit, bool bContinue = false, bool bTestVisible = false, bool bIgnoreCost = false) const;										// Exposed to Python
-	bool haveResourcesToTrain(UnitTypes eUnit) const; // K-Mod. (used in conjuction with canTrain, for AI related decisions.)
-	bool canConstruct(BuildingTypes eBuilding, bool bContinue = false, bool bTestVisible = false, bool bIgnoreCost = false, bool bIgnoreTech = false) const; // Exposed to Python, K-Mod added bIgnoreTech
+	bool canConstruct(BuildingTypes eBuilding, bool bContinue = false, bool bTestVisible = false, bool bIgnoreCost = false) const;	// Exposed to Python
 	bool canCreate(ProjectTypes eProject, bool bContinue = false, bool bTestVisible = false) const;							// Exposed to Python
 	bool canMaintain(ProcessTypes eProcess, bool bContinue = false) const;																			// Exposed to Python
 	bool isProductionMaxedUnitClass(UnitClassTypes eUnitClass) const;																						// Exposed to Python
@@ -245,7 +194,7 @@ public:
 
 	int getBuildCost(const CvPlot* pPlot, BuildTypes eBuild) const;
 	bool canBuild(const CvPlot* pPlot, BuildTypes eBuild, bool bTestEra = false, bool bTestVisible = false) const;	// Exposed to Python
-	RouteTypes getBestRoute(const CvPlot* pPlot = NULL) const;																						// Exposed to Python
+	RouteTypes getBestRoute(CvPlot* pPlot = NULL) const;																						// Exposed to Python
 	int getImprovementUpgradeRate() const;																													// Exposed to Python
 
 	int calculateTotalYield(YieldTypes eYield) const;																											// Exposed to Python
@@ -258,23 +207,16 @@ public:
 	int calculateTotalCityHealthiness() const;																														// Exposed to Python
 	int calculateTotalCityUnhealthiness() const;																													// Exposed to Python
 
-	int calculatePollution(int iTypes = POLLUTION_ALL) const; // K-Mod, Exposed to Python
-	int getGwPercentAnger() const; // K-Mod, Exposed to Python
-	void setGwPercentAnger(int iNewValue); // K-Mod
-
-	int getUnitCostMultiplier() const; // K-Mod
-	int calculateUnitCost(int& iFreeUnits, int& iFreeMilitaryUnits, int& iPaidUnits, int& iPaidMilitaryUnits, int& iUnitCost, int& iMilitaryCost, int& iExtraCost) const; // (K-Mod changed iBaseUnitCost to iUnitCost)
+	int calculateUnitCost(int& iFreeUnits, int& iFreeMilitaryUnits, int& iPaidUnits, int& iPaidMilitaryUnits, int& iBaseUnitCost, int& iMilitaryCost, int& iExtraCost) const;
 	int calculateUnitCost() const;																																				// Exposed to Python
 	int calculateUnitSupply(int& iPaidUnits, int& iBaseSupplyCost) const;																	// Exposed to Python
 	int calculateUnitSupply() const;																																			// Exposed to Python
 	int calculatePreInflatedCosts() const;																																// Exposed to Python
-	//int calculateInflationRate() const;	// (was exposed to python. Use getInflationRate instead.)
-	void updateInflationRate(); // K-Mod
-	int getInflationRate() const { return m_iInflationRate; } // K-Mod, exposed to Python.
+	int calculateInflationRate() const;																																		// Exposed to Python
 	int calculateInflatedCosts() const;																																		// Exposed to Python
 
-	//int calculateBaseNetGold() const; // disabled by K-Mod
-	//int calculateBaseNetResearch(TechTypes eTech = NO_TECH) const;   // disabled by K-Mod (was exposed to Python)
+	int calculateBaseNetGold() const;
+	int calculateBaseNetResearch(TechTypes eTech = NO_TECH) const;   // Exposed to Python
 	int calculateResearchModifier(TechTypes eTech) const;   // Exposed to Python
 	int calculateGoldRate() const;																																				// Exposed to Python
 	int calculateResearchRate(TechTypes eTech = NO_TECH) const;																						// Exposed to Python
@@ -282,13 +224,11 @@ public:
 
 	bool isResearch() const;																																							// Exposed to Python
 	DllExport bool canEverResearch(TechTypes eTech) const;																								// Exposed to Python
-	DllExport bool canResearch(TechTypes eTech, bool bTrade = false, bool bFree = false) const; // (K-Mod, added bFree. Does this break DllExport?) Exposed to Python
+	DllExport bool canResearch(TechTypes eTech, bool bTrade = false) const;																// Exposed to Python
 	DllExport TechTypes getCurrentResearch() const;																												// Exposed to Python
 	bool isCurrentResearchRepeat() const;																																	// Exposed to Python
 	bool isNoResearchAvailable() const;																																		// Exposed to Python
 	DllExport int getResearchTurnsLeft(TechTypes eTech, bool bOverflow) const;														// Exposed to Python
-	bool canSeeResearch(PlayerTypes ePlayer) const; // K-Mod, Exposed to Python
-	bool canSeeDemographics(PlayerTypes ePlayer) const; // K-Mod, Exposed to Python
 
 	bool isCivic(CivicTypes eCivic) const;																																// Exposed to Python
 	bool canDoCivics(CivicTypes eCivic) const;																														// Exposed to Python
@@ -306,8 +246,7 @@ public:
 
 	bool hasHeadquarters(CorporationTypes eCorporation) const;																											// Exposed to Python
 	int countHeadquarters() const;																																					// Exposed to Python
-	//int countCorporations(CorporationTypes eCorporation) const;	// Exposed to Python
-	int countCorporations(CorporationTypes eCorporation, CvArea* pArea = 0) const; // K-Mod, exposed to Python
+	int countCorporations(CorporationTypes eCorporation) const;																																					// Exposed to Python
 	void foundCorporation(CorporationTypes eCorporation);																										// Exposed to Python
 
 	DllExport int getCivicAnarchyLength(CivicTypes* paeNewCivics) const;																	// Exposed to Python
@@ -365,7 +304,6 @@ public:
 	bool canSpyBribeUnit(PlayerTypes eTarget, CvUnit& kUnit) const;
 	bool canSpyDestroyBuilding(PlayerTypes eTarget, BuildingTypes eBuilding) const;
 	bool canSpyDestroyProject(PlayerTypes eTarget, ProjectTypes eProject) const;
-	int getEspionageGoldQuantity(EspionageMissionTypes eMission, PlayerTypes eTargetPlayer, const CvCity* pCity) const; // K-Mod
 
 	DllExport void doAdvancedStartAction(AdvancedStartActionTypes eAction, int iX, int iY, int iData, bool bAdd);
 	DllExport int getAdvancedStartUnitCost(UnitTypes eUnit, bool bAdd, CvPlot* pPlot = NULL) const;																													// Exposed to Python 
@@ -479,9 +417,6 @@ public:
 	int getFreeMilitaryUnitsPopulationPercent() const;																										// Exposed to Python
 	void changeFreeMilitaryUnitsPopulationPercent(int iChange);											
 
-	int getTypicalUnitValue(UnitAITypes eUnitAI, DomainTypes eDomain = NO_DOMAIN) const; // K-Mod
-
-	// K-Mod note: GoldPerUnit and GoldPerMilitaryUnit are now in units of 1/100 gold.
 	int getGoldPerUnit() const;																																								// Exposed to Python
 	void changeGoldPerUnit(int iChange);															
 
@@ -515,19 +450,9 @@ public:
 	void setOverflowResearch(int iNewValue);																														// Exposed to Python
 	void changeOverflowResearch(int iChange);																														// Exposed to Python
 
-/*
-** K-Mod, 27/dec/10, karadoc
-** replaced NoUnhealthyPopulation with UnhealthyPopulationModifier
-*/
-	/* original bts code
 	int getNoUnhealthyPopulationCount() const;
 	bool isNoUnhealthyPopulation() const;																																			// Exposed to Python
-	void changeNoUnhealthyPopulationCount(int iChange); */
-	int getUnhealthyPopulationModifier() const; // Exposed to Python
-	void changeUnhealthyPopulationModifier(int iChange);
-/*
-** K-Mod end
-*/
+	void changeNoUnhealthyPopulationCount(int iChange);
 
 	int getExpInBorderModifier() const;
 	void changeExpInBorderModifier(int iChange);
@@ -677,7 +602,6 @@ public:
 
 	DllExport bool isTurnActive() const;																			
 	DllExport void setTurnActive(bool bNewValue, bool bDoTurn = true);
-	void onTurnLogging() const; // K-Mod
 
 	bool isAutoMoves() const;
 	DllExport void setAutoMoves(bool bNewValue);
@@ -750,12 +674,8 @@ public:
 	void changeFreeCityCommerce(CommerceTypes eIndex, int iChange);
 
 	int getCommercePercent(CommerceTypes eIndex) const;																								// Exposed to Python
-	/* void setCommercePercent(CommerceTypes eIndex, int iNewValue); // Exposed to Python
-	DllExport void changeCommercePercent(CommerceTypes eIndex, int iChange); */ // Exposed to Python
-	// K-Mod. these functions now return false if the value is not changed.
-	bool setCommercePercent(CommerceTypes eIndex, int iNewValue, bool bForce = false); // Exposed to Python
-	bool changeCommercePercent(CommerceTypes eIndex, int iChange); // Exposed to Python
-	// K-Mod end
+	void setCommercePercent(CommerceTypes eIndex, int iNewValue);																// Exposed to Python
+	DllExport void changeCommercePercent(CommerceTypes eIndex, int iChange);										// Exposed to Python
 
 	int getCommerceRate(CommerceTypes eIndex) const;																									// Exposed to Python
 	void changeCommerceRate(CommerceTypes eIndex, int iChange);
@@ -828,7 +748,7 @@ public:
 
 	int getHurryCount(HurryTypes eIndex) const;																												// Exposed to Python
 	DllExport bool canHurry(HurryTypes eIndex) const;																									// Exposed to Python
-	bool canPopRush() const;
+	bool canPopRush();
 	void changeHurryCount(HurryTypes eIndex, int iChange);
 
 	int getSpecialBuildingNotRequiredCount(SpecialBuildingTypes eIndex) const;												// Exposed to Python
@@ -858,11 +778,11 @@ public:
 
 	int getSpecialistValidCount(SpecialistTypes eIndex) const;
 	DllExport bool isSpecialistValid(SpecialistTypes eIndex) const;																		// Exposed to Python					
-	void changeSpecialistValidCount(SpecialistTypes eIndex, int iChange);
-
+	void changeSpecialistValidCount(SpecialistTypes eIndex, int iChange);												
+																																															
 	DllExport bool isResearchingTech(TechTypes eIndex) const;																					// Exposed to Python					
-	void setResearchingTech(TechTypes eIndex, bool bNewValue);
-
+	void setResearchingTech(TechTypes eIndex, bool bNewValue);																	
+																																															
 	DllExport CivicTypes getCivics(CivicOptionTypes eIndex) const;																		// Exposed to Python					
 	int getSingleCivicUpkeep(CivicTypes eCivic, bool bIgnoreAnarchy = false) const;										// Exposed to Python					
 	int getCivicUpkeep(CivicTypes* paeCivics = NULL, bool bIgnoreAnarchy = false) const;							// Exposed to Python					
@@ -874,10 +794,8 @@ public:
 	int getImprovementYieldChange(ImprovementTypes eIndex1, YieldTypes eIndex2) const;								// Exposed to Python
 	void changeImprovementYieldChange(ImprovementTypes eIndex1, YieldTypes eIndex2, int iChange);
 
-	//void updateGroupCycle(CvUnit* pUnit);
-	void updateGroupCycle(CvSelectionGroup* pGroup); // K-Mod
+	void updateGroupCycle(CvUnit* pUnit);
 	void removeGroupCycle(int iID);
-	void refreshGroupCycleList(); // K-Mod
 	CLLNode<int>* deleteGroupCycleNode(CLLNode<int>* pNode);
 	CLLNode<int>* nextGroupCycleNode(CLLNode<int>* pNode) const;
 	CLLNode<int>* previousGroupCycleNode(CLLNode<int>* pNode) const;
@@ -974,8 +892,6 @@ public:
 	int getEspionageHistory(int iTurn) const;																							// Exposed to Python
 	void updateEspionageHistory(int iTurn, int iBestEspionage);
 
-	const CvPlayerRecord* getPlayerRecord() const; // K-Mod
-
 	// Script data needs to be a narrow string for pickling in Python
 	std::string getScriptData() const;																									// Exposed to Python
 	void setScriptData(std::string szNewValue);																					// Exposed to Python
@@ -1052,7 +968,6 @@ public:
 	DllExport bool getHeadingTradeString(PlayerTypes eOtherPlayer, TradeableItems eItem, CvWString& szString, CvString& szIcon) const;
 	DllExport bool getItemTradeString(PlayerTypes eOtherPlayer, bool bOffer, bool bShowingCurrent, const TradeData& zTradeData, CvWString& szString, CvString& szIcon) const;
 	DllExport void updateTradeList(PlayerTypes eOtherPlayer, CLinkList<TradeData>& ourInventory, const CLinkList<TradeData>& ourOffer, const CLinkList<TradeData>& theirOffer) const;
-	void markTradeOffers(CLinkList<TradeData>& ourInventory, const CLinkList<TradeData>& ourOffer) const; // K-Mod
 	DllExport int getIntroMusicScriptId(PlayerTypes eForPlayer) const;
 	DllExport int getMusicScriptId(PlayerTypes eForPlayer) const;
 	DllExport void getGlobeLayerColors(GlobeLayerTypes eGlobeLayerType, int iOption, std::vector<NiColorA>& aColors, std::vector<CvPlotIndicatorData>& aIndicators) const;
@@ -1061,30 +976,27 @@ public:
 	DllExport const CvArtInfoUnit* getUnitArtInfo(UnitTypes eUnit, int iMeshGroup = 0) const;
 	DllExport bool hasSpaceshipArrived() const;
 
-	// K-Mod note: Adding new virtual functions to this list seems to cause unpredictable behaviour during the initialization of the game.
-	// So beware!
 	virtual void AI_init() = 0;
 	virtual void AI_reset(bool bConstructor) = 0;
 	virtual void AI_doTurnPre() = 0;
 	virtual void AI_doTurnPost() = 0;
 	virtual void AI_doTurnUnitsPre() = 0;
 	virtual void AI_doTurnUnitsPost() = 0;
-	//virtual void AI_updateFoundValues(bool bStartingLoc = false) const = 0;
-	virtual void AI_updateFoundValues(bool bStartingLoc = false) = 0; // K-Mod. (Can I fix the const-correctness without breaking compatibility? No problems so far...)
+	virtual void AI_updateFoundValues(bool bStartingLoc = false) const = 0;
 	virtual void AI_unitUpdate() = 0;
 	virtual void AI_makeAssignWorkDirty() = 0;
 	virtual void AI_assignWorkingPlots() = 0;
 	virtual void AI_updateAssignWork() = 0;
 	virtual void AI_makeProductionDirty() = 0;
 	virtual void AI_conquerCity(CvCity* pCity) = 0;
-	virtual short AI_foundValue(int iX, int iY, int iMinUnitRange = -1, bool bStartingLoc = false) const = 0; // Exposed to Python. K-Mod changed return value from int to short
+	virtual int AI_foundValue(int iX, int iY, int iMinUnitRange = -1, bool bStartingLoc = false) const = 0; // Exposed to Python
 	virtual bool AI_isCommercePlot(CvPlot* pPlot) const = 0;
 	virtual int AI_getPlotDanger(CvPlot* pPlot, int iRange = -1, bool bTestMoves = true) const = 0;
 	virtual bool AI_isFinancialTrouble() const = 0;																											// Exposed to Python
 	virtual TechTypes AI_bestTech(int iMaxPathLength = 1, bool bIgnoreCost = false, bool bAsync = false, TechTypes eIgnoreTech = NO_TECH, AdvisorTypes eIgnoreAdvisor = NO_ADVISOR) const = 0;
 	virtual void AI_chooseFreeTech() = 0;
 	virtual void AI_chooseResearch() = 0;
-	virtual bool AI_isWillingToTalk(PlayerTypes ePlayer) const = 0; // Exposed to Python
+	virtual bool AI_isWillingToTalk(PlayerTypes ePlayer) const = 0;
 	virtual bool AI_demandRebukedSneak(PlayerTypes ePlayer) const = 0;
 	virtual bool AI_demandRebukedWar(PlayerTypes ePlayer) const = 0;																		// Exposed to Python
 	virtual AttitudeTypes AI_getAttitude(PlayerTypes ePlayer, bool bForced = true) const = 0;																// Exposed to Python
@@ -1092,7 +1004,7 @@ public:
 	virtual int AI_dealVal(PlayerTypes ePlayer, const CLinkList<TradeData>* pList, bool bIgnoreAnnual = false, int iExtra = 0) const = 0;
 	virtual bool AI_considerOffer(PlayerTypes ePlayer, const CLinkList<TradeData>* pTheirList, const CLinkList<TradeData>* pOurList, int iChange = 1) const = 0;
 	virtual bool AI_counterPropose(PlayerTypes ePlayer, const CLinkList<TradeData>* pTheirList, const CLinkList<TradeData>* pOurList, CLinkList<TradeData>* pTheirInventory, CLinkList<TradeData>* pOurInventory, CLinkList<TradeData>* pTheirCounter, CLinkList<TradeData>* pOurCounter) const = 0;
-	virtual int AI_bonusVal(BonusTypes eBonus, int iChange, bool bAssumeEnabled = false) const = 0; // K-Mod added bAssumeEnabled
+	virtual int AI_bonusVal(BonusTypes eBonus, int iChange = 0) const = 0;
 	virtual int AI_bonusTradeVal(BonusTypes eBonus, PlayerTypes ePlayer, int iChange = 0) const = 0;
 	virtual DenialTypes AI_bonusTrade(BonusTypes eBonus, PlayerTypes ePlayer) const = 0;
 	virtual int AI_cityTradeVal(CvCity* pCity) const = 0;
@@ -1180,8 +1092,7 @@ protected:
 	int m_iMaxConscript;
 	int m_iHighestUnitLevel;
 	int m_iOverflowResearch;
-	//int m_iNoUnhealthyPopulationCount;
-	int m_iUnhealthyPopulationModifier; // K-Mod
+	int m_iNoUnhealthyPopulationCount;
 	int m_iExpInBorderModifier;
 	int m_iBuildingOnlyHealthyCount;
 	int m_iDistanceMaintenanceModifier;
@@ -1198,7 +1109,6 @@ protected:
 	int m_iLargestCityHappiness;
 	int m_iWarWearinessPercentAnger;
 	int m_iWarWearinessModifier;
-	int m_iGwPercentAnger; // K-Mod
 	int m_iFreeSpecialist;
 	int m_iNoForeignTradeCount;
 	int m_iNoCorporationsCount;
@@ -1226,7 +1136,6 @@ protected:
 	int m_iCombatExperience;
 	int m_iPopRushHurryCount;
 	int m_iInflationModifier;
-	int m_iInflationRate; // K-Mod
 
 	uint m_uiStartTime;  // XXX save these?
 
@@ -1240,18 +1149,6 @@ protected:
 	bool m_bFoundedFirstCity;
 	bool m_bStrike;
 	bool m_bHuman;
-
-/************************************************************************************************/
-/* AI_AUTO_PLAY_MOD                        09/01/07                            MRGENIE          */
-/*                                                                                              */
-/*                                                                                              */
-/************************************************************************************************/
-	bool m_bDisableHuman;				// Set to true to disable isHuman() check
-/************************************************************************************************/
-/* AI_AUTO_PLAY_MOD                        END                                                  */
-/************************************************************************************************/
-
-	int m_iChoosingFreeTechCount; // K-Mod (based on the 'Unofficial Patch'
 
 	PlayerTypes m_eID;
 	LeaderHeadTypes m_ePersonalityType;
@@ -1370,7 +1267,7 @@ protected:
 	virtual void read(FDataStreamBase* pStream);
 	virtual void write(FDataStreamBase* pStream);
 	
-	void doUpdateCacheOnTurn();
+	void doUpdateCacheOnTurn();	
 	int getResearchTurnsLeftTimes100(TechTypes eTech, bool bOverflow) const;
 
 	void getTradeLayerColors(std::vector<NiColorA>& aColors, std::vector<CvPlotIndicatorData>& aIndicators) const;  // used by Globeview trade layer

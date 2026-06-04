@@ -21,17 +21,6 @@ void CyPlayerPythonInterface1(python::class_<CyPlayer>& x)
 	python::scope().attr("__doc__") = "Civilization IV Player Class"; 
 	x
 		.def("isNone", &CyPlayer::isNone, "checks for a null player")
-/********************************************************************************/
-/* 	CHANGE_PLAYER							08/27/08			jdog5000	*/
-/* 																			*/
-/* 	 																		*/
-/********************************************************************************/
-		.def( "changeLeader", &CyPlayer::changeLeader, "void ( int /*LeaderHeadTypes*/ eNewLeader ) - change leader of player")
-		.def( "changeCiv", &CyPlayer::changeCiv, "void ( int /*CivilizationTypes*/ eNewCiv ) - change civilization of player" )
-		.def( "setIsHuman", &CyPlayer::setIsHuman, "void ( bool bNewValue ) - set whether player is human" )
-/********************************************************************************/
-/* 	CHANGE_PLAYER							END								*/
-/********************************************************************************/
 		.def("startingPlotRange", &CyPlayer::startingPlotRange, "int ()")
 		.def("startingPlotWithinRange", &CyPlayer::startingPlotWithinRange, "bool (CyPlot *pPlot, int /*PlayerTypes*/ ePlayer, int iRange, int iPass)")
 
@@ -79,8 +68,8 @@ void CyPlayerPythonInterface1(python::class_<CyPlayer>& x)
 		.def("countUnimprovedBonuses", &CyPlayer::countUnimprovedBonuses, "int (int (CyArea* pArea, CyPlot* pFromPlot) - ")
 		.def("countCityFeatures", &CyPlayer::countCityFeatures, "int (int /*FeatureTypes*/ eFeature) - Returns ?")
 		.def("countNumBuildings", &CyPlayer::countNumBuildings, "int (int /*BuildingTypes*/ eBuilding) - Returns the number of buildings?")
-		//.def("countPotentialForeignTradeCities", &CyPlayer::countPotentialForeignTradeCities, "int (CyArea* pIgnoreArea) - Returns the number of potential foreign trade cities")
-		//.def("countPotentialForeignTradeCitiesConnected", &CyPlayer::countPotentialForeignTradeCitiesConnected, "int () - Returns the number of potential foreign trade cities which are also connected to this player's capital")
+		.def("countPotentialForeignTradeCities", &CyPlayer::countPotentialForeignTradeCities, "int (CyArea* pIgnoreArea) - Returns the number of potential foreign trade cities")
+		.def("countPotentialForeignTradeCitiesConnected", &CyPlayer::countPotentialForeignTradeCitiesConnected, "int () - Returns the number of potential foreign trade cities which are also connected to this player's capital")
 
 		.def("canContact", &CyPlayer::canContact, "bool (int ePlayer)")
 		.def("contact", &CyPlayer::contact, "void (int ePlayer)")
@@ -134,15 +123,12 @@ void CyPlayerPythonInterface1(python::class_<CyPlayer>& x)
 		.def("calculateUnitCost", &CyPlayer::calculateUnitCost, "int ()")
 		.def("calculateUnitSupply", &CyPlayer::calculateUnitSupply, "int ()")
 		.def("calculatePreInflatedCosts", &CyPlayer::calculatePreInflatedCosts, "int ()")
-		//.def("calculateInflationRate", &CyPlayer::calculateInflationRate, "int ()")
-		.def("getInflationRate", &CyPlayer::getInflationRate, "int ()") // K-Mod
+		.def("calculateInflationRate", &CyPlayer::calculateInflationRate, "int ()")
 		.def("calculateInflatedCosts", &CyPlayer::calculateInflatedCosts, "int ()")
 		.def("calculateGoldRate", &CyPlayer::calculateGoldRate, "int ()")
 		.def("calculateTotalCommerce", &CyPlayer::calculateTotalCommerce, "int ()")
 		.def("calculateResearchRate", &CyPlayer::calculateResearchRate, "int (int /*TechTypes*/ eTech)")
-		.def("calculatePollution", &CyPlayer::calculatePollution, "int (int /*PollutionFlags*/ iTypes)") // K-Mod
-		.def("getGwPercentAnger", &CyPlayer::getGwPercentAnger, "int ()") // K-Mod
-		//.def("calculateBaseNetResearch", &CyPlayer::calculateBaseNetResearch, "int ()")
+		.def("calculateBaseNetResearch", &CyPlayer::calculateBaseNetResearch, "int ()")
 		.def("calculateResearchModifier", &CyPlayer::calculateResearchModifier, "int (int /*TechTypes*/ eTech)")
 		.def("isResearch", &CyPlayer::isResearch, "bool ()")
 		.def("canEverResearch", &CyPlayer::canEverResearch, "bool (int /*TechTypes*/ iIndex)")
@@ -151,9 +137,6 @@ void CyPlayerPythonInterface1(python::class_<CyPlayer>& x)
 		.def("isCurrentResearchRepeat", &CyPlayer::isCurrentResearchRepeat, "bool ()")
 		.def("isNoResearchAvailable", &CyPlayer::isNoResearchAvailable, "bool ()")
 		.def("getResearchTurnsLeft", &CyPlayer::getResearchTurnsLeft, "int (int /*TechTypes*/ eTech, bool bOverflow)")
-
-		.def("canSeeResearch", &CyPlayer::canSeeResearch, "bool (int /*PlayerTypes*/ ePlayer)") // K-Mod
-		.def("canSeeDemographics", &CyPlayer::canSeeDemographics, "bool (int /*PlayerTypes*/ ePlayer)") // K-Mod
 
 		.def("isCivic", &CyPlayer::isCivic, "bool (int (CivicTypes) eCivic)")
 		.def("canDoCivics", &CyPlayer::canDoCivics, "bool (int (CivicTypes) eCivic)")
@@ -274,8 +257,7 @@ void CyPlayerPythonInterface1(python::class_<CyPlayer>& x)
 
 		.def("getMaxConscript", &CyPlayer::getMaxConscript, "int ()")
 		.def("getOverflowResearch", &CyPlayer::getOverflowResearch, "int ()")
-		//.def("isNoUnhealthyPopulation", &CyPlayer::isNoUnhealthyPopulation, "bool ()")
-		.def("getUnhealthyPopulationModifier", &CyPlayer::getUnhealthyPopulationModifier, "int ()") // K-Mod
+		.def("isNoUnhealthyPopulation", &CyPlayer::isNoUnhealthyPopulation, "bool ()")
 		.def("getExpInBorderModifier", &CyPlayer::getExpInBorderModifier, "bool ()")
 		.def("isBuildingOnlyHealthy", &CyPlayer::isBuildingOnlyHealthy, "bool ()")
 

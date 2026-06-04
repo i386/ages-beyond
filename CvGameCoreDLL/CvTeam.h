@@ -25,17 +25,6 @@ protected:
 
 public:
 
-/********************************************************************************/
-/*		BETTER_BTS_AI_MOD						12/30/08		jdog5000		*/
-/*																				*/
-/*		     																	*/
-/********************************************************************************/
-	void resetPlotAndCityData( );
-/********************************************************************************/
-/*		BETTER_BTS_AI_MOD						END								*/
-/********************************************************************************/
-
-
 	void addTeam(TeamTypes eTeam);																								// Exposed to Python
 	void shareItems(TeamTypes eTeam);
 	void shareCounters(TeamTypes eTeam);
@@ -49,39 +38,24 @@ public:
 
 	bool canChangeWarPeace(TeamTypes eTeam, bool bAllowVassal = false) const;																			// Exposed to Python
 	DllExport bool canDeclareWar(TeamTypes eTeam) const;																// Exposed to Python
-	bool canEventuallyDeclareWar(TeamTypes eTeam) const; // bbai, Exposed to Python
-	//DllExport void declareWar(TeamTypes eTeam, bool bNewDiplo, WarPlanTypes eWarPlan); // Exposed to Python
-	void declareWar(TeamTypes eTeam, bool bNewDiplo, WarPlanTypes eWarPlan, bool bPrimaryDoW = true); // K-Mod added bPrimaryDoW, Exposed to Python
+	DllExport void declareWar(TeamTypes eTeam, bool bNewDiplo, WarPlanTypes eWarPlan);										// Exposed to Python
 	DllExport void makePeace(TeamTypes eTeam, bool bBumpUnits = true);																		// Exposed to Python
-	//bool canContact(TeamTypes eTeam) const; // Exposed to Python
-	bool canContact(TeamTypes eTeam, bool bCheckWillingness = false) const; // K-Mod, Exposed to Python
+	bool canContact(TeamTypes eTeam) const;																							// Exposed to Python
 	void meet(TeamTypes eTeam, bool bNewDiplo);																		// Exposed to Python
-	void signPeaceTreaty(TeamTypes eTeam); // K-Mod
 	void signOpenBorders(TeamTypes eTeam);																				// Exposed to Python
 	void signDefensivePact(TeamTypes eTeam);																			// Exposed to Python
 	bool canSignDefensivePact(TeamTypes eTeam);
 
-	int getTotalVictoryScore() const; // Karadoc (Mastery Victory)
 	int getAssets() const;																															// Exposed to Python
 	int getPower(bool bIncludeVassals) const;																																// Exposed to Python
-	int getDefensivePower(TeamTypes eExcludeTeam = NO_TEAM) const;	// Exposed to Python
+	int getDefensivePower() const;																											// Exposed to Python
 	int getEnemyPower() const;
 	int getNumNukeUnits() const;																												// Exposed to Python
 	int getVotes(VoteTypes eVote, VoteSourceTypes eVoteSource) const;
 	bool isVotingMember(VoteSourceTypes eVoteSource) const;
 	bool isFullMember(VoteSourceTypes eVoteSource) const;
 
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      01/10/09                                jdog5000      */
-/*                                                                                              */
-/*                                                                                              */
-/************************************************************************************************/
-	bool isMasterPlanningLandWar(CvArea* pArea);
-	bool isMasterPlanningSeaWar(CvArea* pArea);
-	int getAtWarCount(bool bIgnoreMinors, bool bIgnoreVassals = false) const;																				// Exposed to Python
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
+	int getAtWarCount(bool bIgnoreMinors) const;																				// Exposed to Python
 	int getWarPlanCount(WarPlanTypes eWarPlan, bool bIgnoreMinors) const;								// Exposed to Python
 	int getAnyWarPlanCount(bool bIgnoreMinors) const;																		// Exposed to Python
 	int getChosenWarCount(bool bIgnoreMinors) const;																		// Exposed to Python
@@ -99,22 +73,17 @@ public:
 	int getHasReligionCount(ReligionTypes eReligion) const;															// Exposed to Python
 	int getHasCorporationCount(CorporationTypes eCorporation) const;															// Exposed to Python
 
-	int countTotalCulture() const; // Exposed to Python
+	int countTotalCulture();																											// Exposed to Python
 
 	int countNumUnitsByArea(CvArea* pArea) const;																				// Exposed to Python
 	int countNumCitiesByArea(CvArea* pArea) const;																			// Exposed to Python
 	int countTotalPopulationByArea(CvArea* pArea) const;																// Exposed to Python
 	int countPowerByArea(CvArea* pArea) const;																					// Exposed to Python
 	int countEnemyPowerByArea(CvArea* pArea) const;																			// Exposed to Python
-	int countEnemyCitiesByArea(CvArea* pArea) const; // K-Mod
-	int countEnemyPopulationByArea(CvArea* pArea) const; // bbai
 	int countNumAIUnitsByArea(CvArea* pArea, UnitAITypes eUnitAI) const;								// Exposed to Python
-	int countEnemyDangerByArea(CvArea* pArea, TeamTypes eEnemyTeam = NO_TEAM) const;																		// Exposed to Python
+	int countEnemyDangerByArea(CvArea* pArea) const;																		// Exposed to Python
 
-	// K-Mod
-	int getTypicalUnitValue(UnitAITypes eUnitAI, DomainTypes eDomain = NO_DOMAIN) const;
-
-	int getResearchCost(TechTypes eTech, bool bGlobalModifiers = true, bool bTeamSizeModifiers = true) const; // (K-Mod added bools) Exposed to Python
+	int getResearchCost(TechTypes eTech) const;																// Exposed to Python
 	int getResearchLeft(TechTypes eTech) const;																// Exposed to Python
 
 	bool hasHolyCity(ReligionTypes eReligion) const;																		// Exposed to Python
@@ -129,7 +98,6 @@ public:
 	PlayerTypes getSecretaryID() const;																									// Exposed to Python
 	HandicapTypes getHandicapType() const;																							// Exposed to Python
 	DllExport CvWString getName() const;																								// Exposed to Python
-	CvWString getReplayName() const; // K-Mod
 
 	DllExport int getNumMembers() const;																								// Exposed to Python
 	void changeNumMembers(int iChange);
@@ -225,7 +193,7 @@ public:
 	void setStolenVisibilityTimer(TeamTypes eIndex, int iNewValue);
 	void changeStolenVisibilityTimer(TeamTypes eIndex, int iChange);
 
-	int getWarWeariness(TeamTypes eIndex, bool bUseEnemyModifer = false) const; // Exposed to Python. K-Mod added bUseEnemyModifier.
+	int getWarWeariness(TeamTypes eIndex) const;																				// Exposed to Python
 	void setWarWeariness(TeamTypes eIndex, int iNewValue);												// Exposed to Python
 	void changeWarWeariness(TeamTypes eIndex, int iChange);												// Exposed to Python
 
@@ -242,11 +210,6 @@ public:
 
 	bool isHasMet(TeamTypes eIndex) const;																		// Exposed to Python
 	void makeHasMet(TeamTypes eIndex, bool bNewDiplo);
-
-	// K-Mod
-	bool isHasSeen(TeamTypes eIndex) const { return m_abHasSeen[eIndex]; };
-	void makeHasSeen(TeamTypes eIndex) { m_abHasSeen[eIndex] = true; };
-	// K-Mod end
 
 	DllExport bool isAtWar(TeamTypes eIndex) const;																			// Exposed to Python
 	DllExport void setAtWar(TeamTypes eIndex, bool bNewValue);
@@ -266,8 +229,6 @@ public:
 
 	bool isVassal(TeamTypes eIndex) const;																// Exposed to Python
 	void setVassal(TeamTypes eIndex, bool bNewValue, bool bCapitulated);
-
-	TeamTypes getMasterTeam() const; // K-Mod
 
 	void assignVassal(TeamTypes eVassal, bool bSurrender) const;																// Exposed to Python
 	void freeVassal(TeamTypes eVassal) const;																// Exposed to Python
@@ -308,15 +269,6 @@ public:
 	int changeResearchProgressPercent(TechTypes eIndex, int iPercent, PlayerTypes ePlayer);
 
 	int getTechCount(TechTypes eIndex) const;																										// Exposed to Python
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      07/27/09                                jdog5000      */
-/*                                                                                              */
-/* General AI                                                                                   */
-/************************************************************************************************/
-	int getBestKnownTechScorePercent() const;
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
 
 	int getTerrainTradeCount(TerrainTypes eIndex) const;
 	bool isTerrainTrade(TerrainTypes eIndex) const;																												// Exposed to Python
@@ -325,18 +277,6 @@ public:
 	int getRiverTradeCount() const;
 	bool isRiverTrade() const;																												// Exposed to Python
 	void changeRiverTradeCount(int iChange);
-
-	int getVictoryCountdown(VictoryTypes eIndex) const;																							// Exposed to Python
-	void setVictoryCountdown(VictoryTypes eIndex, int iTurnsLeft);
-	void changeVictoryCountdown(VictoryTypes eIndex, int iChange);
-	int getVictoryDelay(VictoryTypes eVictory) const;
-	DllExport bool canLaunch(VictoryTypes eVictory) const;		// Exposed to Python 
-	void setCanLaunch(VictoryTypes eVictory, bool bCan);
-	int getLaunchSuccessRate(VictoryTypes eVictory) const;		// Exposed to Python
-	void resetVictoryProgress();
-	bool hasSpaceshipArrived() const; // K-Mod, Exposed to Python
-
-	bool isParent(TeamTypes eTeam) const;
 
 	bool isHasTech(TechTypes eIndex) const;																																			// Exposed to Python
 	void setHasTech(TechTypes eIndex, bool bNewValue, PlayerTypes ePlayer, bool bFirst, bool bAnnounce);	// Exposed to Python
@@ -347,15 +287,22 @@ public:
 	int getImprovementYieldChange(ImprovementTypes eIndex1, YieldTypes eIndex2) const;										// Exposed to Python 
 	void changeImprovementYieldChange(ImprovementTypes eIndex1, YieldTypes eIndex2, int iChange);		// Exposed to Python 
 
-	bool doesImprovementConnectBonus(ImprovementTypes eImprovement, BonusTypes eBonus) const; // K-Mod
-
 	bool isFriendlyTerritory(TeamTypes eTeam) const;
+
+	int getVictoryCountdown(VictoryTypes eIndex) const;																							// Exposed to Python
+	void setVictoryCountdown(VictoryTypes eIndex, int iTurnsLeft);
+	void changeVictoryCountdown(VictoryTypes eIndex, int iChange);
+	int getVictoryDelay(VictoryTypes eVictory) const;
+	DllExport bool canLaunch(VictoryTypes eVictory) const;		// Exposed to Python 
+	void setCanLaunch(VictoryTypes eVictory, bool bCan);
+	int getLaunchSuccessRate(VictoryTypes eVictory) const;		// Exposed to Python
+	void resetVictoryProgress();
+
+	bool isParent(TeamTypes eTeam) const;		// Exposed to Python 
 
 	int getEspionagePointsAgainstTeam(TeamTypes eIndex) const;																							// Exposed to Python
 	void setEspionagePointsAgainstTeam(TeamTypes eIndex, int iValue);																							// Exposed to Python
 	void changeEspionagePointsAgainstTeam(TeamTypes eIndex, int iChange);																				// Exposed to Python
-
-	int getTotalUnspentEspionage() const; // K-Mod
 
 	int getEspionagePointsEver() const;																							// Exposed to Python
 	void setEspionagePointsEver(int iValue);																							// Exposed to Python
@@ -373,8 +320,6 @@ public:
 
 	void setForceRevealedBonus(BonusTypes eBonus, bool bRevealed);
 	bool isForceRevealedBonus(BonusTypes eBonus) const;
-
-	bool isBonusRevealed(BonusTypes eBonus) const; // K-Mod. (the definitive answer)
 
 	DllExport int countNumHumanGameTurnActive() const;
 	void setTurnActive(bool bNewValue, bool bTurn = true);
@@ -460,7 +405,6 @@ protected:
 
 	bool* m_abAtWar;
 	bool* m_abHasMet;
-	bool* m_abHasSeen; // K-Mod
 	bool* m_abPermanentWarPeace;
 	bool* m_abOpenBorders;
 	bool* m_abDefensivePact;

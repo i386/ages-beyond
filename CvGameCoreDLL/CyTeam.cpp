@@ -31,13 +31,6 @@ bool CyTeam::canDeclareWar(int /*TeamTypes*/ eTeam)
 	return m_pTeam ? m_pTeam->canDeclareWar((TeamTypes)eTeam) : false;
 }
 
-// K-Mod
-bool CyTeam::canEventuallyDeclareWar(int /*TeamTypes*/ eTeam)
-{
-	return m_pTeam ? m_pTeam->canEventuallyDeclareWar((TeamTypes)eTeam) : false;
-}
-// K-Mod end
-
 void CyTeam::declareWar(int /*TeamTypes*/ eTeam, bool bNewDiplo, int /*WarPlanTypes*/ eWarPlan)
 {
 	if (m_pTeam)
@@ -963,19 +956,6 @@ void CyTeam::AI_setWarPlan(int /*TeamTypes*/ eIndex, int /*WarPlanTypes*/ eNewVa
 		m_pTeam->AI_setWarPlan((TeamTypes)eIndex, (WarPlanTypes)eNewValue);
 	}
 }
-
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      01/12/09                                jdog5000      */
-/*                                                                                              */
-/* Player Interface                                                                             */
-/************************************************************************************************/
-int CyTeam::AI_getWarPlan(int /*TeamTypes*/ eIndex) const
-{
-	return m_pTeam ? m_pTeam->AI_getWarPlan((TeamTypes)eIndex) : -1;
-}
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
 
 
 int CyTeam::AI_getAtWarCounter(int /*TeamTypes*/ eTeam) const

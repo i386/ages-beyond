@@ -152,13 +152,6 @@ inline int plotDistance(int iX1, int iY1, int iX2, int iY2)													// Expos
 	return (std::max(iDX, iDY) + (std::min(iDX, iDY) / 2));
 }
 
-// K-Mod, plot-to-plot alias for convenience:
-inline int plotDistance(const CvPlot* plot1, const CvPlot* plot2)
-{
-	return plotDistance(plot1->getX_INLINE(), plot1->getY_INLINE(), plot2->getX_INLINE(), plot2->getY_INLINE());
-}
-// K-Mod end
-
 // 3 | 3 | 3 | 3 | 3 | 3 | 3
 // -------------------------
 // 3 | 2 | 2 | 2 | 2 | 2 | 3
@@ -178,13 +171,6 @@ inline int stepDistance(int iX1, int iY1, int iX2, int iY2)													// Expos
 {
 	return std::max(xDistance(iX1, iX2), yDistance(iY1, iY2));
 }
-
-// K-Mod, plot-to-plot alias for convenience:
-inline int stepDistance(const CvPlot* plot1, const CvPlot* plot2)
-{
-	return stepDistance(plot1->getX_INLINE(), plot1->getY_INLINE(), plot2->getX_INLINE(), plot2->getY_INLINE());
-}
-// K-Mod end
 
 inline CvPlot* plotDirection(int iX, int iY, DirectionTypes eDirection)							// Exposed to Python
 {
@@ -207,8 +193,6 @@ inline CvPlot* plotXY(int iX, int iY, int iDX, int iDY)																// Expose
 {
 	return GC.getMapINLINE().plotINLINE((iX + iDX), (iY + iDY));
 }
-
-inline CvPlot* plotXY(const CvPlot* pPlot, int iDX, int iDY) { return plotXY(pPlot->getX_INLINE(), pPlot->getY_INLINE(), iDX, iDY); } // K-Mod
 
 inline DirectionTypes directionXY(int iDX, int iDY)																		// Exposed to Python
 {
@@ -244,10 +228,7 @@ bool isPotentialEnemy(TeamTypes eOurTeam, TeamTypes eTheirTeam);			// Exposed to
 DllExport CvCity* getCity(IDInfo city);	// Exposed to Python
 DllExport CvUnit* getUnit(IDInfo unit);	// Exposed to Python
 
-inline bool isCycleGroup(const CvSelectionGroup* pGroup) { return pGroup->getNumUnits() > 0 && !pGroup->isWaiting() && !pGroup->isAutomated(); } // K-Mod
 bool isBeforeUnitCycle(const CvUnit* pFirstUnit, const CvUnit* pSecondUnit);
-bool isBeforeGroupOnPlot(const CvSelectionGroup* pFirstGroup, const CvSelectionGroup* pSecondGroup); // K-Mod
-int groupCycleDistance(const CvSelectionGroup* pFirstGroup, const CvSelectionGroup* pSecondGroup); // K-Mod
 bool isPromotionValid(PromotionTypes ePromotion, UnitTypes eUnit, bool bLeader);	// Exposed to Python
 
 int getPopulationAsset(int iPopulation);								// Exposed to Python
@@ -258,8 +239,7 @@ int getLandPlotsScore(int iLandPlots);									// Exposed to Python
 int getTechScore(TechTypes eTech);											// Exposed to Python
 int getWonderScore(BuildingClassTypes eWonderClass);		// Exposed to Python
 
-//ImprovementTypes finalImprovementUpgrade(ImprovementTypes eImprovement, int iCount = 0);		// Exposed to Python
-ImprovementTypes finalImprovementUpgrade(ImprovementTypes eImprovement); // Exposed to Python, K-Mod. (I've removed iCount here, and in the python defs. It's a meaningless parameter.)
+ImprovementTypes finalImprovementUpgrade(ImprovementTypes eImprovement, int iCount = 0);		// Exposed to Python
 
 int getWorldSizeMaxConscript(CivicTypes eCivic);								// Exposed to Python
 
@@ -285,8 +265,7 @@ bool isTeamProject(ProjectTypes eProject);														// Exposed to Python
 bool isLimitedProject(ProjectTypes eProject);													// Exposed to Python
 
 __int64 getBinomialCoefficient(int iN, int iK);
-int getCombatOdds(const CvUnit* pAttacker, const CvUnit* pDefender); // Exposed to Python
-int estimateCollateralWeight(const CvPlot* pPlot, TeamTypes eAttackTeam, TeamTypes eDefenceTeam = NO_TEAM); // K-Mod
+int getCombatOdds(CvUnit* pAttacker, CvUnit* pDefender);							// Exposed to Python
 
 int getEspionageModifier(TeamTypes eOurTeam, TeamTypes eTargetTeam);							// Exposed to Python
 
@@ -335,13 +314,6 @@ bool PUF_isSelected( const CvUnit* pUnit, int iData1 = -1, int iData2 = -1);
 bool PUF_makeInfoBarDirty(CvUnit* pUnit, int iData1 = -1, int iData2 = -1);
 bool PUF_isNoMission(const CvUnit* pUnit, int iData1 = -1, int iData2 = -1);
 bool PUF_isFiniteRange(const CvUnit* pUnit, int iData1 = -1, int iData2 = -1);
-// bbai
-bool PUF_isAvailableUnitAITypeGroupie(const CvUnit* pUnit, int iData1, int iData2);
-bool PUF_isUnitAITypeGroupie(const CvUnit* pUnit, int iData1, int iData2);
-bool PUF_isFiniteRangeAndNotJustProduced(const CvUnit* pUnit, int iData1, int iData2);
-// bbai end
-bool PUF_isMissionAIType(const CvUnit* pUnit, int iData1, int iData2); // K-Mod
-bool PUF_isAirIntercept(const CvUnit* pUnit, int iData1, int iData2); // K-Mod
 
 // FAStarFunc...
 int potentialIrrigation(FAStarNode* parent, FAStarNode* node, int data, const void* pointer, FAStar* finder);
@@ -350,8 +322,6 @@ int changeIrrigated(FAStarNode* parent, FAStarNode* node, int data, const void* 
 int pathDestValid(int iToX, int iToY, const void* pointer, FAStar* finder);
 int pathHeuristic(int iFromX, int iFromY, int iToX, int iToY);
 int pathCost(FAStarNode* parent, FAStarNode* node, int data, const void* pointer, FAStar* finder);
-int pathValid_join(FAStarNode* parent, FAStarNode* node, CvSelectionGroup* pSelectionGroup, int iFlags); // K-Mod
-int pathValid_source(FAStarNode* parent, CvSelectionGroup* pSelectionGroup, int iFlags); // K-Mod
 int pathValid(FAStarNode* parent, FAStarNode* node, int data, const void* pointer, FAStar* finder);
 int pathAdd(FAStarNode* parent, FAStarNode* node, int data, const void* pointer, FAStar* finder);
 int stepDestValid(int iToX, int iToY, const void* pointer, FAStar* finder);
@@ -359,16 +329,6 @@ int stepHeuristic(int iFromX, int iFromY, int iToX, int iToY);
 int stepValid(FAStarNode* parent, FAStarNode* node, int data, const void* pointer, FAStar* finder);
 int stepCost(FAStarNode* parent, FAStarNode* node, int data, const void* pointer, FAStar* finder);
 int stepAdd(FAStarNode* parent, FAStarNode* node, int data, const void* pointer, FAStar* finder);
-
-/********************************************************************************/
-/* 	BETTER_BTS_AI_MOD					11/30/08				jdog5000	*/
-/* 																			*/
-/* 																			*/
-/********************************************************************************/
-int teamStepValid(FAStarNode* parent, FAStarNode* node, int data, const void* pointer, FAStar* finder);
-/********************************************************************************/
-/* 	BETTER_BTS_AI_MOD						END								*/
-/********************************************************************************/
 int routeValid(FAStarNode* parent, FAStarNode* node, int data, const void* pointer, FAStar* finder);
 int borderValid(FAStarNode* parent, FAStarNode* node, int data, const void* pointer, FAStar* finder);
 int areaValid(FAStarNode* parent, FAStarNode* node, int data, const void* pointer, FAStar* finder);
@@ -392,8 +352,5 @@ void getActivityTypeString(CvWString& szString, ActivityTypes eActivityType);
 void getMissionTypeString(CvWString& szString, MissionTypes eMissionType);
 void getMissionAIString(CvWString& szString, MissionAITypes eMissionAI);
 void getUnitAIString(CvWString& szString, UnitAITypes eUnitAI);
-
-// Lead From Behind by UncutDragon
-int LFBgetCombatOdds(int iAttackerLowFS,	int iAttackerHighFS, int iDefenderLowFS, int iDefenderHighFS, int iNeededRoundsAttacker, int iNeededRoundsDefender, int iAttackerOdds);
 
 #endif

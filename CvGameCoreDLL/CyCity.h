@@ -257,8 +257,7 @@ public:
 	int getHappinessTimer();
 	void changeHappinessTimer(int iChange);
 	bool isNoUnhappiness();
-	// bool isNoUnhealthyPopulation();
-	int getUnhealthyPopulationModifier(); // K-Mod
+	bool isNoUnhealthyPopulation();
 
 	bool isBuildingOnlyHealthy();
 
@@ -277,7 +276,6 @@ public:
 	void changeExtraTradeRoutes(int iChange);
 	int getTradeRouteModifier();
 	int getForeignTradeRouteModifier();
-	int getTradeCultureRateTimes100(int iLevel) const; // K-Mod
 	int getBuildingDefense();
 	int getBuildingBombardDefense();
 	int getFreeExperience();
@@ -474,7 +472,7 @@ public:
 	int getLiberationPlayer(bool bConquest);
 	void liberate(bool bConquest);
 
-	//bool AI_avoidGrowth();
+	bool AI_avoidGrowth();
 	bool AI_isEmphasize(int iEmphasizeType);
 	int AI_countBestBuilds(CyArea* pArea);
 	int AI_cityValue();

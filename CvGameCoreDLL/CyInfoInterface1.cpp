@@ -96,8 +96,6 @@ void CyInfoPythonInterface1()
 		.def("getPrereqOrTechs", &CvTechInfo::getPrereqOrTechs, "int (int i)")
 		.def("getPrereqAndTechs", &CvTechInfo::getPrereqAndTechs, "int (int i)")
 
-		.def("getCommerceModifier", &CvTechInfo::getCommerceModifier, "int (int i)") // K-Mod
-		.def("getSpecialistExtraCommerce", &CvTechInfo::getSpecialistExtraCommerce, "int (int i)") // K-Mod
 		.def("isCommerceFlexible", &CvTechInfo::isCommerceFlexible, "bool (int i)")
 		.def("isTerrainTrade", &CvTechInfo::isTerrainTrade, "bool (int i)")
 		;
@@ -107,7 +105,6 @@ void CyInfoPythonInterface1()
 		.def("getPrereqPromotion", &CvPromotionInfo::getPrereqPromotion, "int ()")
 		.def("getPrereqOrPromotion1", &CvPromotionInfo::getPrereqOrPromotion1, "int ()")
 		.def("getPrereqOrPromotion2", &CvPromotionInfo::getPrereqOrPromotion2, "int ()")
-		.def("getPrereqOrPromotion3", &CvPromotionInfo::getPrereqOrPromotion3, "int ()") // K-Mod
 		.def("getActionInfoIndex", &CvPromotionInfo::getActionInfoIndex, "int ()")
 
 		.def("getTechPrereq", &CvPromotionInfo::getTechPrereq, "int ()")
@@ -271,21 +268,9 @@ void CyInfoPythonInterface1()
 		.def("getNumUnitNames", &CvUnitInfo::getNumUnitNames, "int ()")
 		.def("getCommandType", &CvUnitInfo::getCommandType, "int ()")
 
-// BUG - Female Great People - start
-		.def("isFemale", &CvUnitInfo::isFemale, "bool ()")
-// BUG - Female Great People - end
 		.def("isAnimal", &CvUnitInfo::isAnimal, "bool ()")
 		.def("isFoodProduction", &CvUnitInfo::isFoodProduction, "bool ()")
 		.def("isNoBadGoodies", &CvUnitInfo::isNoBadGoodies, "bool ()")
-/************************************************************************************************/
-/* UNOFFICIAL_PATCH                       03/20/10                       Afforess & jdog5000    */
-/*                                                                                              */
-/* Bugfix                                                                                       */
-/************************************************************************************************/
-		.def("isOnlyDefensive", &CvUnitInfo::isOnlyDefensive, "bool ()")
-/************************************************************************************************/
-/* UNOFFICIAL_PATCH                        END                                                  */
-/************************************************************************************************/
 		.def("isNoCapture", &CvUnitInfo::isNoCapture, "bool ()")
 		.def("isRivalTerritory", &CvUnitInfo::isRivalTerritory, "bool ()")
 		.def("isMilitaryHappiness", &CvUnitInfo::isMilitaryHappiness, "bool ()")
@@ -396,7 +381,6 @@ void CyInfoPythonInterface1()
 		.def("getNumCitiesMaintenanceModifier", &CvCivicInfo::getNumCitiesMaintenanceModifier, "int ()")
 		.def("getCorporationMaintenanceModifier", &CvCivicInfo::getCorporationMaintenanceModifier, "int ()")
 		.def("getExtraHealth", &CvCivicInfo::getExtraHealth, "int ()")
-		.def("getExtraHappiness", &CvCivicInfo::getExtraHappiness, "int ()") // K-Mod
 		.def("getFreeExperience", &CvCivicInfo::getFreeExperience, "int ()")
 		.def("getWorkerSpeedModifier", &CvCivicInfo::getWorkerSpeedModifier, "int ()")
 		.def("getImprovementUpgradeRateModifier", &CvCivicInfo::getImprovementUpgradeRateModifier, "int ()")
@@ -423,8 +407,7 @@ void CyInfoPythonInterface1()
 		.def("getExpInBorderModifier", &CvCivicInfo::getExpInBorderModifier, "bool ()")
 
 		.def("isMilitaryFoodProduction", &CvCivicInfo::isMilitaryFoodProduction, "bool ()")
-		//.def("isNoUnhealthyPopulation", &CvCivicInfo::isNoUnhealthyPopulation, "bool ()")
-		.def("getUnhealthyPopulationModifier", &CvCivicInfo::getUnhealthyPopulationModifier, "int ()") // K-Mod
+		.def("isNoUnhealthyPopulation", &CvCivicInfo::isNoUnhealthyPopulation, "bool ()")
 		.def("isBuildingOnlyHealthy", &CvCivicInfo::isBuildingOnlyHealthy, "bool ()")
 		.def("isNoForeignTrade", &CvCivicInfo::isNoForeignTrade, "bool ()")
 		.def("isNoCorporations", &CvCivicInfo::isNoCorporations, "bool ()")
@@ -563,8 +546,7 @@ void CyInfoPythonInterface1()
 		.def("isGoldenAge", &CvBuildingInfo::isGoldenAge, "bool ()")
 		.def("isMapCentering", &CvBuildingInfo::isMapCentering, "bool ()")
 		.def("isNoUnhappiness", &CvBuildingInfo::isNoUnhappiness, "bool ()")
-		//.def("isNoUnhealthyPopulation", &CvBuildingInfo::isNoUnhealthyPopulation, "bool ()")
-		.def("getUnhealthyPopulationModifier", &CvBuildingInfo::getUnhealthyPopulationModifier, "int ()") // K-Mod
+		.def("isNoUnhealthyPopulation", &CvBuildingInfo::isNoUnhealthyPopulation, "bool ()")
 		.def("isBuildingOnlyHealthy", &CvBuildingInfo::isBuildingOnlyHealthy, "bool ()")
 		.def("isNeverCapture", &CvBuildingInfo::isNeverCapture, "bool ()")
 		.def("isNukeImmune", &CvBuildingInfo::isNukeImmune, "bool ()")

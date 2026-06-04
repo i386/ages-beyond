@@ -53,7 +53,6 @@ public:
 	DllExport void updateBuildingCommerce();
 	DllExport void updateCitySight(bool bIncrement);
 	DllExport void updateTradeRoutes();
-	void updateGwPercentAnger(); // K-Mod
 
 	DllExport void updateSelectionList();
 	DllExport void updateTestEndTurn();
@@ -65,7 +64,6 @@ public:
 
 	DllExport void cycleCities(bool bForward = true, bool bAdd = false) const;																				// Exposed to Python
 	DllExport void cycleSelectionGroups(bool bClear, bool bForward = true, bool bWorkers = false) const;							// Exposed to Python
-	void cycleSelectionGroups_delayed(int iDelay, bool bIncremental, bool bDelayOnly = false) const; // K-Mod
 	DllExport bool cyclePlotUnits(CvPlot* pPlot, bool bForward = true, bool bAuto = false, int iCount = -1) const;		// Exposed to Python
 	DllExport bool selectCity(CvCity* pSelectCity, bool bCtrl, bool bAlt, bool bShift) const;
 
@@ -85,12 +83,7 @@ public:
 	DllExport void handleAction(int iAction);
 
 	bool canDoControl(ControlTypes eControl) const;
-	void doControl(ControlTypes eControl); // Exposed to Python
-
-	// K-Mod
-	void retire();
-	void enterWorldBuilder();
-	// K-Mod end
+	void doControl(ControlTypes eControl);
 
 	DllExport void implementDeal(PlayerTypes eWho, PlayerTypes eOtherWho, CLinkList<TradeData>* pOurList, CLinkList<TradeData>* pTheirList, bool bForce = false);
 	void verifyDeals();
@@ -99,7 +92,7 @@ public:
 
 	DllExport int getSymbolID(int iSymbol);																	// Exposed to Python
 
-	int getProductionPerPopulation(HurryTypes eHurry) const; // Exposed to Python
+	int getProductionPerPopulation(HurryTypes eHurry);											// Exposed to Python
 
 	int getAdjustedPopulationPercent(VictoryTypes eVictory) const;								// Exposed to Python
 	int getAdjustedLandPercent(VictoryTypes eVictory) const;											// Exposed to Python
@@ -121,7 +114,6 @@ public:
 	DllExport int countCivTeamsAlive() const;																			// Exposed to Python
 	DllExport int countCivTeamsEverAlive() const;																	// Exposed to Python
 	DllExport int countHumanPlayersAlive() const;																	// Exposed to Python
-	int countFreeTeamsAlive() const; // K-Mod
 
 	int countTotalCivPower();																								// Exposed to Python
 	int countTotalNukeUnits();																							// Exposed to Python
@@ -245,24 +237,6 @@ public:
 	int getAIAutoPlay();																				// Exposed to Python
 	DllExport void setAIAutoPlay(int iNewValue);																// Exposed to Python
 	void changeAIAutoPlay(int iChange);
-/*
-** K-mod, 6/dec/10, karadoc
-*/
-	int getGlobalWarmingIndex() const;								// Exposed to Python
-	void setGlobalWarmingIndex(int iNewValue);
-	void changeGlobalWarmingIndex(int iChange);
-	int getGlobalWarmingChances() const;							// Exposed to Python
-	int getGwEventTally() const;							// Exposed to Python
-	void setGwEventTally(int iNewValue);
-	void changeGwEventTally(int iChange);
-
-	int calculateGlobalPollution() const; // Exposed to Python
-	int calculateGwLandDefence(PlayerTypes ePlayer = NO_PLAYER /* global */) const; // Exposed to Python
-	int calculateGwSustainabilityThreshold(PlayerTypes ePlayer = NO_PLAYER /* global */) const; // Exposed to Python
-	int calculateGwSeverityRating() const; // Exposed to Python
-/*
-** K-mod end
-*/
 
 	DllExport unsigned int getInitialTime();
 	DllExport void setInitialTime(unsigned int uiNewValue);
@@ -359,22 +333,20 @@ public:
 	DllExport bool isForcedControl(ForceControlTypes eIndex) const;												// Exposed to Python
 	DllExport void setForceControl(ForceControlTypes eIndex, bool bEnabled);
 
-	int getUnitCreatedCount(UnitTypes eIndex) const; // Exposed to Python
+	int getUnitCreatedCount(UnitTypes eIndex);																	// Exposed to Python
 	void incrementUnitCreatedCount(UnitTypes eIndex);
 
-	int getUnitClassCreatedCount(UnitClassTypes eIndex) const; // Exposed to Python
-	bool isUnitClassMaxedOut(UnitClassTypes eIndex, int iExtra = 0) const; // Exposed to Python
+	int getUnitClassCreatedCount(UnitClassTypes eIndex);												// Exposed to Python
+	bool isUnitClassMaxedOut(UnitClassTypes eIndex, int iExtra = 0);						// Exposed to Python
 	void incrementUnitClassCreatedCount(UnitClassTypes eIndex);
 
-	int getBuildingClassCreatedCount(BuildingClassTypes eIndex) const; // Exposed to Python
-	bool isBuildingClassMaxedOut(BuildingClassTypes eIndex, int iExtra = 0) const; // Exposed to Python
+	int getBuildingClassCreatedCount(BuildingClassTypes eIndex);								// Exposed to Python
+	bool isBuildingClassMaxedOut(BuildingClassTypes eIndex, int iExtra = 0);		// Exposed to Python
 	void incrementBuildingClassCreatedCount(BuildingClassTypes eIndex);
 
-	int getProjectCreatedCount(ProjectTypes eIndex) const; // Exposed to Python
-	bool isProjectMaxedOut(ProjectTypes eIndex, int iExtra = 0) const; // Exposed to Python
+	int getProjectCreatedCount(ProjectTypes eIndex);														// Exposed to Python
+	bool isProjectMaxedOut(ProjectTypes eIndex, int iExtra = 0);								// Exposed to Python
 	void incrementProjectCreatedCount(ProjectTypes eIndex, int iExtra = 1);
-
-	int countWorldWonders(bool bBuilt = true, PlayerTypes eBuilder = NO_PLAYER) const; // Exposed to Python. Karadoc (used for Mastery Victory, replacing sevo's "getSevoWonderScore")
 
 	int getForceCivicCount(CivicTypes eIndex) const;														// Exposed to Python
 	bool isForceCivic(CivicTypes eIndex) const;																	// Exposed to Python
@@ -401,21 +373,21 @@ public:
 
 	DllExport void setVoteChosen(int iSelection, int iVoteId);
 
-	int getReligionGameTurnFounded(ReligionTypes eIndex) const; // Exposed to Python
-	bool isReligionFounded(ReligionTypes eIndex) const; // Exposed to Python
+	int getReligionGameTurnFounded(ReligionTypes eIndex);												// Exposed to Python
+	bool isReligionFounded(ReligionTypes eIndex);																// Exposed to Python
 	void makeReligionFounded(ReligionTypes eIndex, PlayerTypes ePlayer);
 
-	bool isReligionSlotTaken(ReligionTypes eReligion) const; // Exposed to Python
+	bool isReligionSlotTaken(ReligionTypes eReligion) const;											// Exposed to Python
 	void setReligionSlotTaken(ReligionTypes eReligion, bool bTaken);
 
 	CvCity* getHolyCity(ReligionTypes eIndex);																	// Exposed to Python
 	void setHolyCity(ReligionTypes eIndex, CvCity* pNewValue, bool bAnnounce);	// Exposed to Python
 
-	int getCorporationGameTurnFounded(CorporationTypes eIndex) const; // Exposed to Python
-	bool isCorporationFounded(CorporationTypes eIndex) const; // Exposed to Python
+	int getCorporationGameTurnFounded(CorporationTypes eIndex);												// Exposed to Python
+	bool isCorporationFounded(CorporationTypes eIndex);																// Exposed to Python
 	void makeCorporationFounded(CorporationTypes eIndex, PlayerTypes ePlayer);
 
-	CvCity* getHeadquarters(CorporationTypes eIndex) const; // Exposed to Python
+	CvCity* getHeadquarters(CorporationTypes eIndex);																	// Exposed to Python
 	void setHeadquarters(CorporationTypes eIndex, CvCity* pNewValue, bool bAnnounce);	// Exposed to Python
 
 	PlayerVoteTypes getPlayerVote(PlayerTypes eOwnerIndex, int iVoteId) const;			// Exposed to Python
@@ -482,8 +454,7 @@ public:
 	DllExport virtual void AI_reset() = 0;
 	DllExport virtual void AI_makeAssignWorkDirty() = 0;
 	DllExport virtual void AI_updateAssignWork() = 0;
-	//DllExport virtual int AI_combatValue(UnitTypes eUnit) = 0;
-	DllExport virtual int AI_combatValue(UnitTypes eUnit) const = 0; // K-Mod!
+	DllExport virtual int AI_combatValue(UnitTypes eUnit) = 0;
 
 	CvReplayInfo* getReplayInfo() const;
 	DllExport void setReplayInfo(CvReplayInfo* pReplay);
@@ -492,15 +463,6 @@ public:
 	bool hasSkippedSaveChecksum() const;
 
 	void addPlayer(PlayerTypes eNewPlayer, LeaderHeadTypes eLeader, CivilizationTypes eCiv);   // Exposed to Python
-/********************************************************************************/
-/* 	BETTER_BTS_AI_MOD						8/1/08				jdog5000	*/
-/* 																			*/
-/* 	Debug																	*/
-/********************************************************************************/
-	void changeHumanPlayer( PlayerTypes eNewHuman );
-/********************************************************************************/
-/* 	BETTER_BTS_AI_MOD						END								*/
-/********************************************************************************/
 
 	bool testVictory(VictoryTypes eVictory, TeamTypes eTeam, bool* pbEndScore = NULL) const;
 
@@ -515,7 +477,7 @@ public:
 	CultureLevelTypes culturalVictoryCultureLevel();
 	int getCultureThreshold(CultureLevelTypes eLevel) const;
 
-	int getPlotExtraYield(int iX, int iY, YieldTypes eYield) const;   // exposed to Python (K-Mod)
+	int getPlotExtraYield(int iX, int iY, YieldTypes eYield) const;
 	void setPlotExtraYield(int iX, int iY, YieldTypes eYield, int iCost);   // exposed to Python
 	void removePlotExtraYield(int iX, int iY);
 
@@ -544,7 +506,7 @@ public:
 	DllExport CvPlot* getNewHighlightPlot() const;
 	DllExport ColorTypes getPlotHighlightColor(CvPlot* pPlot) const;
 	DllExport void cheatSpaceship() const;
-	DllExport VictoryTypes getSpaceVictory() const; // Exposed to Python (exposed by K-Mod)
+	DllExport VictoryTypes getSpaceVictory() const;
 	DllExport void nextActivePlayer(bool bForward);
 
 	DllExport DomainTypes getUnitDomain(UnitTypes eUnit) const;
@@ -580,8 +542,6 @@ public:
 
 	DllExport void handleDiplomacySetAIComment(DiploCommentTypes eComment) const;
 
-	std::set<int> m_ActivePlayerCycledGroups; // K-Mod. This is used to track which groups have been cycled through in the current turn. Note: it does not need to be kept in sync for multiplayer games.
-
 protected:
 	int m_iElapsedGameTurns;
 	int m_iStartTurn;
@@ -605,8 +565,6 @@ protected:
 	int m_iInitTech;
 	int m_iInitWonders;
 	int m_iAIAutoPlay;
-	int m_iGlobalWarmingIndex;	// K-Mod
-	int m_iGwEventTally;		// K-Mod
 
 	unsigned int m_uiInitialTime;
 
@@ -689,7 +647,6 @@ protected:
 	void doTurn();
 	void doDeals();
 	void doGlobalWarming();
-	CvPlot* getRandGWPlot(int iPool); // K-Mod
 	void doHolyCity();
 	void doHeadquarters();
 	void doDiploVote();

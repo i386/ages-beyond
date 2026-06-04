@@ -139,45 +139,37 @@ void CvPlotGroup::recalculatePlots()
 		}
 	}
 
+	oldPlotGroup.clear();
+
+	pPlotNode = headPlotsNode();
+
+	while (pPlotNode != NULL)
 	{
-		PROFILE("CvPlotGroup::recalculatePlots update");
+		pPlot = GC.getMapINLINE().plotSorenINLINE(pPlotNode->m_data.iX, pPlotNode->m_data.iY);
 
-		oldPlotGroup.clear();
+		FAssertMsg(pPlot != NULL, "Plot is not assigned a valid value");
 
-		pPlotNode = headPlotsNode();
+		xy.iX = pPlot->getX_INLINE();
+		xy.iY = pPlot->getY_INLINE();
 
-		while (pPlotNode != NULL)
-		{
-			PROFILE("CvPlotGroup::recalculatePlots update 1");
+		oldPlotGroup.insertAtEnd(xy);
 
-			pPlot = GC.getMapINLINE().plotSorenINLINE(pPlotNode->m_data.iX, pPlotNode->m_data.iY);
+		pPlot->setPlotGroup(eOwner, NULL);
 
-			FAssertMsg(pPlot != NULL, "Plot is not assigned a valid value");
+		pPlotNode = deletePlotsNode(pPlotNode); // will delete this PlotGroup...
+	}
 
-			xy.iX = pPlot->getX_INLINE();
-			xy.iY = pPlot->getY_INLINE();
+	pPlotNode = oldPlotGroup.head();
 
-			oldPlotGroup.insertAtEnd(xy);
+	while (pPlotNode != NULL)
+	{
+		pPlot = GC.getMapINLINE().plotSorenINLINE(pPlotNode->m_data.iX, pPlotNode->m_data.iY);
 
-			pPlot->setPlotGroup(eOwner, NULL);
+		FAssertMsg(pPlot != NULL, "Plot is not assigned a valid value");
 
-			pPlotNode = deletePlotsNode(pPlotNode); // will delete this PlotGroup...
-		}
+		pPlot->updatePlotGroup(eOwner, true);
 
-		pPlotNode = oldPlotGroup.head();
-
-		while (pPlotNode != NULL)
-		{
-			PROFILE("CvPlotGroup::recalculatePlots update 2");
-
-			pPlot = GC.getMapINLINE().plotSorenINLINE(pPlotNode->m_data.iX, pPlotNode->m_data.iY);
-
-			FAssertMsg(pPlot != NULL, "Plot is not assigned a valid value");
-
-			pPlot->updatePlotGroup(eOwner, true);
-
-			pPlotNode = oldPlotGroup.deleteNode(pPlotNode);
-		}
+		pPlotNode = oldPlotGroup.deleteNode(pPlotNode);
 	}
 }
 
@@ -216,26 +208,26 @@ bool CvPlotGroup::hasBonus(BonusTypes eBonus)
 
 void CvPlotGroup::changeNumBonuses(BonusTypes eBonus, int iChange)
 {
+	CLLNode<XYCoords>* pPlotNode;
+	CvCity* pCity;
+	int iOldNumBonuses;
+
 	FAssertMsg(eBonus >= 0, "eBonus is expected to be non-negative (invalid Index)");
 	FAssertMsg(eBonus < GC.getNumBonusInfos(), "eBonus is expected to be within maximum bounds (invalid Index)");
 
 	if (iChange != 0)
 	{
-		//iOldNumBonuses = getNumBonuses(eBonus);
+		iOldNumBonuses = getNumBonuses(eBonus);
 
 		m_paiNumBonuses[eBonus] = (m_paiNumBonuses[eBonus] + iChange);
 
 		//FAssertMsg(m_paiNumBonuses[eBonus] >= 0, "m_paiNumBonuses[eBonus] is expected to be non-negative (invalid Index)"); XXX
 
-		// K-Mod note, m_paiNumBonuses[eBonus] is often temporarily negative while plot groups are being updated.
-		// It's an unfortuante side effect of the way the update is implemented. ... and so this assert is invalid.
-		// (This isn't my fault. I haven't changed it. It has always been like this.)
-
-		CLLNode<XYCoords>* pPlotNode = headPlotsNode();
+		pPlotNode = headPlotsNode();
 
 		while (pPlotNode != NULL)
 		{
-			CvCity* pCity = GC.getMapINLINE().plotSorenINLINE(pPlotNode->m_data.iX, pPlotNode->m_data.iY)->getPlotCity();
+			pCity = GC.getMapINLINE().plotSorenINLINE(pPlotNode->m_data.iX, pPlotNode->m_data.iY)->getPlotCity();
 
 			if (pCity != NULL)
 			{

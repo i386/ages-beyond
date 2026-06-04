@@ -168,9 +168,9 @@ int cyGetWonderScore(int /*BuildingClassTypes*/ eWonderClass)
 	return getWonderScore((BuildingClassTypes)eWonderClass);
 }
 
-int /*ImprovementTypes*/ cyFinalImprovementUpgrade(int /*ImprovementTypes*/ eImprovement)
+int /*ImprovementTypes*/ cyFinalImprovementUpgrade(int /*ImprovementTypes*/ eImprovement, int iCount)
 {
-	return finalImprovementUpgrade((ImprovementTypes) eImprovement);
+	return finalImprovementUpgrade((ImprovementTypes) eImprovement, iCount);
 }
 
 int cyGetWorldSizeMaxConscript(int /*CivicTypes*/ eCivic)

@@ -10,7 +10,6 @@
 #include "FAStarNode.h"
 #include "CvGameTextMgr.h"
 #include "CvMessageControl.h"
-#include "CvBugOptions.h"
 
 void CvGame::updateColoredPlots()
 {
@@ -49,68 +48,6 @@ void CvGame::updateColoredPlots()
 	{
 		return;
 	}
-
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      06/25/09                                jdog5000      */
-/*                                                                                              */
-/* Debug                                                                                        */
-/************************************************************************************************/
-	// City circles for debugging
-	if (isDebugMode())
-	{
-		for (int iPlotLoop = 0; iPlotLoop < GC.getMap().numPlots(); iPlotLoop++)
-		{
-			CvPlot* pLoopPlot = GC.getMap().plotByIndex(iPlotLoop);
-
-			if (pLoopPlot != NULL)
-			{
-				for( int iI = 0; iI < MAX_CIV_PLAYERS; iI++ )
-				{
-					if( GET_PLAYER((PlayerTypes)iI).isAlive() )
-					{
-						if (GET_PLAYER((PlayerTypes)iI).AI_isPlotCitySite(pLoopPlot))
-						{
-							gDLL->getEngineIFace()->addColoredPlot(pLoopPlot->getX_INLINE(), pLoopPlot->getY_INLINE(), GC.getColorInfo((ColorTypes)GC.getPlayerColorInfo(GET_PLAYER((PlayerTypes)iI).getPlayerColor()).getColorTypePrimary()).getColor(), PLOT_STYLE_CIRCLE, PLOT_LANDSCAPE_LAYER_BASE);
-						}
-					}
-				}
-			}
-		}
-	}
-
-	// Plot improvement replacement circles for debugging
-	if (isDebugMode())
-	{
-		for (int iPlotLoop = 0; iPlotLoop < GC.getMap().numPlots(); iPlotLoop++)
-		{
-			CvPlot* pLoopPlot = GC.getMap().plotByIndex(iPlotLoop);
-
-			if (pLoopPlot != NULL)
-			{
-				CvCity* pWorkingCity = pLoopPlot->getWorkingCity();
-				ImprovementTypes eImprovement = pLoopPlot->getImprovementType();
-
-				if( pWorkingCity != NULL && eImprovement != NO_IMPROVEMENT )
-				{
-					int iPlotIndex = pWorkingCity->getCityPlotIndex(pLoopPlot);
-					int iBuildValue = pWorkingCity->AI_getBestBuildValue(iPlotIndex);
-					BuildTypes eBestBuild = pWorkingCity->AI_getBestBuild(iPlotIndex);
-
-					if (NO_BUILD != eBestBuild)
-					{
-						if( GC.getBuildInfo(eBestBuild).getImprovement() != NO_IMPROVEMENT && eImprovement != GC.getBuildInfo(eBestBuild).getImprovement() )
-						{
-							gDLL->getEngineIFace()->addColoredPlot(pLoopPlot->getX_INLINE(), pLoopPlot->getY_INLINE(), GC.getColorInfo((ColorTypes)GC.getInfoTypeForString("COLOR_RED")).getColor(), PLOT_STYLE_CIRCLE, PLOT_LANDSCAPE_LAYER_BASE);
-						}
-					}
-				}
-			}
-		}
-	}
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
-
 
 	// City circles when in Advanced Start
 	if (gDLL->getInterfaceIFace()->isInAdvancedStart())
@@ -297,12 +234,12 @@ void CvGame::updateColoredPlots()
 
 					if (pCity != NULL)
 					{
-						if (pHeadSelectedUnit->AI_bestCityBuild(pCity, &pBestPlot) && pCity->AI_getBestBuildValue(plotCityXY(pCity, pBestPlot)) > 1)
+						if (pHeadSelectedUnit->AI_bestCityBuild(pCity, &pBestPlot))
 						{
 							FAssert(pBestPlot != NULL);
 							gDLL->getEngineIFace()->addColoredPlot(pBestPlot->getX_INLINE(), pBestPlot->getY_INLINE(), GC.getColorInfo((ColorTypes)GC.getInfoTypeForString("COLOR_HIGHLIGHT_TEXT")).getColor(), PLOT_STYLE_CIRCLE, PLOT_LANDSCAPE_LAYER_RECOMMENDED_PLOTS);
 
-							if (pHeadSelectedUnit->AI_bestCityBuild(pCity, &pNextBestPlot, NULL, pBestPlot) && pCity->AI_getBestBuildValue(plotCityXY(pCity, pNextBestPlot)) > 1)
+							if (pHeadSelectedUnit->AI_bestCityBuild(pCity, &pNextBestPlot, NULL, pBestPlot))
 							{
 								FAssert(pNextBestPlot != NULL);
 								gDLL->getEngineIFace()->addColoredPlot(pNextBestPlot->getX_INLINE(), pNextBestPlot->getY_INLINE(), GC.getColorInfo((ColorTypes)GC.getInfoTypeForString("COLOR_HIGHLIGHT_TEXT")).getColor(), PLOT_STYLE_CIRCLE, PLOT_LANDSCAPE_LAYER_RECOMMENDED_PLOTS);
@@ -312,49 +249,42 @@ void CvGame::updateColoredPlots()
 				}
 			}
 
-			// K-Mod. I've rearranged the following code a bit, so that it is more efficient, and so that it shows city sites within 7 turns, rather than just the ones in 4 plot range.
-			// the original code has been deleted, because it was quite bulky.
+			iRange = 4;
 
-			// city sites
-			const CvPlayerAI& kActivePlayer = GET_PLAYER(getActivePlayer());
-			KmodPathFinder site_path;
-			site_path.SetSettings(pHeadSelectedUnit->getGroup(), 0, 7, GC.getMOVE_DENOMINATOR());
-			if (pHeadSelectedUnit->isFound())
+			for (iDX = -(iRange); iDX <= iRange; iDX++)
 			{
-
-				for (int i = 0; i < kActivePlayer.AI_getNumCitySites(); i++)
+				for (iDY = -(iRange); iDY <= iRange; iDY++)
 				{
-					CvPlot* pSite = kActivePlayer.AI_getCitySite(i);
-					if (pSite && site_path.GeneratePath(pSite))
+					pLoopPlot = plotXY(pHeadSelectedUnit->getX_INLINE(), pHeadSelectedUnit->getY_INLINE(), iDX, iDY);
+
+					if (pLoopPlot != NULL)
 					{
-						gDLL->getEngineIFace()->addColoredPlot(pSite->getX_INLINE(), pSite->getY_INLINE(), GC.getColorInfo((ColorTypes)GC.getInfoTypeForString("COLOR_HIGHLIGHT_TEXT")).getColor(), PLOT_STYLE_CIRCLE, PLOT_LANDSCAPE_LAYER_RECOMMENDED_PLOTS);
-					}
-				}
-			}
-
-			// goody huts
-			if (pHeadSelectedUnit->isNoBadGoodies())
-			{
-				iRange = 4;
-				site_path.SetSettings(pHeadSelectedUnit->getGroup(), 0, iRange, GC.getMOVE_DENOMINATOR()); // just a smaller range.
-
-				for (iDX = -(iRange); iDX <= iRange; iDX++)
-				{
-					for (iDY = -(iRange); iDY <= iRange; iDY++)
-					{
-						pLoopPlot = plotXY(pHeadSelectedUnit->getX_INLINE(), pHeadSelectedUnit->getY_INLINE(), iDX, iDY);
-
-						if (pLoopPlot && pLoopPlot->isVisible(pHeadSelectedUnit->getTeam(), false) && pLoopPlot->isRevealedGoody(pHeadSelectedUnit->getTeam()))
+						if ((pLoopPlot->area() == pHeadSelectedUnit->area()) || pLoopPlot->isAdjacentToArea(pHeadSelectedUnit->area()))
 						{
-							if (site_path.GeneratePath(pLoopPlot))
+							if (pHeadSelectedUnit->canFound(pLoopPlot))
 							{
-								gDLL->getEngineIFace()->addColoredPlot(pLoopPlot->getX_INLINE(), pLoopPlot->getY_INLINE(), GC.getColorInfo((ColorTypes)GC.getInfoTypeForString("COLOR_HIGHLIGHT_TEXT")).getColor(), PLOT_STYLE_CIRCLE, PLOT_LANDSCAPE_LAYER_RECOMMENDED_PLOTS);
+								if (GET_PLAYER(pHeadSelectedUnit->getOwnerINLINE()).AI_isPlotCitySite(pLoopPlot))
+								{
+									gDLL->getEngineIFace()->addColoredPlot(pLoopPlot->getX_INLINE(), pLoopPlot->getY_INLINE(), GC.getColorInfo((ColorTypes)GC.getInfoTypeForString("COLOR_HIGHLIGHT_TEXT")).getColor(), PLOT_STYLE_CIRCLE, PLOT_LANDSCAPE_LAYER_RECOMMENDED_PLOTS);
+								}
+							}
+							if (plotDistance(pHeadSelectedUnit->getX_INLINE(), pHeadSelectedUnit->getY_INLINE(), pLoopPlot->getX_INLINE(), pLoopPlot->getY_INLINE()) <= iRange)
+							{
+								if (pLoopPlot->isVisible(pHeadSelectedUnit->getTeam(), false))
+								{
+									if (pHeadSelectedUnit->isNoBadGoodies())
+									{
+										if (pLoopPlot->isRevealedGoody(pHeadSelectedUnit->getTeam()))
+										{
+											gDLL->getEngineIFace()->addColoredPlot(pLoopPlot->getX_INLINE(), pLoopPlot->getY_INLINE(), GC.getColorInfo((ColorTypes)GC.getInfoTypeForString("COLOR_HIGHLIGHT_TEXT")).getColor(), PLOT_STYLE_CIRCLE, PLOT_LANDSCAPE_LAYER_RECOMMENDED_PLOTS);
+										}
+									}
+								}
 							}
 						}
 					}
 				}
 			}
-			// K-Mod end
 		}
 
 		if (pHeadSelectedUnit->isBlockading())
@@ -379,20 +309,6 @@ void CvGame::updateColoredPlots()
 									CvPlot* pLoopPlot = ::plotXY(pLoopUnit->getX_INLINE(), pLoopUnit->getY_INLINE(), i, j);
 									if (NULL != pLoopPlot && pLoopPlot->isRevealed(getActiveTeam(), false))
 									{
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      12/11/08                                jdog5000      */
-/*                                                                                              */
-/* Bugfix                                                                                       */
-/************************************************************************************************/
-										if( GC.getMapINLINE().calculatePathDistance(pLoopUnit->plot(),pLoopPlot) > iBlockadeRange )
-										{
-											// No blockading on other side of an isthmus
-											continue;
-										}
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
-
 										if (pLoopPlot->isWater() && pLoopPlot->area() == pLoopUnit->area())
 										{
 											NiColorA color(GC.getColorInfo((ColorTypes)GC.getPlayerColorInfo(GET_PLAYER(getActivePlayer()).getPlayerColor()).getColorTypePrimary()).getColor());
@@ -437,8 +353,7 @@ void CvGame::updateSelectionList()
 {
 	CvUnit* pHeadSelectedUnit;
 
-	//if (GET_PLAYER(getActivePlayer()).isOption(PLAYEROPTION_NO_UNIT_CYCLING))
-	if (GC.suppressCycling() || GET_PLAYER(getActivePlayer()).isOption(PLAYEROPTION_NO_UNIT_CYCLING)) // K-Mod
+	if (GET_PLAYER(getActivePlayer()).isOption(PLAYEROPTION_NO_UNIT_CYCLING))
 	{
 		return;
 	}
@@ -471,7 +386,6 @@ void CvGame::updateSelectionList()
 void CvGame::updateTestEndTurn()
 {
 	bool bAny;
-	bool bShift = GC.shiftKey();
 
 	bAny = ((gDLL->getInterfaceIFace()->getHeadSelectedUnit() != NULL) && !(GET_PLAYER(getActivePlayer()).isOption(PLAYEROPTION_NO_UNIT_CYCLING)));
 
@@ -490,25 +404,20 @@ void CvGame::updateTestEndTurn()
 			{
 				if (!(gDLL->getInterfaceIFace()->isForcePopup()))
 				{
-					if (!bShift && !GC.suppressCycling()) // K-Mod
-						gDLL->getInterfaceIFace()->setForcePopup(true);
+					gDLL->getInterfaceIFace()->setForcePopup(true);
 				}
 				else
 				{
 					if (GET_PLAYER(getActivePlayer()).hasAutoUnit())
 					{
-						//if (!(GC.shiftKey()))
-						// K-Mod. Don't start automoves if we currently have a group selected which would move.
-						CvUnit* pSelectedUnit = gDLL->getInterfaceIFace()->getHeadSelectedUnit();
-						if (!bShift && !GC.suppressCycling() && (pSelectedUnit == NULL || !pSelectedUnit->getGroup()->readyToAuto()))
-						// K-Mod end
+						if (!(gDLL->shiftKey()))
 						{
 							CvMessageControl::getInstance().sendAutoMoves();
 						}
 					}
 					else
 					{
-						if (GET_PLAYER(getActivePlayer()).isOption(PLAYEROPTION_WAIT_END_TURN) || !gDLL->getInterfaceIFace()->isHasMovedUnit() || isHotSeat() || isPbem())
+						if (GET_PLAYER(getActivePlayer()).isOption(PLAYEROPTION_WAIT_END_TURN) || !(gDLL->getInterfaceIFace()->isHasMovedUnit()) || isHotSeat() || isPbem())
 						{
 							gDLL->getInterfaceIFace()->setEndTurnMessage(true);
 						}
@@ -735,11 +644,7 @@ void CvGame::cycleSelectionGroups(bool bClear, bool bForward, bool bWorkers) con
 
 		if (bWrap)
 		{
-			//if (GET_PLAYER(getActivePlayer()).hasAutoUnit())
-			// K-Mod. I've weakend this condition so that the group cycle order can be refreshed by automoves.
-			// (Maybe I should create & use "sendCycleRefresh" instead.)
-			if (pNextSelectionGroup || GET_PLAYER(getActivePlayer()).hasAutoUnit())
-			// K-Mod end
+			if (GET_PLAYER(getActivePlayer()).hasAutoUnit())
 			{
 				CvMessageControl::getInstance().sendAutoMoves();
 			}
@@ -754,18 +659,8 @@ void CvGame::cycleSelectionGroups(bool bClear, bool bForward, bool bWorkers) con
 	if (pNextSelectionGroup != NULL)
 	{
 		FAssert(pNextSelectionGroup->getOwnerINLINE() == getActivePlayer());
-		FAssert(pNextSelectionGroup->getHeadUnit() != NULL); // K-Mod
 		gDLL->getInterfaceIFace()->selectUnit(pNextSelectionGroup->getHeadUnit(), bClear);
 	}
-	// K-Mod
-	else if (pCycleUnit)
-	{
-		gDLL->getInterfaceIFace()->clearSelectionList();
-		const_cast<CvGame*>(this)->updateTestEndTurn();
-		// again, I'm sorry about the const_cast. this function and updateTestEndTurn are both dllexport functions.
-		// so I can't change the constness of either of them to fix the problem.
-	}
-	// K-Mod end
 
 	if ((pCycleUnit != gDLL->getInterfaceIFace()->getHeadSelectedUnit()) || ((pCycleUnit != NULL) && pCycleUnit->getGroup()->readyToSelect()))
 	{
@@ -773,42 +668,6 @@ void CvGame::cycleSelectionGroups(bool bClear, bool bForward, bool bWorkers) con
 	}
 }
 
-// K-Mod
-void CvGame::cycleSelectionGroups_delayed(int iDelay, bool bIncremental, bool bDelayOnly) const
-{
-	PROFILE_FUNC(); // I'm just hoping that the python call doesn't hurt the respose times
-
-	if (GC.suppressCycling()) // cf. GvGame::updateSelectionList
-		return;
-
-	// Only rapid-cycle when not doing auto-play.
-	// Also note, cycleSelectionGroups currently causes a crash if the game is not initialised.
-	// (and this function is indirectly called during the set of up a new game - so we currently need that init check.)
-	PlayerTypes eActive = getActivePlayer();
-	if (GC.getGameINLINE().isFinalInitialized() &&
-		eActive != NO_PLAYER && GET_PLAYER(eActive).isHuman() &&
-		getBugOptionBOOL("MainInterface__RapidUnitCycling", false, "RAPID_UNIT_CYCLING"))
-	{
-		if (!bDelayOnly)
-		{
-			if (GET_PLAYER(eActive).isOption(PLAYEROPTION_NO_UNIT_CYCLING)) // (for the non-rapid case, this option is handled elsewhere.)
-				return;
-
-			if (gDLL->getEngineIFace()->isCameraLocked())
-				gDLL->getInterfaceIFace()->setCycleSelectionCounter(1); // immediate cycling might violate the camera lock. :(
-			else
-				cycleSelectionGroups(true);
-		}
-	}
-	else
-	{
-		if (bIncremental)
-			gDLL->getInterfaceIFace()->changeCycleSelectionCounter(iDelay);
-		else
-			gDLL->getInterfaceIFace()->setCycleSelectionCounter(iDelay);
-	}
-}
-// K-Mod end
 
 // Returns true if unit was cycled...
 bool CvGame::cyclePlotUnits(CvPlot* pPlot, bool bForward, bool bAuto, int iCount) const
@@ -968,10 +827,10 @@ bool CvGame::selectCity(CvCity* pSelectCity, bool bCtrl, bool bAlt, bool bShift)
 
 void CvGame::selectionListMove(CvPlot* pPlot, bool bAlt, bool bShift, bool bCtrl) const
 {
-	//CLLNode<IDInfo>* pSelectedUnitNode;
+	CLLNode<IDInfo>* pSelectedUnitNode;
 	CvUnit* pHeadSelectedUnit;
-	//CvUnit* pSelectedUnit;
-	//TeamTypes eRivalTeam;
+	CvUnit* pSelectedUnit;
+	TeamTypes eRivalTeam;
 
 	if (pPlot == NULL)
 	{
@@ -1001,15 +860,13 @@ void CvGame::selectionListMove(CvPlot* pPlot, bool bAlt, bool bShift, bool bCtrl
 
 	if (bAlt)
 	{
-		//gDLL->getInterfaceIFace()->selectGroup(pHeadSelectedUnit, false, false, true);
-		gDLL->getInterfaceIFace()->selectGroup(pHeadSelectedUnit, false, true, true); // K-Mod
+		gDLL->getInterfaceIFace()->selectGroup(pHeadSelectedUnit, false, false, true);
 	}
 	else if (bCtrl)
 	{
 		gDLL->getInterfaceIFace()->selectGroup(pHeadSelectedUnit, false, true, false);
 	}
 
-	/* original bts code
 	pSelectedUnitNode = gDLL->getInterfaceIFace()->headSelectionListNode();
 
 	while (pSelectedUnitNode != NULL)
@@ -1034,7 +891,7 @@ void CvGame::selectionListMove(CvPlot* pPlot, bool bAlt, bool bShift, bool bCtrl
 		}
 
 		pSelectedUnitNode = gDLL->getInterfaceIFace()->nextSelectionListNode(pSelectedUnitNode);
-	} */ // K-Mod has moved this to selectionListGameNetMessage.
+	}
 
 	selectionListGameNetMessage(GAMEMESSAGE_PUSH_MISSION, MISSION_MOVE_TO, pPlot->getX(), pPlot->getY(), 0, false, bShift);
 }
@@ -1086,8 +943,8 @@ void CvGame::selectionListGameNetMessage(int eMessage, int iData2, int iData3, i
 						{
 							CvMessageControl::getInstance().sendJoinGroup(pSelectedUnit->getID(), FFreeList::INVALID_INDEX);
 						}
-						else // K-Mod
-							CvMessageControl::getInstance().sendJoinGroup(pSelectedUnit->getID(), pHeadSelectedUnit->getID());
+
+						CvMessageControl::getInstance().sendJoinGroup(pSelectedUnit->getID(), pHeadSelectedUnit->getID());
 					}
 				}
 
@@ -1098,12 +955,6 @@ void CvGame::selectionListGameNetMessage(int eMessage, int iData2, int iData3, i
 			}
 			else if (eMessage == GAMEMESSAGE_DO_COMMAND)
 			{
-				// K-Mod. When setting a unit to automate, we must be careful not to keep it grouped
-				if (iData2 == COMMAND_AUTOMATE && !gDLL->getInterfaceIFace()->mirrorsSelectionGroup())
-				{
-					selectionListGameNetMessage(GAMEMESSAGE_JOIN_GROUP);
-				}
-				// K-Mod end
 				pSelectedUnitNode = gDLL->getInterfaceIFace()->headSelectionListNode();
 
 				while (pSelectedUnitNode != NULL)
@@ -1123,51 +974,7 @@ void CvGame::selectionListGameNetMessage(int eMessage, int iData2, int iData3, i
 
 				if (eMessage == GAMEMESSAGE_PUSH_MISSION)
 				{
-					// K-Mod. I've moved the BUTTONPOPUP_DECLAREWARMOVE stuff to here from selectionListMove
-					// so that it can catch left-click moves as well as right-click moves.
-					//
-					// Note: If MOVE_DECLARE_WAR is set, then we assume it was set by a BUTTONPOPUP_DECLAREWARMOVE
-					// which was triggered already by this move. In which case we shouldn't check for declare war
-					// this time. This is a kludge to prevent the popup from appearing twice.
-					// Also, when this happens we should clear the MOVE_DECLARE_WAR flag. Otherwise it may cause
-					// the pathfinder to fail in some cases.
-					//
-					// (I'd rather not have UI stuff like this in this function,
-					//  but this is the only place where I can catch left-click moves.)
-					if (iData2 == MISSION_MOVE_TO && !(iFlags & MOVE_DECLARE_WAR))
-					{
-						CvPlot* pPlot = GC.getMapINLINE().plotINLINE(iData3, iData4);
-						FAssert(pPlot);
-						pSelectedUnitNode = gDLL->getInterfaceIFace()->headSelectionListNode();
-
-						while (pSelectedUnitNode != NULL)
-						{
-							pSelectedUnit = ::getUnit(pSelectedUnitNode->m_data);
-
-							TeamTypes eRivalTeam = pSelectedUnit->getDeclareWarMove(pPlot);
-
-							if (eRivalTeam != NO_TEAM)
-							{
-								CvPopupInfo* pInfo = new CvPopupInfo(BUTTONPOPUP_DECLAREWARMOVE);
-								if (NULL != pInfo)
-								{
-									pInfo->setData1(eRivalTeam);
-									pInfo->setData2(pPlot->getX());
-									pInfo->setData3(pPlot->getY());
-									pInfo->setOption1(bShift);
-									pInfo->setOption2(pPlot->getTeam() != eRivalTeam);
-									gDLL->getInterfaceIFace()->addPopup(pInfo);
-								}
-								return;
-							}
-
-							pSelectedUnitNode = gDLL->getInterfaceIFace()->nextSelectionListNode(pSelectedUnitNode);
-						}
-					}
-
-					//CvMessageControl::getInstance().sendPushMission(pHeadSelectedUnit->getID(), ((MissionTypes)iData2), iData3, iData4, iFlags, bShift);
-					CvMessageControl::getInstance().sendPushMission(pHeadSelectedUnit->getID(), ((MissionTypes)iData2), iData3, iData4, iFlags & ~ MOVE_DECLARE_WAR, bShift);
-					// K-Mod end
+					CvMessageControl::getInstance().sendPushMission(pHeadSelectedUnit->getID(), ((MissionTypes)iData2), iData3, iData4, iFlags, bShift);
 				}
 				else
 				{
@@ -1206,32 +1013,10 @@ void CvGame::selectedCitiesGameNetMessage(int eMessage, int iData2, int iData3, 
 					break;
 
 				case GAMEMESSAGE_POP_ORDER:
-					/* original bts code
 					if (pSelectedCity->getOrderQueueLength() > 1)
 					{
 						CvMessageControl::getInstance().sendPopOrder(pSelectedCity->getID(), iData2);
-					} */
-					// K-Mod. Some additional controls
-					if (bAlt || (bShift != bCtrl))
-					{
-						// bCtrl moves the order up, bShift moves the order down.
-						// bAlt toggles bSave (ie. repeat)
-						int iNewPos = iData2 + (bShift ? 1 : 0) + (bCtrl ? -1 : 0);
-						if (pSelectedCity->getOrderQueueLength() > iNewPos && iNewPos >= 0)
-						{
-							OrderData order = pSelectedCity->getOrderData(iData2);
-							if (order.eOrderType != NO_ORDER && (bShift || bCtrl || order.eOrderType == ORDER_TRAIN))
-							{
-								order.bSave = order.bSave != (bAlt && order.eOrderType == ORDER_TRAIN);
-								CvMessageControl::getInstance().sendPopOrder(pSelectedCity->getID(), iData2);
-								CvMessageControl::getInstance().sendPushOrder(pSelectedCity->getID(), order.eOrderType, order.iData1, order.bSave, false, iNewPos);
-							}
-						}
 					}
-					// Allow us to cancel the final order for automated cities. (The governor can choose production at the end of the turn.)
-					else if (pSelectedCity->getOrderQueueLength() > 1 || pSelectedCity->isProductionAutomated())
-						CvMessageControl::getInstance().sendPopOrder(pSelectedCity->getID(), iData2);
-					// K-Mod end
 					break;
 
 				case GAMEMESSAGE_DO_TASK:
@@ -1255,7 +1040,7 @@ bool CvGame::canHandleAction(int iAction, CvPlot* pPlot, bool bTestVisible, bool
 	CvSelectionGroup* pSelectedGroup;
 	CvUnit* pHeadSelectedUnit;
 	CvPlot* pMissionPlot;
-	bool bShift = GC.shiftKey();
+	bool bShift = gDLL->shiftKey();
 
 	if(GC.getUSE_CANNOT_HANDLE_ACTION_CALLBACK())
 	{
@@ -1363,8 +1148,8 @@ void CvGame::handleAction(int iAction)
 	bool bShift;
 	bool bSkip;
 
-	bAlt = GC.altKey();
-	bShift = GC.shiftKey();
+	bAlt = gDLL->altKey();
+	bShift = gDLL->shiftKey();
 
 	if (!(gDLL->getInterfaceIFace()->canHandleAction(iAction)))
 	{
@@ -1384,8 +1169,7 @@ void CvGame::handleAction(int iAction)
 		{
 			if (GC.getInterfaceModeInfo((InterfaceModeTypes)GC.getActionInfo(iAction).getInterfaceModeType()).getSelectAll())
 			{
-				//gDLL->getInterfaceIFace()->selectGroup(pHeadSelectedUnit, false, false, true);
-				gDLL->getInterfaceIFace()->selectGroup(pHeadSelectedUnit, false, true, true); // K-Mod
+				gDLL->getInterfaceIFace()->selectGroup(pHeadSelectedUnit, false, false, true);
 			}
 			else if (GC.getInterfaceModeInfo((InterfaceModeTypes)GC.getActionInfo(iAction).getInterfaceModeType()).getSelectType())
 			{
@@ -1631,8 +1415,7 @@ void CvGame::doControl(ControlTypes eControl)
 		pHeadSelectedUnit = gDLL->getInterfaceIFace()->getHeadSelectedUnit();
 		if (pHeadSelectedUnit != NULL)
 		{
-			//gDLL->getInterfaceIFace()->selectGroup(pHeadSelectedUnit, false, false, true);
-			gDLL->getInterfaceIFace()->selectGroup(pHeadSelectedUnit, false, true, true); // K-Mod
+			gDLL->getInterfaceIFace()->selectGroup(pHeadSelectedUnit, false, false, true);
 		}
 		break;
 
@@ -1653,7 +1436,7 @@ void CvGame::doControl(ControlTypes eControl)
 
 					if (pUnit->getOwnerINLINE() == getActivePlayer())
 					{
-						//if (!isMPOption(MPOPTION_SIMULTANEOUS_TURNS) || getTurnSlice() - pUnit->getLastMoveTurn() > GC.getDefineINT("MIN_TIMER_UNIT_DOUBLE_MOVES")) // disabled by K-Mod
+						if (!isMPOption(MPOPTION_SIMULTANEOUS_TURNS) || getTurnSlice() - pUnit->getLastMoveTurn() > GC.getDefineINT("MIN_TIMER_UNIT_DOUBLE_MOVES"))
 						{
 							if (pUnit->isHurt())
 							{
@@ -1822,16 +1605,30 @@ void CvGame::doControl(ControlTypes eControl)
 		break;
 
 	case CONTROL_RETIRE:
-		// K-Mod. (original code moved into CvGame::retire)
+		if (!isGameMultiPlayer() || countHumanPlayersAlive() == 1)
 		{
-			CvPopupInfo* pInfo = new CvPopupInfo(BUTTONPOPUP_CONFIRM_MENU);
-			if (NULL != pInfo)
+			if (gDLL->GetAutorun())
 			{
-				pInfo->setData1(2);
-				gDLL->getInterfaceIFace()->addPopup(pInfo, GC.getGameINLINE().getActivePlayer(), true);
+				GC.getInitCore().setSlotStatus(getActivePlayer(), SS_COMPUTER);
+			}
+			else
+			{
+				setGameState(GAMESTATE_OVER);
+				gDLL->getInterfaceIFace()->setDirty(Soundtrack_DIRTY_BIT, true);
 			}
 		}
-		// K-Mod end
+		else
+		{
+			if (isNetworkMultiPlayer())
+			{
+				gDLL->sendMPRetire();
+				gDLL->getInterfaceIFace()->exitingToMainMenu();
+			}
+			else
+			{
+				gDLL->handleRetirement(getActivePlayer());
+			}
+		}
 		break;
 
 	case CONTROL_SAVE_GROUP:
@@ -1995,16 +1792,19 @@ void CvGame::doControl(ControlTypes eControl)
 		break;
 
 	case CONTROL_WORLD_BUILDER:
-		// K-Mod. (original code moved into CvGame::retire)
+		if (GC.getInitCore().getAdminPassword().empty())
 		{
-			CvPopupInfo* pInfo = new CvPopupInfo(BUTTONPOPUP_CONFIRM_MENU);
+			gDLL->getInterfaceIFace()->setWorldBuilder(!(gDLL->GetWorldBuilderMode()));
+		}
+		else
+		{
+			CvPopupInfo* pInfo = new CvPopupInfo(BUTTONPOPUP_ADMIN_PASSWORD);
 			if (NULL != pInfo)
 			{
-				pInfo->setData1(4);
-				gDLL->getInterfaceIFace()->addPopup(pInfo, GC.getGameINLINE().getActivePlayer(), true);
+				pInfo->setData1((int)CONTROL_WORLD_BUILDER);
+				gDLL->getInterfaceIFace()->addPopup(pInfo, NO_PLAYER, true);
 			}
 		}
-		// K-Mod end
 		break;
 
 	case CONTROL_ESPIONAGE_SCREEN:
@@ -2034,56 +1834,6 @@ void CvGame::doControl(ControlTypes eControl)
 		break;
 	}
 }
-
-// K-Mod. This code use to be inside CvGame::doControl. I've moved it here and told doControl to simply create a confirmation popup.
-void CvGame::retire()
-{
-	FAssert(canDoControl(CONTROL_RETIRE));
-
-	if (!isGameMultiPlayer() || countHumanPlayersAlive() == 1)
-	{
-		if (gDLL->GetAutorun())
-		{
-			GC.getInitCore().setSlotStatus(getActivePlayer(), SS_COMPUTER);
-		}
-		else
-		{
-			setGameState(GAMESTATE_OVER);
-			gDLL->getInterfaceIFace()->setDirty(Soundtrack_DIRTY_BIT, true);
-		}
-	}
-	else
-	{
-		if (isNetworkMultiPlayer())
-		{
-			gDLL->sendMPRetire();
-			gDLL->getInterfaceIFace()->exitingToMainMenu();
-		}
-		else
-		{
-			gDLL->handleRetirement(getActivePlayer());
-		}
-	}
-}
-
-void CvGame::enterWorldBuilder()
-{
-	FAssert(canDoControl(CONTROL_WORLD_BUILDER));
-	if (GC.getInitCore().getAdminPassword().empty())
-	{
-		gDLL->getInterfaceIFace()->setWorldBuilder(!(gDLL->GetWorldBuilderMode()));
-	}
-	else
-	{
-		CvPopupInfo* pInfo = new CvPopupInfo(BUTTONPOPUP_ADMIN_PASSWORD);
-		if (NULL != pInfo)
-		{
-			pInfo->setData1((int)CONTROL_WORLD_BUILDER);
-			gDLL->getInterfaceIFace()->addPopup(pInfo, NO_PLAYER, true);
-		}
-	}
-}
-// K-Mod end
 
 void CvGame::getGlobeLayers(std::vector<CvGlobeLayerData>& aLayers) const
 {
@@ -2243,7 +1993,7 @@ void CvGame::startFlyoutMenu(const CvPlot* pPlot, std::vector<CvFlyoutMenuData>&
 				if (eConscriptUnit != NO_UNIT)
 				{
 					szBuffer = gDLL->getText("TXT_KEY_DRAFT_UNIT", GC.getUnitInfo(eConscriptUnit).getDescription(), pCity->getConscriptPopulation());
-					aFlyoutItems.push_back(CvFlyoutMenuData(FLYOUT_CONSCRIPT, GC.getNumHurryInfos(), pPlot->getX_INLINE(), pPlot->getY_INLINE(), szBuffer));
+					aFlyoutItems.push_back(CvFlyoutMenuData(FLYOUT_CONSCRIPT, iI, pPlot->getX_INLINE(), pPlot->getY_INLINE(), szBuffer));
 				}
 			}
 		}
@@ -2421,8 +2171,7 @@ void CvGame::applyFlyoutMenu(const CvFlyoutMenuData& kItem)
 				{
 					CvUnit* pLoopUnit = ::getUnit(pUnitNode->m_data);
 					pUnitNode = pPlot->nextUnitNode(pUnitNode);
-					//if (pLoopUnit->isGroupHead())
-					if (pLoopUnit->isGroupHead() && pLoopUnit->getOwnerINLINE() == getActivePlayer()) // K-Mod
+					if (pLoopUnit->isGroupHead())
 					{
 						CvMessageControl::getInstance().sendDoCommand(pLoopUnit->getID(), COMMAND_WAKE, -1, -1, false);
 					}
@@ -2438,7 +2187,7 @@ void CvGame::applyFlyoutMenu(const CvFlyoutMenuData& kItem)
 				{
 					CvUnit* pLoopUnit = ::getUnit(pUnitNode->m_data);
 					pUnitNode = pPlot->nextUnitNode(pUnitNode);
-					if (pLoopUnit->isGroupHead() && pLoopUnit->getOwnerINLINE() == getActivePlayer()) // K-Mod
+					if (pLoopUnit->isGroupHead())
 					{
 						CvMessageControl::getInstance().sendPushMission(pLoopUnit->getID(), ((pLoopUnit->isFortifyable()) ? MISSION_FORTIFY : MISSION_SLEEP), -1, -1, 0, false);
 					}
@@ -2965,15 +2714,9 @@ EndTurnButtonStates CvGame::getEndTurnState() const
 {
 	EndTurnButtonStates eNewState = END_TURN_GO;
 
-	/* original bts code
 	if ((isNetworkMultiPlayer() && 
 		(isMPOption(MPOPTION_SIMULTANEOUS_TURNS) && 1 == countNumHumanGameTurnActive() || 
-		(!isSimultaneousTeamTurns() && 1 == GET_TEAM(getActiveTeam()).countNumHumanGameTurnActive() && GET_TEAM(getActiveTeam()).getAliveCount() > 1)))) */
-	// K-Mod. Don't use GET_TEAM in pitboss mode. (and note, I've fixed a typo in the parentheses.)
-	if (isNetworkMultiPlayer() && getActiveTeam() != NO_TEAM &&
-		((isMPOption(MPOPTION_SIMULTANEOUS_TURNS) && 1 == countNumHumanGameTurnActive()) ||
-		(!isSimultaneousTeamTurns() && 1 == GET_TEAM(getActiveTeam()).countNumHumanGameTurnActive() && GET_TEAM(getActiveTeam()).getAliveCount() > 1)))
-	// K-Mod end
+		(!isSimultaneousTeamTurns() && 1 == GET_TEAM(getActiveTeam()).countNumHumanGameTurnActive() && GET_TEAM(getActiveTeam()).getAliveCount() > 1))))
 	{
 		eNewState = END_TURN_OVER_HIGHLIGHT;
 	}

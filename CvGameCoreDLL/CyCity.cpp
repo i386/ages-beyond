@@ -1142,22 +1142,10 @@ bool CyCity::isNoUnhappiness()
 	return m_pCity ? m_pCity->isNoUnhappiness() : false;
 }
 
-/*
-** K-Mod, 27/dec/10, karadoc
-** replaced NoUnhealthyPopulation with UnhealthyPopulationModifier
-*/
-/* original bts code
 bool CyCity::isNoUnhealthyPopulation()
 {
 	return m_pCity ? m_pCity->isNoUnhealthyPopulation() : false;
-}*/
-int CyCity::getUnhealthyPopulationModifier()
-{
-	return m_pCity ? m_pCity->getUnhealthyPopulationModifier() : 0;
 }
-/*
-** K-Mod end
-*/
 
 bool CyCity::isBuildingOnlyHealthy()
 {
@@ -1243,18 +1231,6 @@ int CyCity::getForeignTradeRouteModifier()
 {
 	return m_pCity ? m_pCity->getForeignTradeRouteModifier() : -1;
 }
-
-/***
-**** K-Mod, 26/sep/10, Karadoc
-**** Trade culture calculation
-***/
-int CyCity::getTradeCultureRateTimes100(int iLevel) const
-{
-	return m_pCity ? m_pCity->getTradeCultureRateTimes100(iLevel) : 0;
-}
-/*
-** K-Mod end
-*/
 
 int CyCity::getBuildingDefense()
 {
@@ -2118,7 +2094,7 @@ void CyCity::clearOrderQueue()
 void CyCity::pushOrder(OrderTypes eOrder, int iData1, int iData2, bool bSave, bool bPop, bool bAppend, bool bForce)
 {
 	if (m_pCity)
-		m_pCity->pushOrder(eOrder, iData1, iData2, bSave, bPop, bAppend ? -1 : 0, bForce);
+		m_pCity->pushOrder(eOrder, iData1, iData2, bSave, bPop, bAppend, bForce);
 }
 
 void CyCity::popOrder(int iNum, bool bFinish, bool bChoose)
@@ -2175,10 +2151,10 @@ python::tuple CyCity::getWallOverridePoints() const
 	return tup;
 }
 
-/*bool CyCity::AI_avoidGrowth()
+bool CyCity::AI_avoidGrowth()
 {
 	return m_pCity ? m_pCity->AI_avoidGrowth() : false;
-}*/
+}
 
 bool CyCity::AI_isEmphasize(int iEmphasizeType)
 {

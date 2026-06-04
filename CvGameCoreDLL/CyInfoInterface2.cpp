@@ -88,7 +88,6 @@ void CyInfoPythonInterface2()
 		.def("isConquest", &CvVictoryInfo::isConquest, "bool ()")
 		.def("isDiploVote", &CvVictoryInfo::isDiploVote, "bool ()")
 		.def("isPermanent", &CvVictoryInfo::isPermanent, "bool ()")
-		.def("isTotalVictory", &CvVictoryInfo::isTotalVictory, "bool ()") // Karadoc, mastery victory
 
 		.def("getMovie", &CvVictoryInfo::getMovie, "string ()")
 		;
@@ -274,18 +273,7 @@ void CyInfoPythonInterface2()
 		.def("getUpgradeTime", &CvImprovementInfo::getUpgradeTime, "int ()")
 		.def("getAirBombDefense", &CvImprovementInfo::getAirBombDefense, "int ()")
 		.def("getDefenseModifier", &CvImprovementInfo::getDefenseModifier, "int ()")
-/************************************************************************************************/
-/* UNOFFICIAL_PATCH                       02/12/10                             jdog5000         */
-/*                                                                                              */
-/* Bugfix                                                                                       */
-/************************************************************************************************/
-/* original bts code
 		.def("getHappiness", &CvImprovementInfo::getDefenseModifier, "int ()")
-*/
-		.def("getHappiness", &CvImprovementInfo::getHappiness, "int ()")
-/************************************************************************************************/
-/* UNOFFICIAL_PATCH                        END                                                  */
-/************************************************************************************************/
 		.def("getPillageGold", &CvImprovementInfo::getPillageGold, "int ()")
 		.def("getImprovementPillage", &CvImprovementInfo::getImprovementPillage, "int ()")
 		.def("getImprovementUpgrade", &CvImprovementInfo::getImprovementUpgrade, "int ()")
@@ -389,7 +377,6 @@ void CyInfoPythonInterface2()
 		.def("getDefenseModifier", &CvFeatureInfo::getDefenseModifier, "int ()")
 		.def("getAdvancedStartRemoveCost", &CvFeatureInfo::getAdvancedStartRemoveCost, "int ()")
 		.def("getTurnDamage", &CvFeatureInfo::getTurnDamage, "int ()")
-		.def("getWarmingDefense", &CvFeatureInfo::getWarmingDefense, "int ()") //GWMod new XML field M.A.
 		
 		.def("isNoCoast", &CvFeatureInfo::isNoCoast, "bool ()")
 		.def("isNoRiver", &CvFeatureInfo::isNoRiver, "bool ()")

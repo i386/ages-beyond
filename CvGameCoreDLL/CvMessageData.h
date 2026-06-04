@@ -60,12 +60,8 @@ private:
 class CvNetPushOrder : public CvMessageData
 {
 public:
-	//CvNetPushOrder();
-	//CvNetPushOrder(PlayerTypes ePlayer, int iCityID, OrderTypes eOrder, int iData, bool bAlt, bool bShift, bool bCtrl);
-	// K-Mod
-	CvNetPushOrder(PlayerTypes ePlayer = NO_PLAYER, int iCityID = -1, OrderTypes eOrder = NO_ORDER, int iData = -1, bool bSave = false, bool bPop = true, int iPosition = 0)
-		: CvMessageData(GAMEMESSAGE_PUSH_ORDER), m_ePlayer(ePlayer), m_iCityID(iCityID), m_eOrder(eOrder), m_iData(iData), m_bSave(bSave), m_bPop(bPop), m_iPosition(iPosition) { }
-	// K-Mod end
+	CvNetPushOrder();
+	CvNetPushOrder(PlayerTypes ePlayer, int iCityID, OrderTypes eOrder, int iData, bool bAlt, bool bShift, bool bCtrl);
 	DllExport virtual void Debug(char* szAddendum);
 	DllExport virtual void Execute();
 	DllExport virtual void PutInBuffer(FDataStreamBase* pStream);
@@ -75,14 +71,9 @@ private:
 	int m_iCityID;
 	OrderTypes m_eOrder;
 	int m_iData;
-	/*bool m_bAlt;
+	bool m_bAlt;
 	bool m_bShift;
-	bool m_bCtrl;*/
-	// K-Mod
-	bool m_bSave;
-	bool m_bPop;
-	int m_iPosition;
-	// K-Mod end
+	bool m_bCtrl;
 };
 
 class CvNetPopOrder : public CvMessageData

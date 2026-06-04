@@ -21,7 +21,6 @@ class CvSelectionGroup;
 class CvEventReporter
 {
 	friend class CyStatistics;
-	friend const CvPlayerRecord* CvPlayer::getPlayerRecord() const; // K-Mod. Allow direct read-only access to player stats
 public:
 	DllExport static CvEventReporter& getInstance();		// singleton accessor
 	DllExport void resetStatistics();

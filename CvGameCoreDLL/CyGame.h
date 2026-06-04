@@ -141,14 +141,6 @@ public:
 	int getAIAutoPlay() const;
 	void setAIAutoPlay(int iNewValue);
 
-	int getGlobalWarmingIndex() const;	// K-Mod
-	int getGlobalWarmingChances() const;	// K-Mod
-	int getGwEventTally() const;		// K-Mod
-	int calculateGlobalPollution() const; // K-Mod
-	int calculateGwLandDefence(int /* PlayerTypes */ ePlayer) const; // K-Mod
-	int calculateGwSustainabilityThreshold(int /* PlayerTypes */ ePlayer) const; // K-Mod
-	int calculateGwSeverityRating() const;
-
 	bool isScoreDirty() const;
 	void setScoreDirty(bool bNewValue);
 	bool isCircumnavigated() const;
@@ -200,8 +192,6 @@ public:
 
 	int getProjectCreatedCount(int /*ProjectTypes*/ eIndex);
 	bool isProjectMaxedOut(int /*ProjectTypes*/ eIndex, int iExtra);
-
-	int countWorldWonders(bool bBuilt, int /*PlayerTypes*/ eBuilder) { return m_pGame ? m_pGame->countWorldWonders(bBuilt, (PlayerTypes)eBuilder) : false; } // Karadoc
 
 	int getForceCivicCount(int /*CivicTypes*/ eIndex);
 	bool isForceCivic(int /*CivicTypes*/ eIndex);
@@ -269,18 +259,7 @@ public:
 	void saveReplay(int iPlayer);
 
 	void addPlayer(int /*PlayerTypes*/ eNewPlayer, int /*LeaderHeadTypes*/ eLeader, int /*CivilizationTypes*/ eCiv);
-/********************************************************************************/
-/* 	BETTER_BTS_AI_MOD						8/1/08				jdog5000	*/
-/* 																			*/
-/* 	Debug																	*/
-/********************************************************************************/
-	void changeHumanPlayer( int /*PlayerTypes*/ eNewHuman );
-/********************************************************************************/
-/* 	BETTER_BTS_AI_MOD						END								*/
-/********************************************************************************/
 	int getCultureThreshold(int /*CultureLevelTypes*/ eLevel);
-
-	int getPlotExtraYield(int iX, int iY, int /*YieldTypes*/ eYield); // K-Mod
 	void setPlotExtraYield(int iX, int iY, int /*YieldTypes*/ eYield, int iExtraYield);
 	void changePlotExtraCost(int iX, int iY, int iExtraCost);
 	
@@ -291,7 +270,6 @@ public:
 
 	bool isEventActive(int /*EventTriggerTypes*/ eTrigger);
 	void doControl(int iControl);
-	int /*VictoryTypes*/ getSpaceVictory() { return m_pGame ? m_pGame->getSpaceVictory() : -1; } // K-Mod
 
 protected:
 	CvGame* m_pGame;

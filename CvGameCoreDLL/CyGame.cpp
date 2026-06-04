@@ -546,48 +546,6 @@ void CyGame::setAIAutoPlay(int iNewValue)
 		m_pGame->setAIAutoPlay(iNewValue);
 }
 
-/*
-** K-Mod, 11/dec/10, karadoc
-*/
-int CyGame::getGlobalWarmingIndex() const
-{
-	return (NULL != m_pGame ? m_pGame->getGlobalWarmingIndex() : 0);
-}
-
-int CyGame::getGlobalWarmingChances() const
-{
-	return (NULL != m_pGame ? m_pGame->getGlobalWarmingChances() : 0);
-}
-
-int CyGame::getGwEventTally() const
-{
-	return (NULL != m_pGame ? m_pGame->getGwEventTally() : -1);
-}
-
-int CyGame::calculateGlobalPollution() const
-{
-	return (NULL != m_pGame ? m_pGame->calculateGlobalPollution() : 0);
-}
-
-int CyGame::calculateGwLandDefence(int /* PlayerTypes */ ePlayer) const
-{
-	return (NULL != m_pGame ? m_pGame->calculateGwLandDefence((PlayerTypes)ePlayer) : 0);
-}
-
-int CyGame::calculateGwSustainabilityThreshold(int /* PlayerTypes */ ePlayer) const
-{
-	return (NULL != m_pGame ? m_pGame->calculateGwSustainabilityThreshold((PlayerTypes)ePlayer) : 0);
-}
-
-int CyGame::calculateGwSeverityRating() const
-{
-	return (NULL != m_pGame ? m_pGame->calculateGwSeverityRating() : 0);
-}
-/*
-** K-Mod end
-*/
-
-
 bool CyGame::isScoreDirty() const
 {
 	return m_pGame ? m_pGame->isScoreDirty() : false;
@@ -1142,31 +1100,9 @@ void CyGame::addPlayer(int eNewPlayer, int eLeader, int eCiv)
 	}
 }
 
-/********************************************************************************/
-/* 	BETTER_BTS_AI_MOD						8/1/08				jdog5000	*/
-/* 																			*/
-/* 	Debug																	*/
-/********************************************************************************/
-void CyGame::changeHumanPlayer( int /*PlayerTypes*/ eNewHuman )
-{
-	if (m_pGame)
-	{
-		m_pGame->changeHumanPlayer((PlayerTypes)eNewHuman);
-	}
-}
-/********************************************************************************/
-/* 	BETTER_BTS_AI_MOD						END								*/
-/********************************************************************************/
-
 int CyGame::getCultureThreshold(int eLevel)
 {
 	return (m_pGame ? m_pGame->getCultureThreshold((CultureLevelTypes) eLevel) : -1);
-}
-
-// K-Mod
-int CyGame::getPlotExtraYield(int iX, int iY, int /*YieldTypes*/ eYield)
-{
-	return (m_pGame ? m_pGame->getPlotExtraYield(iX, iY, (YieldTypes)eYield) : 0);
 }
 
 void CyGame::setPlotExtraYield(int iX, int iY, int /*YieldTypes*/ eYield, int iExtraYield)

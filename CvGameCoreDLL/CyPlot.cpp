@@ -526,10 +526,9 @@ int CyPlot::getCityRadiusCount()
 	return m_pPlot ? m_pPlot->getCityRadiusCount() : -1;
 }
 
-bool CyPlot::isCityRadius()
+int CyPlot::isCityRadius()
 {
-	//return m_pPlot ? m_pPlot->isCityRadius() : -1;
-	return m_pPlot ? m_pPlot->isCityRadius() : false; // K-Mod. (-1? really?)
+	return m_pPlot ? m_pPlot->isCityRadius() : -1;
 }
 
 bool CyPlot::isStartingPlot()
@@ -836,10 +835,9 @@ int CyPlot::getYield(YieldTypes eIndex)
 	return m_pPlot ? m_pPlot->getYield(eIndex) : -1;
 }
 
-// K-Mod, 26/Jun/2011, karadoc: changed enum types to ints, so that it actually works...
-int CyPlot::calculateNatureYield(int /*YieldTypes*/ eIndex, int /*TeamTypes*/ eTeam, bool bIgnoreFeature)
+int CyPlot::calculateNatureYield(YieldTypes eIndex, TeamTypes eTeam, bool bIgnoreFeature)
 {
-	return m_pPlot ? m_pPlot->calculateNatureYield((YieldTypes)eIndex, (TeamTypes)eTeam, bIgnoreFeature) : -1;
+	return m_pPlot ? m_pPlot->calculateNatureYield(eIndex, eTeam, bIgnoreFeature) : -1;
 }
 
 int CyPlot::calculateBestNatureYield(YieldTypes eIndex, TeamTypes eTeam)

@@ -38,7 +38,7 @@ void CyUnitPythonInterface1(python::class_<CyUnit>& x)
 		.def("getDeclareWarMove", &CyUnit::getDeclareWarMove, "TeamTypes (CyPlot* pPlot)")
 		.def("canMoveInto", &CyUnit::canMoveInto, "bool (CyPlot* pPlot, bool bAttack, bool bDeclareWar, bool bIgnoreLoad)")
 		.def("canMoveOrAttackInto", &CyUnit::canMoveOrAttackInto, "bool (CyPlot* pPlot, bool bDeclareWar)")
-		//.def("canMoveThrough", &CyUnit::canMoveThrough, "bool (CyPlot* pPlot)")
+		.def("canMoveThrough", &CyUnit::canMoveThrough, "bool (CyPlot* pPlot)")
 		.def("jumpToNearestValidPlot", &CyUnit::jumpToNearestValidPlot, "bool ()")
 
 		.def("canAutomate", &CyUnit::canAutomate, "bool (int (AutomateTypes) eAutomate)")
@@ -148,9 +148,6 @@ void CyUnitPythonInterface1(python::class_<CyUnit>& x)
 		.def("getBuildType", &CyUnit::getBuildType, "int (BuildTypes) ()")
 		.def("workRate", &CyUnit::workRate, "int (bool bMax)")
 
-// BUG - Female Great People - start
-		.def("isFemale", &CyUnit::isFemale, "bool ()")
-// BUG - Female Great People - end
 		.def("isAnimal", &CyUnit::isAnimal, "bool ()")
 		.def("isNoBadGoodies", &CyUnit::isNoBadGoodies, "bool ()")
 		.def("isOnlyDefensive", &CyUnit::isOnlyDefensive, "bool ()")
@@ -254,7 +251,7 @@ void CyUnitPythonInterface1(python::class_<CyUnit>& x)
 		.def("isFull", &CyUnit::isFull, "bool ()")
 		.def("cargoSpaceAvailable", &CyUnit::cargoSpaceAvailable, "int ()")
 		.def("hasCargo", &CyUnit::hasCargo, "bool ()")
-		//.def("canCargoAllMove", &CyUnit::canCargoAllMove, "bool ()")
+		.def("canCargoAllMove", &CyUnit::canCargoAllMove, "bool ()")
 		.def("getUnitAICargo", &CyUnit::getUnitAICargo, "int (int (UnitAITypes) eUnitAI)")
 		.def("getID", &CyUnit::getID, "int ()")
 

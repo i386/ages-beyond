@@ -35,6 +35,7 @@ CvReplayInfo::CvReplayInfo() :
 
 CvReplayInfo::~CvReplayInfo()
 {
+	ReplayMessageList::const_iterator it;
 	for (uint i = 0; i < m_listReplayMessages.size(); i++)
 	{
 		SAFE_DELETE(m_listReplayMessages[i]);
@@ -126,8 +127,7 @@ void CvReplayInfo::createInfo(PlayerTypes ePlayer)
 
 			PlayerInfo playerInfo;
 			playerInfo.m_eLeader = player.getLeaderType();
-			//playerInfo.m_eColor = (ColorTypes)GC.getPlayerColorInfo(player.getPlayerColor()).getColorTypePrimary();
-			playerInfo.m_eColor = (ColorTypes)GC.getPlayerColorInfo(GC.getInitCore().getColor((PlayerTypes)iPlayer)).getColorTypePrimary(); // K-Mod. (bypass the conceal colour check.)
+			playerInfo.m_eColor = (ColorTypes)GC.getPlayerColorInfo(player.getPlayerColor()).getColorTypePrimary();
 			for (int iTurn = m_iInitialTurn; iTurn <= m_iFinalTurn; iTurn++)
 			{
 				TurnData score;
@@ -327,7 +327,7 @@ void CvReplayInfo::addReplayMessage(CvReplayMessage* pMessage)
 
 void CvReplayInfo::clearReplayMessageMap()
 {
-	for (ReplayMessageList::const_iterator itList = m_listReplayMessages.begin(); itList != m_listReplayMessages.end(); ++itList)
+	for (ReplayMessageList::const_iterator itList = m_listReplayMessages.begin(); itList != m_listReplayMessages.end(); itList++)
 	{
 		const CvReplayMessage* pMessage = *itList;
 		if (NULL != pMessage)
@@ -689,6 +689,7 @@ void CvReplayInfo::write(FDataStreamBase& stream)
 	}
 	stream.Write((int)m_eVictoryType);
 	stream.Write((int)m_listReplayMessages.size());
+	ReplayMessageList::const_iterator it;
 	for (uint i = 0; i < m_listReplayMessages.size(); i++)
 	{
 		if (NULL != m_listReplayMessages[i])

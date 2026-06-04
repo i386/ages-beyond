@@ -92,7 +92,6 @@ public:
 
 	void doTurn();																			
 
-	void setFlagsDirty(); // K-Mod
 	DllExport void updateFlagSymbols();
 
 	DllExport void updateFog();
@@ -261,19 +260,6 @@ public:
 
 	void resetPathDistance();																		// Exposed to Python
 	int calculatePathDistance(CvPlot *pSource, CvPlot *pDest);	// Exposed to Python
-
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      08/21/09                                jdog5000      */
-/*                                                                                              */
-/* Efficiency                                                                                   */
-/************************************************************************************************/
-	// Plot danger cache
-	//void invalidateIsActivePlayerNoDangerCache();
-	void invalidateActivePlayerSafeRangeCache(); // K-Mod version
-	void invalidateBorderDangerCache(TeamTypes eTeam);
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
 
 	// Serialization:
 	DllExport virtual void read(FDataStreamBase* pStream);

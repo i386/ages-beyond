@@ -5,13 +5,6 @@
 #ifndef CIV4_GLOBALS_H
 #define CIV4_GLOBALS_H
 
-// K-Mod. Created the following function for rounded integer division
-static inline int ROUND_DIVIDE(int a, int b)
-{
-	return (a+((a/b>0)?1:-1)*(b/2)) / b;
-}
-// K-Mod end
-
 //#include "CvStructs.h"
 //
 // 'global' vars for Civ IV.  singleton class.
@@ -695,7 +688,6 @@ public:
 	DllExport void setDefineFLOAT( const char * szName, float fValue );
 	DllExport void setDefineSTRING( const char * szName, const char * szValue );
 
-	inline int getEXTRA_YIELD() { return m_iEXTRA_YIELD; } // K-Mod (why aren't all these functions inline?)
 	int getMOVE_DENOMINATOR();
 	int getNUM_UNIT_PREREQ_OR_BONUSES();
 	int getNUM_BUILDING_PREREQ_OR_BONUSES();
@@ -772,34 +764,6 @@ public:
 	int getUSE_ON_UPDATE_CALLBACK();
 	int getUSE_ON_UNIT_CREATED_CALLBACK();
 	int getUSE_ON_UNIT_LOST_CALLBACK();
-	// K-Mod
-	inline bool getUSE_AI_UNIT_UPDATE_CALLBACK() { return m_bUSE_AI_UNIT_UPDATE_CALLBACK; }
-	inline bool getUSE_AI_DO_DIPLO_CALLBACK() { return m_bUSE_AI_DO_DIPLO_CALLBACK; }
-	inline bool getUSE_AI_CHOOSE_PRODUCTION_CALLBACK() { return m_bUSE_AI_CHOOSE_PRODUCTION_CALLBACK; }
-	inline bool getUSE_AI_DO_WAR_CALLBACK() { return m_bUSE_AI_DO_WAR_CALLBACK; }
-	inline bool getUSE_AI_CHOOSE_TECH_CALLBACK() { return m_bUSE_AI_CHOOSE_TECH_CALLBACK; }
-
-	inline bool getUSE_DO_GROWTH_CALLBACK() { return m_bUSE_DO_GROWTH_CALLBACK; }
-	inline bool getUSE_DO_CULTURE_CALLBACK() { return m_bUSE_DO_CULTURE_CALLBACK; }
-	inline bool getUSE_DO_PLOT_CULTURE_CALLBACK() { return m_bUSE_DO_PLOT_CULTURE_CALLBACK; }
-	inline bool getUSE_DO_PRODUCTION_CALLBACK() { return m_bUSE_DO_PRODUCTION_CALLBACK; }
-	inline bool getUSE_DO_RELIGION_CALLBACK() { return m_bUSE_DO_RELIGION_CALLBACK; }
-	inline bool getUSE_DO_GREAT_PEOPLE_CALLBACK() { return m_bUSE_DO_GREAT_PEOPLE_CALLBACK; }
-	inline bool getUSE_DO_MELTDOWN_CALLBACK() { return m_bUSE_DO_MELTDOWN_CALLBACK; }
-
-	inline bool getUSE_DO_PILLAGE_GOLD_CALLBACK() { return m_bUSE_DO_PILLAGE_GOLD_CALLBACK; }
-	inline bool getUSE_GET_EXPERIENCE_NEEDED_CALLBACK() { return m_bUSE_GET_EXPERIENCE_NEEDED_CALLBACK; }
-	inline bool getUSE_UNIT_UPGRADE_PRICE_CALLBACK() { return m_bUSE_UNIT_UPGRADE_PRICE_CALLBACK; }
-	inline bool getUSE_DO_COMBAT_CALLBACK() { return m_bUSE_DO_COMBAT_CALLBACK; }
-
-	// more reliable versions of the 'gDLL->xxxKey' functions:
-	inline bool altKey() { return (GetKeyState(VK_MENU) & 0x8000); }
-	inline bool ctrlKey() { return (GetKeyState(VK_CONTROL) & 0x8000); }
-	inline bool shiftKey() { return (GetKeyState(VK_SHIFT) & 0x8000); }
-	// NOTE: I've replaced all calls to the gDLL key functions with calls to these functions.
-
-	inline bool suppressCycling() { return (GetKeyState('X') & 0x8000); } // hold X to temporarily suppress automatic unit cycling.
-	// K-Mod end
 
 	DllExport int getMAX_CIV_PLAYERS();
 	DllExport int getMAX_PLAYERS();
@@ -1143,7 +1107,6 @@ protected:
 
 	FVariableSystem* m_VarSystem;
 
-	int m_iEXTRA_YIELD; // K-Mod
 	int m_iMOVE_DENOMINATOR;
 	int m_iNUM_UNIT_PREREQ_OR_BONUSES;
 	int m_iNUM_BUILDING_PREREQ_OR_BONUSES;
@@ -1220,119 +1183,12 @@ protected:
 	int m_iUSE_ON_UPDATE_CALLBACK;
 	int m_iUSE_ON_UNIT_CREATED_CALLBACK;
 	int m_iUSE_ON_UNIT_LOST_CALLBACK;
-	// K-Mod
-	bool m_bUSE_AI_UNIT_UPDATE_CALLBACK;
-	bool m_bUSE_AI_DO_DIPLO_CALLBACK;
-	bool m_bUSE_AI_CHOOSE_PRODUCTION_CALLBACK;
-	bool m_bUSE_AI_DO_WAR_CALLBACK;
-	bool m_bUSE_AI_CHOOSE_TECH_CALLBACK;
-
-	bool m_bUSE_DO_GROWTH_CALLBACK;
-	bool m_bUSE_DO_CULTURE_CALLBACK;
-	bool m_bUSE_DO_PLOT_CULTURE_CALLBACK;
-	bool m_bUSE_DO_PRODUCTION_CALLBACK;
-	bool m_bUSE_DO_RELIGION_CALLBACK;
-	bool m_bUSE_DO_GREAT_PEOPLE_CALLBACK;
-	bool m_bUSE_DO_MELTDOWN_CALLBACK;
-
-	bool m_bUSE_DO_PILLAGE_GOLD_CALLBACK;
-	bool m_bUSE_GET_EXPERIENCE_NEEDED_CALLBACK;
-	bool m_bUSE_UNIT_UPGRADE_PRICE_CALLBACK;
-	bool m_bUSE_DO_COMBAT_CALLBACK;
-	// K-Mod end
 
 	// DLL interface
 	CvDLLUtilityIFaceBase* m_pDLL;
 
 	FProfiler* m_Profiler;		// profiler
 	CvString m_szDllProfileText;
-
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      02/21/10                                jdog5000      */
-/*                                                                                              */
-/* Efficiency, Options                                                                          */
-/************************************************************************************************/
-public:
-	int getDefineINT( const char * szName, const int iDefault ) const;
-	
-// BBAI Options
-public:
-	bool getBBAI_AIR_COMBAT();
-	bool getBBAI_HUMAN_VASSAL_WAR_BUILD();
-	int  getBBAI_DEFENSIVE_PACT_BEHAVIOR();
-	bool getBBAI_HUMAN_AS_VASSAL_OPTION();
-
-protected:
-	bool m_bBBAI_AIR_COMBAT;
-	bool m_bBBAI_HUMAN_VASSAL_WAR_BUILD;
-	int  m_iBBAI_DEFENSIVE_PACT_BEHAVIOR;
-	bool m_bBBAI_HUMAN_AS_VASSAL_OPTION;
-
-// BBAI AI Variables
-public:
-	int getWAR_SUCCESS_CITY_CAPTURING();
-	int getBBAI_ATTACK_CITY_STACK_RATIO();
-	int getBBAI_SKIP_BOMBARD_BEST_ATTACK_ODDS();
-	int getBBAI_SKIP_BOMBARD_BASE_STACK_RATIO();
-	int getBBAI_SKIP_BOMBARD_MIN_STACK_RATIO();
-
-protected:
-	int m_iWAR_SUCCESS_CITY_CAPTURING;
-	int m_iBBAI_ATTACK_CITY_STACK_RATIO;
-	int m_iBBAI_SKIP_BOMBARD_BEST_ATTACK_ODDS;
-	int m_iBBAI_SKIP_BOMBARD_BASE_STACK_RATIO;
-	int m_iBBAI_SKIP_BOMBARD_MIN_STACK_RATIO;
-
-// Tech Diffusion
-public:
-	bool getTECH_DIFFUSION_ENABLE();
-	int getTECH_DIFFUSION_KNOWN_TEAM_MODIFIER();
-	int getTECH_DIFFUSION_WELFARE_THRESHOLD();
-	int getTECH_DIFFUSION_WELFARE_MODIFIER();
-	int getTECH_COST_FIRST_KNOWN_PREREQ_MODIFIER();
-	int getTECH_COST_KNOWN_PREREQ_MODIFIER();
-	int getTECH_COST_MODIFIER();
-
-protected:
-	bool m_bTECH_DIFFUSION_ENABLE;
-	int m_iTECH_DIFFUSION_KNOWN_TEAM_MODIFIER;
-	int m_iTECH_DIFFUSION_WELFARE_THRESHOLD;
-	int m_iTECH_DIFFUSION_WELFARE_MODIFIER;
-	int m_iTECH_COST_FIRST_KNOWN_PREREQ_MODIFIER;
-	int m_iTECH_COST_KNOWN_PREREQ_MODIFIER;
-	int m_iTECH_COST_MODIFIER;
-	
-// From Lead From Behind by UncutDragon. (edited for K-Mod)
-public:
-	bool getLFBEnable() const;
-	int getLFBBasedOnGeneral() const;
-	int getLFBBasedOnExperience() const;
-	int getLFBBasedOnLimited() const;
-	int getLFBBasedOnHealer() const;
-	int getLFBDefensiveAdjustment() const;
-	bool getLFBUseSlidingScale() const;
-	int getLFBAdjustNumerator() const;
-	int getLFBAdjustDenominator() const;
-	bool getLFBUseCombatOdds() const;
-	int getCOMBAT_DIE_SIDES() const;
-	int getCOMBAT_DAMAGE() const;
-
-protected:
-	bool m_bLFBEnable;
-	int m_iLFBBasedOnGeneral;
-	int m_iLFBBasedOnExperience;
-	int m_iLFBBasedOnLimited;
-	int m_iLFBBasedOnHealer;
-	int m_iLFBDefensiveAdjustment;
-	bool m_bLFBUseSlidingScale;
-	int	m_iLFBAdjustNumerator;
-	int	m_iLFBAdjustDenominator;
-	bool m_bLFBUseCombatOdds;
-	int m_iCOMBAT_DIE_SIDES;
-	int m_iCOMBAT_DAMAGE;
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
 };
 
 extern CvGlobals gGlobals;	// for debugging

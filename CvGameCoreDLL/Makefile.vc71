@@ -1,0 +1,142 @@
+CFG = FinalRelease
+
+!IF "$(CFG)" == "FinalRelease"
+INTDIR = build\vc71\final-release
+OUTDIR = artifacts
+CPP_DEFS = /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_USRDLL" /D "CVGAMECOREDLL_EXPORTS" /D "FINAL_RELEASE"
+!ELSE
+!ERROR Unsupported CFG "$(CFG)"; use CFG=FinalRelease.
+!ENDIF
+
+CPP = cl.exe
+LINK = link.exe
+RC = "$(SDKROOT)\bin\rc.exe"
+
+CPP_FLAGS = /nologo /TP /O2 /Og /Oi /Oy /G7 /MD /EHsc /GR /W3 /FD $(CPP_DEFS) /I "Boost-1.32.0\include" /I "Python24\include"
+LINK_FLAGS = /nologo /DLL /SUBSYSTEM:WINDOWS /MACHINE:X86 /LARGEADDRESSAWARE /OPT:REF /OPT:ICF
+LIBS = "Boost-1.32.0\libs\boost_python-vc71-mt-1_32.lib" "Python24\libs\python24.lib" user32.lib winmm.lib
+
+OUTDLL = $(OUTDIR)\CvGameCoreDLL.dll
+IMPLIB = $(INTDIR)\CvGameCoreDLL.lib
+PDB = $(OUTDIR)\CvGameCoreDLL.pdb
+RES = $(INTDIR)\CvGameCoreDLL.res
+
+OBJECTS = \
+	$(INTDIR)\_precompile.obj \
+	$(INTDIR)\CvArea.obj \
+	$(INTDIR)\CvArtFileMgr.obj \
+	$(INTDIR)\CvCity.obj \
+	$(INTDIR)\CvCityAI.obj \
+	$(INTDIR)\CvDeal.obj \
+	$(INTDIR)\CvDiploParameters.obj \
+	$(INTDIR)\CvDLLButtonPopup.obj \
+	$(INTDIR)\CvDLLEntity.obj \
+	$(INTDIR)\CvDLLPython.obj \
+	$(INTDIR)\CvDllPythonEvents.obj \
+	$(INTDIR)\CvDllTranslator.obj \
+	$(INTDIR)\CvDLLWidgetData.obj \
+	$(INTDIR)\CvEventReporter.obj \
+	$(INTDIR)\CvFractal.obj \
+	$(INTDIR)\CvGame.obj \
+	$(INTDIR)\CvGameAI.obj \
+	$(INTDIR)\CvGameCoreDLL.obj \
+	$(INTDIR)\CvGameCoreUtils.obj \
+	$(INTDIR)\CvGameInterface.obj \
+	$(INTDIR)\CvGameTextMgr.obj \
+	$(INTDIR)\CvGlobals.obj \
+	$(INTDIR)\CvHallOfFameInfo.obj \
+	$(INTDIR)\CvInfos.obj \
+	$(INTDIR)\CvInfoWater.obj \
+	$(INTDIR)\CvInitCore.obj \
+	$(INTDIR)\CvMap.obj \
+	$(INTDIR)\CvMapGenerator.obj \
+	$(INTDIR)\CvMessageControl.obj \
+	$(INTDIR)\CvMessageData.obj \
+	$(INTDIR)\CvPlayer.obj \
+	$(INTDIR)\CvPlayerAI.obj \
+	$(INTDIR)\CvPlot.obj \
+	$(INTDIR)\CvPlotGroup.obj \
+	$(INTDIR)\CvPopupInfo.obj \
+	$(INTDIR)\CvPopupReturn.obj \
+	$(INTDIR)\CvRandom.obj \
+	$(INTDIR)\CvReplayInfo.obj \
+	$(INTDIR)\CvReplayMessage.obj \
+	$(INTDIR)\CvSelectionGroup.obj \
+	$(INTDIR)\CvSelectionGroupAI.obj \
+	$(INTDIR)\CvStatistics.obj \
+	$(INTDIR)\CvStructs.obj \
+	$(INTDIR)\CvTalkingHeadMessage.obj \
+	$(INTDIR)\CvTeam.obj \
+	$(INTDIR)\CvTeamAI.obj \
+	$(INTDIR)\CvUnit.obj \
+	$(INTDIR)\CvUnitAI.obj \
+	$(INTDIR)\CvXMLLoadUtility.obj \
+	$(INTDIR)\CvXMLLoadUtilityGet.obj \
+	$(INTDIR)\CvXMLLoadUtilityInit.obj \
+	$(INTDIR)\CvXMLLoadUtilitySet.obj \
+	$(INTDIR)\FAssert.obj \
+	$(INTDIR)\FDialogTemplate.obj \
+	$(INTDIR)\CyArgsList.obj \
+	$(INTDIR)\CyArea.obj \
+	$(INTDIR)\CyAreaInterface.obj \
+	$(INTDIR)\CyArtFileMgr.obj \
+	$(INTDIR)\CyArtFileMgrInterface.obj \
+	$(INTDIR)\CyCityInterface1.obj \
+	$(INTDIR)\CyEnumsInterface.obj \
+	$(INTDIR)\CyGameCoreUtils.obj \
+	$(INTDIR)\CyGameCoreUtilsInterface.obj \
+	$(INTDIR)\CyGameInterface.obj \
+	$(INTDIR)\CyGameTextMgr.obj \
+	$(INTDIR)\CyGameTextMgrInterface.obj \
+	$(INTDIR)\CyGlobalContext.obj \
+	$(INTDIR)\CyGlobalContextInterface1.obj \
+	$(INTDIR)\CyGlobalContextInterface2.obj \
+	$(INTDIR)\CyGlobalContextInterface3.obj \
+	$(INTDIR)\CyGlobalContextInterface4.obj \
+	$(INTDIR)\CyHallOfFameInfo.obj \
+	$(INTDIR)\CyHallOfFameInterface.obj \
+	$(INTDIR)\CyInfoInterface1.obj \
+	$(INTDIR)\CyInfoInterface2.obj \
+	$(INTDIR)\CyInfoInterface3.obj \
+	$(INTDIR)\CyMap.obj \
+	$(INTDIR)\CyMapGenerator.obj \
+	$(INTDIR)\CyMapGeneratorInterface.obj \
+	$(INTDIR)\CyMapInterface.obj \
+	$(INTDIR)\CyMessageControl.obj \
+	$(INTDIR)\CyMessageControlInterface.obj \
+	$(INTDIR)\CyPlayer.obj \
+	$(INTDIR)\CyPlayerInterface1.obj \
+	$(INTDIR)\CyPlayerInterface2.obj \
+	$(INTDIR)\CyPlot.obj \
+	$(INTDIR)\CyPlotInterface1.obj \
+	$(INTDIR)\CyRandomInterface.obj \
+	$(INTDIR)\CyReplayInfo.obj \
+	$(INTDIR)\CySelectionGroup.obj \
+	$(INTDIR)\CySelectionGroupInterface.obj \
+	$(INTDIR)\CyStructsInterface1.obj \
+	$(INTDIR)\CyTeam.obj \
+	$(INTDIR)\CyTeamInterface.obj \
+	$(INTDIR)\CyUnit.obj \
+	$(INTDIR)\CyUnitInterface1.obj \
+	$(INTDIR)\CyCity.obj \
+	$(INTDIR)\CyDeal.obj \
+	$(INTDIR)\CyGame.obj
+
+all: dirs $(OUTDLL)
+
+dirs:
+	@if not exist "$(INTDIR)" mkdir "$(INTDIR)"
+	@if not exist "$(OUTDIR)" mkdir "$(OUTDIR)"
+
+$(OUTDLL): $(OBJECTS) $(RES)
+	$(LINK) $(LINK_FLAGS) /OUT:"$(OUTDLL)" /IMPLIB:"$(IMPLIB)" /PDB:"$(PDB)" $(OBJECTS) $(RES) $(LIBS)
+
+$(RES): CvGameCoreDLL.rc resource.h
+	$(RC) /i "$(VCROOT)\include" /i "$(SDKROOT)\include" /fo"$(RES)" CvGameCoreDLL.rc
+
+.cpp{$(INTDIR)}.obj:
+	$(CPP) $(CPP_FLAGS) /Fo"$@" /Fd"$(INTDIR)\vc70.pdb" /c "$<"
+
+clean:
+	@if exist "$(INTDIR)" rmdir /s /q "$(INTDIR)"
+	@if exist "$(OUTDIR)" rmdir /s /q "$(OUTDIR)"

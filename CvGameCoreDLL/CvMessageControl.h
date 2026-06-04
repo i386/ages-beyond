@@ -8,8 +8,7 @@ public:
 	void sendExtendedGame();
 	void sendAutoMoves();
 	void sendTurnComplete();
-	//void sendPushOrder(int iCityID, OrderTypes eOrder, int iData, bool bAlt, bool bShift, bool bCtrl);
-	void sendPushOrder(int iCityID, OrderTypes eOrder, int iData, bool bSave, bool bPop, int iPosition); // K-Mod
+	void sendPushOrder(int iCityID, OrderTypes eOrder, int iData, bool bAlt, bool bShift, bool bCtrl);
 	void sendPopOrder(int iCity, int iNum);
 	DllExport void sendDoTask(int iCityID, TaskTypes eTask, int iData1, int iData2, bool bOption, bool bAlt, bool bShift, bool bCtrl);
 	void sendUpdateCivics(const std::vector<CivicTypes>& aeCivics);

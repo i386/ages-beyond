@@ -7,44 +7,13 @@
 
 // The following #defines should not be moddable...
 
-#define MOVE_IGNORE_DANGER									(0x00000001)
-#define MOVE_SAFE_TERRITORY									(0x00000002)
+#define MOVE_IGNORE_DANGER										(0x00000001)
+#define MOVE_SAFE_TERRITORY										(0x00000002)
 #define MOVE_NO_ENEMY_TERRITORY								(0x00000004)
-#define MOVE_DECLARE_WAR									(0x00000008)
-#define MOVE_DIRECT_ATTACK									(0x00000010)
-#define MOVE_THROUGH_ENEMY									(0x00000020)
-#define MOVE_MAX_MOVES										(0x00000040)
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      01/01/09                                jdog5000      */
-/*                                                                                              */
-/* General AI                                                                                   */
-/************************************************************************************************/
-// These two flags signal to weight the cost of moving through or adjacent to enemy territory higher
-// Used to reduce exposure to attack for approaching enemy cities
-#define MOVE_AVOID_ENEMY_WEIGHT_2							(0x00000080)
-#define MOVE_AVOID_ENEMY_WEIGHT_3							(0x00000100)
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
-#define MOVE_ATTACK_STACK									(0x00000200) // K-Mod.. allow the path to fight through enemy defences, but prefer not to.
-#define MOVE_SINGLE_ATTACK									(0x00000400) // K-Mod. only attack with one unit, not the whole stack
-#define MOVE_NO_ATTACK										(0x00000800) // K-Mod. used to prevent humans from accidentally attacking unseen units
-#define MOVE_HAS_STEPPED									(0x00001000) // K-Mod. used to signal that at least one step has been taken for this move command
-#define MOVE_ASSUME_VISIBLE									(0x00002000) // K-Mod. With this flag, the pathfinder will plan around enemy units even if they are not visible. (Note: AI units do this regardless of the flag.)
-
-/*
-** K-Mod, 18/dec/10, karadoc
-** global warming pollution flags for use in the CvPlayer::calculateGwPollution function
-*/
-#define POLLUTION_POPULATION	1
-#define POLLUTION_BUILDINGS		2
-#define POLLUTION_BONUSES		4
-#define POLLUTION_POWER			8
-#define POLLUTION_ALL			15
-/*
-** K-Mod end
-*/
-
+#define MOVE_DECLARE_WAR											(0x00000008)
+#define MOVE_DIRECT_ATTACK										(0x00000010)
+#define MOVE_THROUGH_ENEMY										(0x00000020)
+#define MOVE_MAX_MOVES											(0x00000040)
 
 #define RANDPLOT_LAND													(0x00000001)
 #define RANDPLOT_UNOWNED											(0x00000002)
@@ -55,7 +24,7 @@
 #define RANDPLOT_NOT_CITY											(0x00000040)
 
 #ifdef _USRDLL
-#define MAX_CIV_PLAYERS												(18) // note: default is 18, some people like 48. They are not compatible
+#define MAX_CIV_PLAYERS												(18)
 #else
 #define MAX_CIV_PLAYERS												(CvGlobals::getInstance().getMaxCivPlayers())
 #endif
@@ -106,9 +75,6 @@
 #define ENDCOLR																L"</color>"
 #define NEWLINE																L"\n"
 #define SEPARATOR															L"\n-----------------------"
-// BUG - start
-#define DOUBLE_SEPARATOR													L"\n======================="
-// BUG - end
 #define TEXT_COLOR(szColor)										((int)(GC.getColorInfo((ColorTypes)GC.getInfoTypeForString(szColor)).getColor().r * 255)), ((int)(GC.getColorInfo((ColorTypes)GC.getInfoTypeForString(szColor)).getColor().g * 255)), ((int)(GC.getColorInfo((ColorTypes)GC.getInfoTypeForString(szColor)).getColor().b * 255)), ((int)(GC.getColorInfo((ColorTypes)GC.getInfoTypeForString(szColor)).getColor().a * 255))
 
 // Version Verification files and folders
@@ -145,8 +111,5 @@
 #define PYGameModule					"CvGameInterface"
 #define PYEventModule					"CvEventInterface"
 #define PYRandomEventModule					"CvRandomEventInterface"
-
-#define DANGER_RANGE						(4)
-#define BORDER_DANGER_RANGE					(2) // K-Mod
 
 #endif	// CVDEFINES_H
