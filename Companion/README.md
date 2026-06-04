@@ -49,18 +49,22 @@ generation and returns an empty string so the diplomacy screen keeps its vanilla
 XML fallback.
 
 The companion also keeps an in-memory director state. Accepted game events feed
-relationship memories, named conflicts, and a current world arc. When war
-starts, Rust asks Ollama to name the conflict and keeps that name active for
-later chronicle and diplomacy prompts. When peace is signed, Rust asks for a
-treaty or peace name and records the closed conflict as relationship memory.
-When a major world trigger appears, Rust asks Ollama to name the arc from the
-actual civilizations, places, faiths, wonders, and conflicts in the game, then
-stores the result in memory. Rust only applies structural cleanup to generated
-names: one line, bounded length, non-empty, and no raw coordinate leaks.
-Diplomacy generation receives the relevant relationship memory between the
-active player and leader, plus active/recent conflict names and the current
-world arc. Chronicle generation receives the current arc, conflict context, and
-recent world-event summaries as continuity context.
+relationship memories, named conflicts, per-civilization arcs, and a current
+world arc. When war starts, Rust asks Ollama to name the conflict and keeps
+that name active for later chronicle and diplomacy prompts. When peace is
+signed, Rust asks for a treaty or peace name and records the closed conflict as
+relationship memory. For major civilization-specific events, Rust asks Ollama
+to name that civilization's current arc from its own settlements, wars,
+discoveries, wonders, faiths, conquests, and golden ages. When a major world
+trigger appears, Rust asks Ollama to name the global arc from the actual
+civilizations, places, faiths, wonders, and conflicts in the game, then stores
+the result in memory. Rust only applies structural cleanup to generated names:
+one line, bounded length, non-empty, and no raw coordinate leaks. Diplomacy
+generation receives the relevant relationship memory between the active player
+and leader, active/recent conflict names, both civilizations' arcs, and the
+current world arc. Chronicle generation receives the current arc, conflict
+context, civilization arc context, and recent world-event summaries as
+continuity context.
 
 Example:
 

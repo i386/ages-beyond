@@ -55,7 +55,7 @@ where
                 director.observe_event(event)
             };
 
-            if let Some(proposal) = observation.historical_name().cloned() {
+            for proposal in observation.historical_names().iter().cloned() {
                 let request = proposal.request().clone();
                 let title = match llm
                     .respond(&RequestBody::HistoricalName {

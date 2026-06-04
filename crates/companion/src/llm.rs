@@ -136,7 +136,7 @@ fn historical_name_prompt(request: &HistoricalNameRequest) -> String {
         "Name this Civilization IV historical subject.\n\
          Use the supplied facts only.\n\
          Be creative and specific to the civilizations, cities, faiths, wonders, people, or conflict in play.\n\
-         For name_kind war, return a war name. For name_kind treaty, return a treaty or peace name.\n\
+         For name_kind war, return a war name. For name_kind treaty, return a treaty or peace name. For name_kind civilization_arc, return a civilization-specific historical arc name.\n\
          Do not invent hidden map knowledge or mechanical consequences.\n\
          Do not mention map coordinates, tile coordinates, x/y values, or coordinate pairs.\n\
          Return only the name, one line, maximum 8 words.\n\
@@ -397,7 +397,7 @@ fn game_event_prompt(event: &GameEvent) -> String {
          - Historical tone, not modern UI language.\n\
          - Mention only facts provided below.\n\
          - Match tone to facts.importance: minor is restrained, major is consequential, epochal is chapter-defining.\n\
-         - If facts.world_arc_title, facts.named_conflict_title, facts.named_treaty_title, or facts.recent_world_events are present, use them only as continuity context.\n\
+         - If facts.world_arc_title, facts.civilization_arcs, facts.named_conflict_title, facts.named_treaty_title, or facts.recent_world_events are present, use them only as continuity context.\n\
          - If facts.diplomacy_memory is present, you may echo the historical memory without adding new accusations.\n\
          - Treat facts.data1 as target_team_id for war_declared/peace_signed, tech_id for tech_discovered, religion_id for religion_founded, and building_id for wonder_built.\n\
          - Treat facts.data1/data2 according to named facts when a clearer *_id field is present.\n\
