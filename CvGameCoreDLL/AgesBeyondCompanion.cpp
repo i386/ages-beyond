@@ -238,9 +238,10 @@ namespace
 
 		CvString szRaw;
 		bool bEscaped = false;
+		const char* szJsonText = szJson.GetCString();
 		for (size_t iI = iStart + 1; iI < szJson.length(); ++iI)
 		{
-			char ch = szJson[iI];
+			char ch = szJsonText[iI];
 			if (bEscaped)
 			{
 				szRaw += '\\';
