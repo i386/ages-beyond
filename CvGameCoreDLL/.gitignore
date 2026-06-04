@@ -21,3 +21,9 @@ build/
 
 # GitHub workflow staging output
 artifacts/
+
+# Vendored Boost headers needed by the VC7.1 build
+!Boost-1.32.0/include/boost/preprocessor/debug/
+!Boost-1.32.0/include/boost/preprocessor/debug/**
+!Boost-1.32.0/include/boost/spirit/debug/
+!Boost-1.32.0/include/boost/spirit/debug/**
