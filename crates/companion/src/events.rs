@@ -54,26 +54,22 @@ where
                 .await
                 .with_context(|| format!("failed to render {listener} event"))?;
 
-            let mut should_notify = true;
             if let Some(writer) = chronicle {
                 match writer.append_event(event, &heading, &text).await? {
                     ChronicleWrite::Appended => {}
                     ChronicleWrite::DuplicateSkipped => {
-                        should_notify = false;
                         info!(
                             listener = listener,
                             event_type = %event.event_type,
                             event_id = ?event_id(event),
-                            "skipped duplicate chronicle projection"
+                            "skipped duplicate chronicle projection, keeping session notification"
                         );
                     }
                 }
             }
 
-            if should_notify {
-                if let Some(writer) = notifications {
-                    writer.append_event(event, &text).await?;
-                }
+            if let Some(writer) = notifications {
+                writer.append_event(event, &text).await?;
             }
 
             Ok(text)
