@@ -6,6 +6,7 @@ gc = CyGlobalContext()
 _notificationOffset = 0
 _notificationPath = None
 _lastProbeMessage = None
+_shownCount = 0
 
 
 def reset():
@@ -110,6 +111,8 @@ def writeProbe(message):
 
 
 def showLine(line):
+	global _shownCount
+
 	line = line.strip()
 	if not line:
 		return True
@@ -135,12 +138,15 @@ def showLine(line):
 	iX = toInt(parts[1], -1)
 	iY = toInt(parts[2], -1)
 	bHasPlot = iX >= 0 and iY >= 0
+	message = "Ages Beyond: %s" % text
+
+	CyInterface().addImmediateMessage(message, "AS2D_POSITIVE_DINK")
 
 	CyInterface().addMessage(
 		iPlayer,
 		True,
 		gc.getEVENT_MESSAGE_TIME(),
-		"Ages Beyond: %s" % text,
+		message,
 		"AS2D_POSITIVE_DINK",
 		InterfaceMessageTypes.MESSAGE_TYPE_INFO,
 		"",
@@ -150,7 +156,8 @@ def showLine(line):
 		bHasPlot,
 		bHasPlot)
 
-	writeProbe("shown notification")
+	_shownCount += 1
+	writeProbe("shown notification %d" % _shownCount)
 	return True
 
 
