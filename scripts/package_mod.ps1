@@ -53,7 +53,9 @@ Install by placing the "Ages Beyond" folder in your Civilization IV Beyond the S
 This package includes:
 - Assets\CvGameCoreDLL.dll
 - Assets\Python\AgesBeyondNotifications.py
+- Assets\Python\AgesBeyondScreenUtils.py
 - Assets\Python\EntryPoints\CvEventInterface.py
+- Assets\Python\EntryPoints\CvScreenUtilsInterface.py
 - Companion\AgesBeyondCompanion.exe
 - Chronicle\AgesBeyondChronicle.md, created at runtime
 - Chronicle\AgesBeyondNotifications.tsv, created at runtime for in-game messages
