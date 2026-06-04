@@ -2,6 +2,7 @@ mod chronicle;
 mod events;
 mod ipc;
 mod llm;
+mod notifications;
 
 use std::path::PathBuf;
 
@@ -11,6 +12,7 @@ use tracing::info;
 
 use crate::chronicle::ChronicleWriter;
 use crate::llm::OllamaClient;
+use crate::notifications::NotificationWriter;
 
 #[derive(Debug, Parser)]
 #[command(name = "AgesBeyondCompanion")]
@@ -42,8 +44,14 @@ async fn main() -> anyhow::Result<()> {
     let llm = OllamaClient::new(args.ollama_url, args.model)
         .context("failed to initialize Ollama client")?;
 
-    let chronicle = args.chronicle.map(ChronicleWriter::new);
+    let chronicle_path = args.chronicle;
+    let chronicle = chronicle_path.clone().map(ChronicleWriter::new);
+    let notifications = chronicle_path
+        .map(|path| NotificationWriter::new(path.with_file_name("AgesBeyondNotifications.tsv")));
+    if let Some(writer) = &notifications {
+        writer.reset().await?;
+    }
 
     info!(pipe = %args.pipe, "starting Ages Beyond companion");
-    ipc::run_server(&args.pipe, llm, chronicle).await
+    ipc::run_server(&args.pipe, llm, chronicle, notifications).await
 }

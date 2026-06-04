@@ -38,7 +38,7 @@ impl OllamaClient {
             model: &self.model,
             prompt: &prompt,
             stream: false,
-            system: "You write concise, grounded Civilization IV narrative text. Use only the supplied game facts. Do not invent game-mechanical consequences.",
+            system: "You write concise, grounded Civilization IV narrative text. Use only the supplied game facts. Do not invent game-mechanical consequences. Use plain ASCII punctuation.",
             options: OllamaOptions {
                 temperature: 0.7,
                 num_predict: 120,
@@ -102,6 +102,7 @@ fn game_event_prompt(event: &GameEvent) -> String {
          - If facts.dynamic_quest_seed exists, include a subtle unresolved hook without claiming game effects were applied.\n\
          - Treat facts.data1 as target_team_id for war_declared/peace_signed, tech_id for tech_discovered, religion_id for religion_founded, and building_id for wonder_built.\n\
          - Treat facts.data1/data2 according to named facts when a clearer *_id field is present.\n\
+         - Use plain ASCII punctuation.\n\
          - No bullet points.\n\n\
          Event type: {event_type}\n\
          Turn: {turn}\n\

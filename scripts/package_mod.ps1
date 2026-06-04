@@ -52,8 +52,11 @@ Install by placing the "Ages Beyond" folder in your Civilization IV Beyond the S
 
 This package includes:
 - Assets\CvGameCoreDLL.dll
+- Assets\Python\AgesBeyondNotifications.py
+- Assets\Python\EntryPoints\CvEventInterface.py
 - Companion\AgesBeyondCompanion.exe
 - Chronicle\AgesBeyondChronicle.md, created at runtime
+- Chronicle\AgesBeyondNotifications.tsv, created at runtime for in-game messages
 
 The companion expects Ollama to already be running at http://localhost:11434.
 Structured chronicle events and story metadata are stored in the save game; the Markdown chronicle is regenerated/appended as readable chaptered prose.

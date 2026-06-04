@@ -7,6 +7,7 @@ use tracing::{debug, info};
 
 use crate::chronicle::{ChronicleWrite, ChronicleWriter};
 use crate::llm::LlmClient;
+use crate::notifications::NotificationWriter;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum EventHandling {
@@ -24,6 +25,7 @@ pub async fn process_game_event<L>(
     event: &GameEvent,
     llm: &L,
     chronicle: Option<&ChronicleWriter>,
+    notifications: Option<&NotificationWriter>,
 ) -> anyhow::Result<String>
 where
     L: LlmClient,
@@ -52,10 +54,12 @@ where
                 .await
                 .with_context(|| format!("failed to render {listener} event"))?;
 
+            let mut should_notify = true;
             if let Some(writer) = chronicle {
                 match writer.append_event(event, &heading, &text).await? {
                     ChronicleWrite::Appended => {}
                     ChronicleWrite::DuplicateSkipped => {
+                        should_notify = false;
                         info!(
                             listener = listener,
                             event_type = %event.event_type,
@@ -63,6 +67,12 @@ where
                             "skipped duplicate chronicle projection"
                         );
                     }
+                }
+            }
+
+            if should_notify {
+                if let Some(writer) = notifications {
+                    writer.append_event(event, &text).await?;
                 }
             }
 

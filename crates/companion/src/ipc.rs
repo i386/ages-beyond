@@ -11,12 +11,14 @@ use crate::chronicle::ChronicleWriter;
 #[cfg(windows)]
 use crate::events;
 use crate::llm::LlmClient;
+use crate::notifications::NotificationWriter;
 
 #[cfg(windows)]
 pub async fn run_server<L>(
     pipe_name: &str,
     llm: L,
     chronicle: Option<ChronicleWriter>,
+    notifications: Option<NotificationWriter>,
 ) -> anyhow::Result<()>
 where
     L: LlmClient,
@@ -34,7 +36,7 @@ where
         .with_context(|| format!("failed while waiting for pipe client {pipe_name}"))?;
     info!("DLL connected");
 
-    handle_connection(pipe, llm, chronicle).await
+    handle_connection(pipe, llm, chronicle, notifications).await
 }
 
 #[cfg(not(windows))]
@@ -42,6 +44,7 @@ pub async fn run_server<L>(
     _pipe_name: &str,
     _llm: L,
     _chronicle: Option<ChronicleWriter>,
+    _notifications: Option<NotificationWriter>,
 ) -> anyhow::Result<()>
 where
     L: LlmClient,
@@ -54,6 +57,7 @@ async fn handle_connection<S, L>(
     stream: S,
     llm: L,
     chronicle: Option<ChronicleWriter>,
+    notifications: Option<NotificationWriter>,
 ) -> anyhow::Result<()>
 where
     S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin,
@@ -70,7 +74,14 @@ where
         let response = match serde_json::from_str::<CompanionRequest>(&line) {
             Ok(request) => {
                 let id = request.id.clone();
-                match handle_request(&request.body, &llm, chronicle.as_ref()).await {
+                match handle_request(
+                    &request.body,
+                    &llm,
+                    chronicle.as_ref(),
+                    notifications.as_ref(),
+                )
+                .await
+                {
                     Ok(text) => CompanionResponse::ok(id, text),
                     Err(err) => {
                         error!(request_id = %id, error = %err, "failed to handle request");
@@ -105,6 +116,7 @@ async fn handle_request<L>(
     body: &ages_beyond_protocol::RequestBody,
     llm: &L,
     chronicle: Option<&ChronicleWriter>,
+    notifications: Option<&NotificationWriter>,
 ) -> anyhow::Result<String>
 where
     L: LlmClient,
@@ -112,7 +124,7 @@ where
     match body {
         ages_beyond_protocol::RequestBody::Ping => llm.respond(body).await,
         ages_beyond_protocol::RequestBody::GameEvent { event } => {
-            events::process_game_event(event, llm, chronicle).await
+            events::process_game_event(event, llm, chronicle, notifications).await
         }
     }
 }
