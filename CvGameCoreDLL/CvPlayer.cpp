@@ -25,6 +25,7 @@
 #include "CyPlot.h"
 #include "CyUnit.h"
 #include "CvEventReporter.h"
+#include "AgesBeyondEvents.h"
 
 #include "CvDLLInterfaceIFaceBase.h"
 #include "CvDLLEntityIFaceBase.h"
@@ -5119,6 +5120,7 @@ void CvPlayer::found(int iX, int iY)
 	}
 
 	CvEventReporter::getInstance().cityBuilt(pCity);
+	AgesBeyond::OnCityFounded(pCity);
 }
 
 

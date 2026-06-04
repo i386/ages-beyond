@@ -309,6 +309,9 @@
 				RelativePath=".\AgesBeyondCompanion.cpp">
 			</File>
 			<File
+				RelativePath=".\AgesBeyondEvents.cpp">
+			</File>
+			<File
 				RelativePath=".\CvArea.cpp">
 				<FileConfiguration
 					Name="Debug|Win32">
@@ -1029,6 +1032,9 @@
 			</File>
 			<File
 				RelativePath=".\AgesBeyondCompanion.h">
+			</File>
+			<File
+				RelativePath=".\AgesBeyondEvents.h">
 			</File>
 			<File
 				RelativePath=".\CvArea.h">

@@ -21,6 +21,7 @@
 #include "CvDLLPythonIFaceBase.h"
 #include "CyArgsList.h"
 #include "FProfiler.h"
+#include "AgesBeyondEvents.h"
 
 // Public Functions...
 
@@ -1124,6 +1125,7 @@ void CvTeam::declareWar(TeamTypes eTeam, bool bNewDiplo, WarPlanTypes eWarPlan)
 		FAssertMsg(eTeam != getID(), "eTeam is not expected to be equal with getID()");
 		setAtWar(eTeam, true);
 		GET_TEAM(eTeam).setAtWar(getID(), true);
+		AgesBeyond::OnWarDeclared(getID(), eTeam, eWarPlan);
 
 		for (iI = 0; iI < MAX_PLAYERS; iI++)
 		{
@@ -1433,6 +1435,7 @@ void CvTeam::makePeace(TeamTypes eTeam, bool bBumpUnits)
 		FAssertMsg(eTeam != getID(), "eTeam is not expected to be equal with getID()");
 		setAtWar(eTeam, false);
 		GET_TEAM(eTeam).setAtWar(getID(), false);
+		AgesBeyond::OnPeaceSigned(getID(), eTeam);
 
 		for (iI = 0; iI < MAX_PLAYERS; iI++)
 		{
@@ -4783,6 +4786,10 @@ void CvTeam::setHasTech(TechTypes eIndex, bool bNewValue, PlayerTypes ePlayer, b
 
 			// report event to Python, along with some other key state
 			CvEventReporter::getInstance().techAcquired(eIndex, getID(), ePlayer, bAnnounce);
+			if (bAnnounce)
+			{
+				AgesBeyond::OnTechDiscovered(getID(), ePlayer, eIndex);
+			}
 
 			bReligionFounded = false;
 			bFirstBonus = false;

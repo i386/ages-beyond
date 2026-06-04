@@ -1,10 +1,14 @@
+mod chronicle;
 mod ipc;
 mod llm;
+
+use std::path::PathBuf;
 
 use anyhow::Context;
 use clap::Parser;
 use tracing::info;
 
+use crate::chronicle::ChronicleWriter;
 use crate::llm::OllamaClient;
 
 #[derive(Debug, Parser)]
@@ -19,6 +23,9 @@ struct Args {
 
     #[arg(long, default_value = "llama3.1")]
     model: String,
+
+    #[arg(long)]
+    chronicle: Option<PathBuf>,
 }
 
 #[tokio::main]
@@ -34,6 +41,8 @@ async fn main() -> anyhow::Result<()> {
     let llm = OllamaClient::new(args.ollama_url, args.model)
         .context("failed to initialize Ollama client")?;
 
+    let chronicle = args.chronicle.map(ChronicleWriter::new);
+
     info!(pipe = %args.pipe, "starting Ages Beyond companion");
-    ipc::run_server(&args.pipe, llm).await
+    ipc::run_server(&args.pipe, llm, chronicle).await
 }

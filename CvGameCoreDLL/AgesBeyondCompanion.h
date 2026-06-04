@@ -9,7 +9,7 @@ namespace AgesBeyond
 	void StopCompanion();
 	bool IsCompanionRunning();
 	bool SendPing();
-	bool SendGameEvent(const char* szEventType, int iTurn, const char* szSummary);
+	bool SendGameEvent(const char* szEventType, int iEventId, int iTurn, const char* szSummary);
 }
 
 #endif

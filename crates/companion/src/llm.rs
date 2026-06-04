@@ -1,9 +1,12 @@
 #![cfg_attr(not(windows), allow(dead_code))]
 
+use std::time::Duration;
+
 use ages_beyond_protocol::{GameEvent, RequestBody};
 use anyhow::{anyhow, Context};
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
+use tracing::warn;
 
 pub trait LlmClient: Clone + Send + Sync + 'static {
     async fn respond(&self, body: &RequestBody) -> anyhow::Result<String>;
@@ -21,7 +24,10 @@ impl OllamaClient {
         let mut base = Url::parse(&base_url).context("invalid Ollama base URL")?;
         base.set_path("/api/generate");
         Ok(Self {
-            client: reqwest::Client::new(),
+            client: reqwest::Client::builder()
+                .timeout(Duration::from_secs(20))
+                .build()
+                .context("failed to build HTTP client")?,
             generate_url: base,
             model,
         })
@@ -69,7 +75,14 @@ impl LlmClient for OllamaClient {
     async fn respond(&self, body: &RequestBody) -> anyhow::Result<String> {
         match body {
             RequestBody::Ping => Ok("Ages Beyond Companion ready.".to_owned()),
-            RequestBody::GameEvent { event } => self.generate(game_event_prompt(event)).await,
+            RequestBody::GameEvent { event } => match self.generate(game_event_prompt(event)).await
+            {
+                Ok(text) => Ok(text),
+                Err(err) => {
+                    warn!(event_type = %event.event_type, error = %err, "using fallback chronicle text");
+                    Ok(fallback_game_event_text(event))
+                }
+            },
         }
     }
 }
@@ -100,6 +113,16 @@ fn game_event_prompt(event: &GameEvent) -> String {
         actors = actors,
         facts = facts,
     )
+}
+
+fn fallback_game_event_text(event: &GameEvent) -> String {
+    match event.summary.as_deref() {
+        Some(summary) if !summary.trim().is_empty() => summary.trim().to_owned(),
+        _ => format!(
+            "A {} event was recorded.",
+            event.event_type.replace('_', " ")
+        ),
+    }
 }
 
 #[derive(Debug, Serialize)]

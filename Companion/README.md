@@ -9,8 +9,12 @@ The DLL searches for the executable next to `CvGameCoreDLL.dll`, in
 The first provider is Ollama. The companion assumes Ollama is already running at
 `http://localhost:11434` unless a different `--ollama-url` is supplied.
 
+The DLL stores the canonical structured event ledger in the save game. The
+companion writes generated prose as a Markdown projection to
+`..\Chronicle\AgesBeyondChronicle.md`.
+
 Example:
 
 ```cmd
-AgesBeyondCompanion.exe --pipe \\.\pipe\AgesBeyond-12345 --model llama3.1
+AgesBeyondCompanion.exe --pipe \\.\pipe\AgesBeyond-12345 --chronicle ..\Chronicle\AgesBeyondChronicle.md --model llama3.1
 ```

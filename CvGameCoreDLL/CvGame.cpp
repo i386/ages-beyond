@@ -25,6 +25,7 @@
 #include "CvEventReporter.h"
 #include "CvMessageControl.h"
 #include "AgesBeyondCompanion.h"
+#include "AgesBeyondEvents.h"
 
 // interface uses
 #include "CvDLLInterfaceIFaceBase.h"
@@ -32,6 +33,12 @@
 #include "CvDLLPythonIFaceBase.h"
 
 // Public Functions...
+
+namespace
+{
+	const int AGES_BEYOND_CHRONICLE_SAVE_MARKER = 0x41424348;
+	const int AGES_BEYOND_CHRONICLE_SAVE_VERSION = 1;
+}
 
 CvGame::CvGame()
 {
@@ -264,7 +271,7 @@ void CvGame::init(HandicapTypes eHandicap)
 	doUpdateCacheOnTurn();
 
 	AgesBeyond::StartCompanion();
-	AgesBeyond::SendGameEvent("game_started", getGameTurn(), "A new game of Civilization IV: Ages Beyond has begun.");
+	AgesBeyond::OnGameStarted();
 }
 
 //
@@ -391,6 +398,7 @@ void CvGame::uninit()
 
 	m_aszDestroyedCities.clear();
 	m_aszGreatPeopleBorn.clear();
+	m_aAgesBeyondChronicleEvents.clear();
 
 	m_deals.uninit();
 	m_voteSelections.uninit();
@@ -595,6 +603,7 @@ void CvGame::reset(HandicapTypes eHandicap, bool bConstructorCall)
 	m_sorenRand.reset();
 
 	m_iNumSessions = 1;
+	m_iNextAgesBeyondChronicleEventId = 1;
 
 	m_iShrineBuildingCount = 0;
 	m_iNumCultureVictoryCities = 0;
@@ -5337,6 +5346,7 @@ void CvGame::setHolyCity(ReligionTypes eIndex, CvCity* pNewValue, bool bAnnounce
 				{
 					szBuffer = gDLL->getText("TXT_KEY_MISC_REL_FOUNDED", GC.getReligionInfo(eIndex).getTextKeyWide(), pHolyCity->getNameKey());
 					addReplayMessage(REPLAY_MESSAGE_MAJOR_EVENT, pHolyCity->getOwnerINLINE(), szBuffer, pHolyCity->getX_INLINE(), pHolyCity->getY_INLINE(), (ColorTypes)GC.getInfoTypeForString("COLOR_HIGHLIGHT_TEXT"));
+					AgesBeyond::OnReligionFounded(eIndex, pHolyCity);
 
 					for (iI = 0; iI < MAX_PLAYERS; iI++)
 					{
@@ -7499,6 +7509,33 @@ uint CvGame::getNumReplayMessages() const
 	return m_listReplayMessages.size();
 }
 
+int CvGame::addAgesBeyondChronicleEvent(const char* szEventType, const char* szSummary, PlayerTypes ePlayer, TeamTypes eTeam, int iCityId, int iX, int iY, int iData1, int iData2)
+{
+	AgesBeyondChronicleEvent kEvent;
+
+	kEvent.m_iEventId = m_iNextAgesBeyondChronicleEventId++;
+	kEvent.m_iTurn = getGameTurn();
+	kEvent.m_iPlayer = ePlayer;
+	kEvent.m_iTeam = eTeam;
+	kEvent.m_iCityId = iCityId;
+	kEvent.m_iX = iX;
+	kEvent.m_iY = iY;
+	kEvent.m_iData1 = iData1;
+	kEvent.m_iData2 = iData2;
+	kEvent.m_szEventType = (szEventType != NULL) ? szEventType : "";
+	kEvent.m_szSummary = (szSummary != NULL) ? szSummary : "";
+
+	m_aAgesBeyondChronicleEvents.push_back(kEvent);
+	AgesBeyond::SendGameEvent(kEvent.m_szEventType.c_str(), kEvent.m_iEventId, kEvent.m_iTurn, kEvent.m_szSummary.c_str());
+
+	return kEvent.m_iEventId;
+}
+
+int CvGame::getNumAgesBeyondChronicleEvents() const
+{
+	return (int)m_aAgesBeyondChronicleEvents.size();
+}
+
 // Private Functions...
 
 void CvGame::read(FDataStreamBase* pStream)
@@ -7725,6 +7762,42 @@ void CvGame::read(FDataStreamBase* pStream)
 	pStream->Read(GC.getNumBuildingInfos(), m_aiShrineReligion);
 	pStream->Read(&m_iNumCultureVictoryCities);
 	pStream->Read(&m_eCultureVictoryCultureLevel);
+
+	m_aAgesBeyondChronicleEvents.clear();
+	m_iNextAgesBeyondChronicleEventId = 1;
+	if (!pStream->AtEnd())
+	{
+		int iMarker;
+		pStream->Read(&iMarker);
+		if (iMarker == AGES_BEYOND_CHRONICLE_SAVE_MARKER)
+		{
+			int iVersion;
+			int iSize;
+			pStream->Read(&iVersion);
+			pStream->Read(&m_iNextAgesBeyondChronicleEventId);
+			pStream->Read(&iSize);
+
+			if (iVersion >= 1)
+			{
+				for (int i = 0; i < iSize; ++i)
+				{
+					AgesBeyondChronicleEvent kEvent;
+					pStream->Read(&kEvent.m_iEventId);
+					pStream->Read(&kEvent.m_iTurn);
+					pStream->Read(&kEvent.m_iPlayer);
+					pStream->Read(&kEvent.m_iTeam);
+					pStream->Read(&kEvent.m_iCityId);
+					pStream->Read(&kEvent.m_iX);
+					pStream->Read(&kEvent.m_iY);
+					pStream->Read(&kEvent.m_iData1);
+					pStream->Read(&kEvent.m_iData2);
+					pStream->ReadString(kEvent.m_szEventType);
+					pStream->ReadString(kEvent.m_szSummary);
+					m_aAgesBeyondChronicleEvents.push_back(kEvent);
+				}
+			}
+		}
+	}
 }
 
 
@@ -7881,6 +7954,25 @@ void CvGame::write(FDataStreamBase* pStream)
 	pStream->Write(GC.getNumBuildingInfos(), m_aiShrineReligion);
 	pStream->Write(m_iNumCultureVictoryCities);
 	pStream->Write(m_eCultureVictoryCultureLevel);
+
+	pStream->Write(AGES_BEYOND_CHRONICLE_SAVE_MARKER);
+	pStream->Write(AGES_BEYOND_CHRONICLE_SAVE_VERSION);
+	pStream->Write(m_iNextAgesBeyondChronicleEventId);
+	pStream->Write((int)m_aAgesBeyondChronicleEvents.size());
+	for (std::vector<AgesBeyondChronicleEvent>::iterator it = m_aAgesBeyondChronicleEvents.begin(); it != m_aAgesBeyondChronicleEvents.end(); ++it)
+	{
+		pStream->Write((*it).m_iEventId);
+		pStream->Write((*it).m_iTurn);
+		pStream->Write((*it).m_iPlayer);
+		pStream->Write((*it).m_iTeam);
+		pStream->Write((*it).m_iCityId);
+		pStream->Write((*it).m_iX);
+		pStream->Write((*it).m_iY);
+		pStream->Write((*it).m_iData1);
+		pStream->Write((*it).m_iData2);
+		pStream->WriteString((*it).m_szEventType);
+		pStream->WriteString((*it).m_szSummary);
+	}
 }
 
 void CvGame::writeReplay(FDataStreamBase& stream, PlayerTypes ePlayer)

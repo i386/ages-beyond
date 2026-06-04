@@ -5,12 +5,17 @@ use anyhow::Context;
 #[cfg(windows)]
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 #[cfg(windows)]
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
+use crate::chronicle::ChronicleWriter;
 use crate::llm::LlmClient;
 
 #[cfg(windows)]
-pub async fn run_server<L>(pipe_name: &str, llm: L) -> anyhow::Result<()>
+pub async fn run_server<L>(
+    pipe_name: &str,
+    llm: L,
+    chronicle: Option<ChronicleWriter>,
+) -> anyhow::Result<()>
 where
     L: LlmClient,
 {
@@ -27,11 +32,15 @@ where
         .with_context(|| format!("failed while waiting for pipe client {pipe_name}"))?;
     info!("DLL connected");
 
-    handle_connection(pipe, llm).await
+    handle_connection(pipe, llm, chronicle).await
 }
 
 #[cfg(not(windows))]
-pub async fn run_server<L>(_pipe_name: &str, _llm: L) -> anyhow::Result<()>
+pub async fn run_server<L>(
+    _pipe_name: &str,
+    _llm: L,
+    _chronicle: Option<ChronicleWriter>,
+) -> anyhow::Result<()>
 where
     L: LlmClient,
 {
@@ -39,7 +48,11 @@ where
 }
 
 #[cfg(windows)]
-async fn handle_connection<S, L>(stream: S, llm: L) -> anyhow::Result<()>
+async fn handle_connection<S, L>(
+    stream: S,
+    llm: L,
+    chronicle: Option<ChronicleWriter>,
+) -> anyhow::Result<()>
 where
     S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin,
     L: LlmClient,
@@ -56,7 +69,18 @@ where
             Ok(request) => {
                 let id = request.id.clone();
                 match llm.respond(&request.body).await {
-                    Ok(text) => CompanionResponse::ok(id, text),
+                    Ok(text) => {
+                        if let (
+                            Some(writer),
+                            ages_beyond_protocol::RequestBody::GameEvent { event },
+                        ) = (&chronicle, &request.body)
+                        {
+                            if let Err(err) = writer.append_event(event, &text).await {
+                                warn!(request_id = %id, error = %err, "failed to append chronicle");
+                            }
+                        }
+                        CompanionResponse::ok(id, text)
+                    }
                     Err(err) => {
                         error!(request_id = %id, error = %err, "failed to handle request");
                         CompanionResponse::error(id, err.to_string())

@@ -53,8 +53,10 @@ Install by placing the "Ages Beyond" folder in your Civilization IV Beyond the S
 This package includes:
 - Assets\CvGameCoreDLL.dll
 - Companion\AgesBeyondCompanion.exe
+- Chronicle\AgesBeyondChronicle.md, created at runtime
 
 The companion expects Ollama to already be running at http://localhost:11434.
+Structured chronicle events are stored in the save game; the Markdown chronicle is regenerated/appended as readable prose.
 "@ | Set-Content -Path $readmePath -Encoding ASCII
 
 if (Test-Path $zipPath) {

@@ -84,6 +84,18 @@ namespace
 		return false;
 	}
 
+	bool GetChroniclePath(CvString& szChroniclePath)
+	{
+		CvString szDllDir;
+		if (!GetDllDirectory(szDllDir))
+		{
+			return false;
+		}
+
+		szChroniclePath = szDllDir + "\\..\\Chronicle\\AgesBeyondChronicle.md";
+		return true;
+	}
+
 	CvString QuoteCommandArgument(const CvString& szArgument)
 	{
 		CvString szQuoted = "\"";
@@ -153,11 +165,13 @@ namespace
 		return szEscaped;
 	}
 
-	bool LaunchCompanionProcess(const CvString& szExePath, const CvString& szPipeName)
+	bool LaunchCompanionProcess(const CvString& szExePath, const CvString& szPipeName, const CvString& szChroniclePath)
 	{
 		CvString szCommandLine = QuoteCommandArgument(szExePath);
 		szCommandLine += " --pipe ";
 		szCommandLine += QuoteCommandArgument(szPipeName);
+		szCommandLine += " --chronicle ";
+		szCommandLine += QuoteCommandArgument(szChroniclePath);
 
 		STARTUPINFOA kStartupInfo;
 		ZeroMemory(&kStartupInfo, sizeof(kStartupInfo));
@@ -302,7 +316,14 @@ namespace AgesBeyond
 
 		CvString szPipeName = CvString::format("\\\\.\\pipe\\AgesBeyond-%lu-%lu", GetCurrentProcessId(), GetTickCount());
 
-		if (!LaunchCompanionProcess(szExePath, szPipeName))
+		CvString szChroniclePath;
+		if (!GetChroniclePath(szChroniclePath))
+		{
+			Trace("Ages Beyond Companion: failed to resolve chronicle path");
+			return;
+		}
+
+		if (!LaunchCompanionProcess(szExePath, szPipeName, szChroniclePath))
 		{
 			return;
 		}
@@ -372,15 +393,16 @@ namespace AgesBeyond
 		return WriteLine(szRequest);
 	}
 
-	bool SendGameEvent(const char* szEventType, int iTurn, const char* szSummary)
+	bool SendGameEvent(const char* szEventType, int iEventId, int iTurn, const char* szSummary)
 	{
 		CvString szRequest = CvString::format(
-			"{\"version\":%d,\"id\":\"%s\",\"kind\":\"game_event\",\"event\":{\"event_type\":\"%s\",\"turn\":%d,\"actors\":[],\"summary\":\"%s\",\"facts\":{}}}",
+			"{\"version\":%d,\"id\":\"%s\",\"kind\":\"game_event\",\"event\":{\"event_type\":\"%s\",\"turn\":%d,\"actors\":[],\"summary\":\"%s\",\"facts\":{\"event_id\":%d}}}",
 			PROTOCOL_VERSION,
 			NextRequestId("event").c_str(),
 			JsonEscape(szEventType).c_str(),
 			iTurn,
-			JsonEscape(szSummary).c_str());
+			JsonEscape(szSummary).c_str(),
+			iEventId);
 		return WriteLine(szRequest);
 	}
 }

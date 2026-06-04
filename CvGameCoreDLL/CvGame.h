@@ -16,6 +16,21 @@ class CvReplayInfo;
 
 typedef std::vector<const CvReplayMessage*> ReplayMessageList;
 
+struct AgesBeyondChronicleEvent
+{
+	int m_iEventId;
+	int m_iTurn;
+	int m_iPlayer;
+	int m_iTeam;
+	int m_iCityId;
+	int m_iX;
+	int m_iY;
+	int m_iData1;
+	int m_iData2;
+	CvString m_szEventType;
+	CvString m_szSummary;
+};
+
 class CvGame
 {
 
@@ -446,6 +461,9 @@ public:
 	uint getNumReplayMessages() const;
 	ColorTypes getReplayMessageColor(uint i) const;
 
+	DllExport int addAgesBeyondChronicleEvent(const char* szEventType, const char* szSummary, PlayerTypes ePlayer = NO_PLAYER, TeamTypes eTeam = NO_TEAM, int iCityId = -1, int iX = -1, int iY = -1, int iData1 = -1, int iData2 = -1);
+	DllExport int getNumAgesBeyondChronicleEvents() const;
+
 	DllExport virtual void read(FDataStreamBase* pStream);
 	DllExport virtual void write(FDataStreamBase* pStream);
 	DllExport virtual void writeReplay(FDataStreamBase& stream, PlayerTypes ePlayer);
@@ -618,6 +636,8 @@ protected:
 
 	std::vector<CvWString> m_aszDestroyedCities;
 	std::vector<CvWString> m_aszGreatPeopleBorn;
+	std::vector<AgesBeyondChronicleEvent> m_aAgesBeyondChronicleEvents;
+	int m_iNextAgesBeyondChronicleEventId;
 
 	FFreeListTrashArray<CvDeal> m_deals;
 	FFreeListTrashArray<VoteSelectionData> m_voteSelections;
