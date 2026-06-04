@@ -7526,7 +7526,18 @@ int CvGame::addAgesBeyondChronicleEvent(const char* szEventType, const char* szS
 	kEvent.m_szSummary = (szSummary != NULL) ? szSummary : "";
 
 	m_aAgesBeyondChronicleEvents.push_back(kEvent);
-	AgesBeyond::SendGameEvent(kEvent.m_szEventType.c_str(), kEvent.m_iEventId, kEvent.m_iTurn, kEvent.m_szSummary.c_str());
+	AgesBeyond::SendGameEvent(
+		kEvent.m_szEventType.c_str(),
+		kEvent.m_iEventId,
+		kEvent.m_iTurn,
+		kEvent.m_szSummary.c_str(),
+		kEvent.m_iPlayer,
+		kEvent.m_iTeam,
+		kEvent.m_iCityId,
+		kEvent.m_iX,
+		kEvent.m_iY,
+		kEvent.m_iData1,
+		kEvent.m_iData2);
 
 	return kEvent.m_iEventId;
 }

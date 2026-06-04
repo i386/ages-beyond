@@ -98,6 +98,8 @@ fn game_event_prompt(event: &GameEvent) -> String {
          - 1 sentence, maximum 35 words.\n\
          - Historical tone, not modern UI language.\n\
          - Mention only facts provided below.\n\
+         - Treat facts.data1 as target_team_id for war_declared/peace_signed, tech_id for tech_discovered, religion_id for religion_founded, and building_id for wonder_built.\n\
+         - Treat facts.data2 as war_plan_id for war_declared when present.\n\
          - No bullet points.\n\n\
          Event type: {event_type}\n\
          Turn: {turn}\n\

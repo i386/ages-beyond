@@ -5,9 +5,11 @@ use anyhow::Context;
 #[cfg(windows)]
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 #[cfg(windows)]
-use tracing::{error, info, warn};
+use tracing::{error, info};
 
 use crate::chronicle::ChronicleWriter;
+#[cfg(windows)]
+use crate::events;
 use crate::llm::LlmClient;
 
 #[cfg(windows)]
@@ -68,19 +70,8 @@ where
         let response = match serde_json::from_str::<CompanionRequest>(&line) {
             Ok(request) => {
                 let id = request.id.clone();
-                match llm.respond(&request.body).await {
-                    Ok(text) => {
-                        if let (
-                            Some(writer),
-                            ages_beyond_protocol::RequestBody::GameEvent { event },
-                        ) = (&chronicle, &request.body)
-                        {
-                            if let Err(err) = writer.append_event(event, &text).await {
-                                warn!(request_id = %id, error = %err, "failed to append chronicle");
-                            }
-                        }
-                        CompanionResponse::ok(id, text)
-                    }
+                match handle_request(&request.body, &llm, chronicle.as_ref()).await {
+                    Ok(text) => CompanionResponse::ok(id, text),
                     Err(err) => {
                         error!(request_id = %id, error = %err, "failed to handle request");
                         CompanionResponse::error(id, err.to_string())
@@ -107,4 +98,21 @@ where
 
     info!("DLL disconnected");
     Ok(())
+}
+
+#[cfg(windows)]
+async fn handle_request<L>(
+    body: &ages_beyond_protocol::RequestBody,
+    llm: &L,
+    chronicle: Option<&ChronicleWriter>,
+) -> anyhow::Result<String>
+where
+    L: LlmClient,
+{
+    match body {
+        ages_beyond_protocol::RequestBody::Ping => llm.respond(body).await,
+        ages_beyond_protocol::RequestBody::GameEvent { event } => {
+            events::process_game_event(event, llm, chronicle).await
+        }
+    }
 }

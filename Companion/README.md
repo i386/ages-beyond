@@ -13,6 +13,11 @@ The DLL stores the canonical structured event ledger in the save game. The
 companion writes generated prose as a Markdown projection to
 `..\Chronicle\AgesBeyondChronicle.md`.
 
+The companion owns event listener behavior: it classifies incoming DLL events,
+filters internal engine events such as barbarian setup diplomacy, calls Ollama
+for chronicle-worthy events, and skips duplicate Markdown projections by saved
+event id.
+
 Example:
 
 ```cmd

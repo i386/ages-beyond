@@ -7,6 +7,12 @@ use anyhow::Context;
 use serde_json::Value;
 use tokio::io::AsyncWriteExt;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ChronicleWrite {
+    Appended,
+    DuplicateSkipped,
+}
+
 #[derive(Clone, Debug)]
 pub struct ChronicleWriter {
     path: PathBuf,
@@ -17,7 +23,12 @@ impl ChronicleWriter {
         Self { path }
     }
 
-    pub async fn append_event(&self, event: &GameEvent, text: &str) -> anyhow::Result<()> {
+    pub async fn append_event(
+        &self,
+        event: &GameEvent,
+        heading: &str,
+        text: &str,
+    ) -> anyhow::Result<ChronicleWrite> {
         if let Some(parent) = self.path.parent() {
             tokio::fs::create_dir_all(parent).await.with_context(|| {
                 format!("failed to create chronicle directory {}", parent.display())
@@ -25,6 +36,16 @@ impl ChronicleWriter {
         }
 
         let exists = tokio::fs::metadata(&self.path).await.is_ok();
+        let event_id = event_id_label(event);
+        if exists && event_id != "unsaved" {
+            let existing = tokio::fs::read_to_string(&self.path)
+                .await
+                .with_context(|| format!("failed to read chronicle {}", self.path.display()))?;
+            if existing.contains(&format!("## Event {event_id} - ")) {
+                return Ok(ChronicleWrite::DuplicateSkipped);
+            }
+        }
+
         let mut file = tokio::fs::OpenOptions::new()
             .create(true)
             .append(true)
@@ -38,16 +59,7 @@ impl ChronicleWriter {
                 .context("failed to write chronicle header")?;
         }
 
-        let turn = event
-            .turn
-            .map(|turn| turn.to_string())
-            .unwrap_or_else(|| "unknown".to_owned());
-        let event_id = match event.facts.get("event_id") {
-            Some(Value::Number(value)) => value.to_string(),
-            Some(value) => value.to_string(),
-            None => "unsaved".to_owned(),
-        };
-        let heading = event.event_type.replace('_', " ");
+        let turn = turn_label(event);
         let entry = format!("## Event {event_id} - Turn {turn}: {heading}\n\n{text}\n\n");
 
         file.write_all(entry.as_bytes())
@@ -55,6 +67,21 @@ impl ChronicleWriter {
             .context("failed to append chronicle entry")?;
         file.flush().await.context("failed to flush chronicle")?;
 
-        Ok(())
+        Ok(ChronicleWrite::Appended)
+    }
+}
+
+fn turn_label(event: &GameEvent) -> String {
+    event
+        .turn
+        .map(|turn| turn.to_string())
+        .unwrap_or_else(|| "unknown".to_owned())
+}
+
+fn event_id_label(event: &GameEvent) -> String {
+    match event.facts.get("event_id") {
+        Some(Value::Number(value)) => value.to_string(),
+        Some(value) => value.to_string(),
+        None => "unsaved".to_owned(),
     }
 }
