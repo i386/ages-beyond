@@ -18,6 +18,10 @@ filters internal engine events such as barbarian setup diplomacy, calls Ollama
 for chronicle-worthy events, and skips duplicate Markdown projections by saved
 event id.
 
+DLL events include names, type keys, era/chapter metadata, importance, and
+quest-policy hints where available. The save-game ledger keeps these structured
+facts; the Markdown chronicle is a chaptered projection of that ledger.
+
 Example:
 
 ```cmd

@@ -10844,6 +10844,7 @@ void CvCity::popOrder(int iNum, bool bFinish, bool bChoose)
 		{
 			// Event reported to Python before the project is built, so that we can show the movie before awarding free techs, for example
 			CvEventReporter::getInstance().projectBuilt(this, eCreateProject);
+			AgesBeyond::OnProjectBuilt(this, eCreateProject);
 
 			GET_TEAM(getTeam()).changeProjectCount(eCreateProject, 1);
 

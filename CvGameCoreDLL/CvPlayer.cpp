@@ -1695,6 +1695,7 @@ void CvPlayer::acquireCity(CvCity* pOldCity, bool bConquest, bool bTrade, bool b
 	}
 
 	CvEventReporter::getInstance().cityAcquired(eOldOwner, getID(), pNewCity, bConquest, bTrade);
+	AgesBeyond::OnCityAcquired(eOldOwner, getID(), pNewCity, bConquest, bTrade);
 
 	SAFE_DELETE_ARRAY(pabHasReligion);
 	SAFE_DELETE_ARRAY(pabHolyCity);
@@ -4524,6 +4525,7 @@ void CvPlayer::raze(CvCity* pCity)
 
 	// Report this event
 	CvEventReporter::getInstance().cityRazed(pCity, getID());
+	AgesBeyond::OnCityRazed(pCity, getID());
 
 	disband(pCity);
 }
@@ -7736,6 +7738,7 @@ void CvPlayer::changeGoldenAgeTurns(int iChange)
 				GC.getGameINLINE().addReplayMessage(REPLAY_MESSAGE_MAJOR_EVENT, getID(), szBuffer, -1, -1, (ColorTypes)GC.getInfoTypeForString("COLOR_HIGHLIGHT_TEXT"));
 
 				CvEventReporter::getInstance().goldenAge(getID());
+				AgesBeyond::OnGoldenAgeStarted(getID());
 			}
 			else
 			{
@@ -16529,6 +16532,7 @@ void CvPlayer::createGreatPeople(UnitTypes eGreatPersonUnit, bool bIncrementThre
 	{
 		CvEventReporter::getInstance().greatPersonBorn(pGreatPeopleUnit, getID(), pCity);
 	}
+	AgesBeyond::OnGreatPersonBorn(pGreatPeopleUnit, getID(), pCity, iX, iY);
 
 }
 
@@ -16577,6 +16581,7 @@ void CvPlayer::setEventOccured(EventTypes eEvent, const EventTriggeredData& kEve
 		szMessageBuffer.append(GC.getEventInfo(eEvent).getDescription());
 		GAMETEXT.setEventHelp(szMessageBuffer, eEvent, kEventTriggered.getID(), getID());
 		gDLL->getInterfaceIFace()->addQuestMessage(getID(), szMessageBuffer.getCString(), kEventTriggered.getID());
+		AgesBeyond::OnQuestStarted(getID(), eEvent);
 	}
 
 	if (bOthers)

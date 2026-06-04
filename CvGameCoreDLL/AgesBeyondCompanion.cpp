@@ -393,10 +393,17 @@ namespace AgesBeyond
 		return WriteLine(szRequest);
 	}
 
-	bool SendGameEvent(const char* szEventType, int iEventId, int iTurn, const char* szSummary, int iPlayer, int iTeam, int iCityId, int iX, int iY, int iData1, int iData2)
+	bool SendGameEvent(const char* szEventType, int iEventId, int iTurn, const char* szSummary, int iPlayer, int iTeam, int iCityId, int iX, int iY, int iData1, int iData2, const char* szFactsJson)
 	{
+		CvString szExtraFacts;
+		if (szFactsJson != NULL && szFactsJson[0] != 0)
+		{
+			szExtraFacts = ",";
+			szExtraFacts += szFactsJson;
+		}
+
 		CvString szRequest = CvString::format(
-			"{\"version\":%d,\"id\":\"%s\",\"kind\":\"game_event\",\"event\":{\"event_type\":\"%s\",\"turn\":%d,\"actors\":[],\"summary\":\"%s\",\"facts\":{\"contract_version\":1,\"event_id\":%d,\"player_id\":%d,\"team_id\":%d,\"city_id\":%d,\"x\":%d,\"y\":%d,\"data1\":%d,\"data2\":%d,\"max_civ_players\":%d,\"barbarian_team_id\":%d}}}",
+			"{\"version\":%d,\"id\":\"%s\",\"kind\":\"game_event\",\"event\":{\"event_type\":\"%s\",\"turn\":%d,\"actors\":[],\"summary\":\"%s\",\"facts\":{\"contract_version\":2,\"event_id\":%d,\"player_id\":%d,\"team_id\":%d,\"city_id\":%d,\"x\":%d,\"y\":%d,\"data1\":%d,\"data2\":%d,\"max_civ_players\":%d,\"barbarian_team_id\":%d%s}}}",
 			PROTOCOL_VERSION,
 			NextRequestId("event").c_str(),
 			JsonEscape(szEventType).c_str(),
@@ -411,7 +418,8 @@ namespace AgesBeyond
 			iData1,
 			iData2,
 			MAX_CIV_PLAYERS,
-			BARBARIAN_TEAM);
+			BARBARIAN_TEAM,
+			szExtraFacts.c_str());
 		return WriteLine(szRequest);
 	}
 }

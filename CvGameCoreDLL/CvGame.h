@@ -29,6 +29,7 @@ struct AgesBeyondChronicleEvent
 	int m_iData2;
 	CvString m_szEventType;
 	CvString m_szSummary;
+	CvString m_szFactsJson;
 };
 
 class CvGame
@@ -461,7 +462,7 @@ public:
 	uint getNumReplayMessages() const;
 	ColorTypes getReplayMessageColor(uint i) const;
 
-	DllExport int addAgesBeyondChronicleEvent(const char* szEventType, const char* szSummary, PlayerTypes ePlayer = NO_PLAYER, TeamTypes eTeam = NO_TEAM, int iCityId = -1, int iX = -1, int iY = -1, int iData1 = -1, int iData2 = -1);
+	DllExport int addAgesBeyondChronicleEvent(const char* szEventType, const char* szSummary, PlayerTypes ePlayer = NO_PLAYER, TeamTypes eTeam = NO_TEAM, int iCityId = -1, int iX = -1, int iY = -1, int iData1 = -1, int iData2 = -1, const char* szFactsJson = NULL);
 	DllExport int getNumAgesBeyondChronicleEvents() const;
 
 	DllExport virtual void read(FDataStreamBase* pStream);

@@ -41,7 +41,7 @@ impl ChronicleWriter {
             let existing = tokio::fs::read_to_string(&self.path)
                 .await
                 .with_context(|| format!("failed to read chronicle {}", self.path.display()))?;
-            if existing.contains(&format!("## Event {event_id} - ")) {
+            if existing.contains(&format!("Event {event_id} - ")) {
                 return Ok(ChronicleWrite::DuplicateSkipped);
             }
         }
@@ -59,8 +59,24 @@ impl ChronicleWriter {
                 .context("failed to write chronicle header")?;
         }
 
+        if let Some(chapter) = chapter_label(event) {
+            let existing = if exists {
+                tokio::fs::read_to_string(&self.path)
+                    .await
+                    .unwrap_or_default()
+            } else {
+                String::new()
+            };
+            let chapter_heading = format!("## {chapter}");
+            if !existing.contains(&chapter_heading) {
+                file.write_all(format!("{chapter_heading}\n\n").as_bytes())
+                    .await
+                    .context("failed to append chronicle chapter")?;
+            }
+        }
+
         let turn = turn_label(event);
-        let entry = format!("## Event {event_id} - Turn {turn}: {heading}\n\n{text}\n\n");
+        let entry = format!("### Event {event_id} - Turn {turn}: {heading}\n\n{text}\n\n");
 
         file.write_all(entry.as_bytes())
             .await
@@ -83,5 +99,12 @@ fn event_id_label(event: &GameEvent) -> String {
         Some(Value::Number(value)) => value.to_string(),
         Some(value) => value.to_string(),
         None => "unsaved".to_owned(),
+    }
+}
+
+fn chapter_label(event: &GameEvent) -> Option<String> {
+    match event.facts.get("chapter") {
+        Some(Value::String(value)) if !value.trim().is_empty() => Some(value.trim().to_owned()),
+        _ => None,
     }
 }

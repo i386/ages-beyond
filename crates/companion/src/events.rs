@@ -73,14 +73,23 @@ where
 
 fn classify_event(event: &GameEvent) -> EventHandling {
     match event.event_type.as_str() {
-        "game_started" => chronicle("lifecycle", "Game Started"),
-        "city_founded" => chronicle("settlement", "City Founded"),
-        "religion_founded" => chronicle("faith", "Religion Founded"),
-        "tech_discovered" => chronicle("knowledge", "Technology Discovered"),
-        "wonder_built" => chronicle("achievement", "World Wonder Built"),
+        "game_started" => chronicle(event, "lifecycle", "Game Started"),
+        "city_founded" => chronicle(event, "settlement", "City Founded"),
+        "city_acquired" => chronicle(event, "territory", "City Acquired"),
+        "city_captured" => chronicle(event, "territory", "City Captured"),
+        "city_razed" => chronicle(event, "territory", "City Razed"),
+        "religion_founded" => chronicle(event, "faith", "Religion Founded"),
+        "tech_discovered" => chronicle(event, "knowledge", "Technology Discovered"),
+        "wonder_built" => chronicle(event, "achievement", "World Wonder Built"),
+        "project_built" => chronicle(event, "achievement", "Great Project Built"),
+        "golden_age_started" => chronicle(event, "society", "Golden Age Started"),
+        "great_person_born" => chronicle(event, "personage", "Great Person Born"),
+        "quest_started" => chronicle(event, "quest", "Quest Started"),
+        "event_triggered" => chronicle(event, "event", "Event Triggered"),
+        "victory" => chronicle(event, "finale", "Victory"),
         "war_declared" => classify_diplomacy(event, "War Declared"),
         "peace_signed" => classify_diplomacy(event, "Peace Signed"),
-        _ => chronicle("generic", title_case_event_type(&event.event_type)),
+        _ => chronicle(event, "generic", title_case_event_type(&event.event_type)),
     }
 }
 
@@ -92,7 +101,7 @@ fn classify_diplomacy(event: &GameEvent, heading: &'static str) -> EventHandling
         };
     }
 
-    chronicle("diplomacy", heading)
+    chronicle(event, "diplomacy", heading)
 }
 
 fn internal_diplomacy_reason(event: &GameEvent) -> Option<String> {
@@ -118,7 +127,11 @@ fn internal_diplomacy_reason(event: &GameEvent) -> Option<String> {
     None
 }
 
-fn chronicle(listener: &'static str, heading: impl Into<String>) -> EventHandling {
+fn chronicle(
+    _event: &GameEvent,
+    listener: &'static str,
+    heading: impl Into<String>,
+) -> EventHandling {
     EventHandling::Chronicle {
         listener,
         heading: heading.into(),
@@ -199,6 +212,19 @@ mod tests {
             classify_event(&event("war_declared", facts)),
             EventHandling::Chronicle {
                 listener: "diplomacy",
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn classifies_city_capture_as_territory() {
+        let facts = BTreeMap::new();
+
+        assert!(matches!(
+            classify_event(&event("city_captured", facts)),
+            EventHandling::Chronicle {
+                listener: "territory",
                 ..
             }
         ));

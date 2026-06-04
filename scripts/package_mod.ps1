@@ -56,7 +56,7 @@ This package includes:
 - Chronicle\AgesBeyondChronicle.md, created at runtime
 
 The companion expects Ollama to already be running at http://localhost:11434.
-Structured chronicle events are stored in the save game; the Markdown chronicle is regenerated/appended as readable prose.
+Structured chronicle events and story metadata are stored in the save game; the Markdown chronicle is regenerated/appended as readable chaptered prose.
 "@ | Set-Content -Path $readmePath -Encoding ASCII
 
 if (Test-Path $zipPath) {

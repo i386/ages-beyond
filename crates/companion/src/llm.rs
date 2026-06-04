@@ -98,8 +98,10 @@ fn game_event_prompt(event: &GameEvent) -> String {
          - 1 sentence, maximum 35 words.\n\
          - Historical tone, not modern UI language.\n\
          - Mention only facts provided below.\n\
+         - Match tone to facts.importance: minor is restrained, major is consequential, epochal is chapter-defining.\n\
+         - If facts.dynamic_quest_seed exists, include a subtle unresolved hook without claiming game effects were applied.\n\
          - Treat facts.data1 as target_team_id for war_declared/peace_signed, tech_id for tech_discovered, religion_id for religion_founded, and building_id for wonder_built.\n\
-         - Treat facts.data2 as war_plan_id for war_declared when present.\n\
+         - Treat facts.data1/data2 according to named facts when a clearer *_id field is present.\n\
          - No bullet points.\n\n\
          Event type: {event_type}\n\
          Turn: {turn}\n\

@@ -37,7 +37,7 @@
 namespace
 {
 	const int AGES_BEYOND_CHRONICLE_SAVE_MARKER = 0x41424348;
-	const int AGES_BEYOND_CHRONICLE_SAVE_VERSION = 1;
+	const int AGES_BEYOND_CHRONICLE_SAVE_VERSION = 2;
 }
 
 CvGame::CvGame()
@@ -4673,6 +4673,7 @@ void CvGame::setWinner(TeamTypes eNewWinner, VictoryTypes eNewVictory)
 
 		gDLL->getInterfaceIFace()->setDirty(Center_DIRTY_BIT, true);
 		CvEventReporter::getInstance().victory(eNewWinner, eNewVictory);
+		AgesBeyond::OnVictory(eNewWinner, eNewVictory);
 		gDLL->getInterfaceIFace()->setDirty(Soundtrack_DIRTY_BIT, true);
 	}
 }
@@ -7509,7 +7510,7 @@ uint CvGame::getNumReplayMessages() const
 	return m_listReplayMessages.size();
 }
 
-int CvGame::addAgesBeyondChronicleEvent(const char* szEventType, const char* szSummary, PlayerTypes ePlayer, TeamTypes eTeam, int iCityId, int iX, int iY, int iData1, int iData2)
+int CvGame::addAgesBeyondChronicleEvent(const char* szEventType, const char* szSummary, PlayerTypes ePlayer, TeamTypes eTeam, int iCityId, int iX, int iY, int iData1, int iData2, const char* szFactsJson)
 {
 	AgesBeyondChronicleEvent kEvent;
 
@@ -7524,6 +7525,7 @@ int CvGame::addAgesBeyondChronicleEvent(const char* szEventType, const char* szS
 	kEvent.m_iData2 = iData2;
 	kEvent.m_szEventType = (szEventType != NULL) ? szEventType : "";
 	kEvent.m_szSummary = (szSummary != NULL) ? szSummary : "";
+	kEvent.m_szFactsJson = (szFactsJson != NULL) ? szFactsJson : "";
 
 	m_aAgesBeyondChronicleEvents.push_back(kEvent);
 	AgesBeyond::SendGameEvent(
@@ -7537,7 +7539,8 @@ int CvGame::addAgesBeyondChronicleEvent(const char* szEventType, const char* szS
 		kEvent.m_iX,
 		kEvent.m_iY,
 		kEvent.m_iData1,
-		kEvent.m_iData2);
+		kEvent.m_iData2,
+		kEvent.m_szFactsJson.c_str());
 
 	return kEvent.m_iEventId;
 }
@@ -7804,6 +7807,14 @@ void CvGame::read(FDataStreamBase* pStream)
 					pStream->Read(&kEvent.m_iData2);
 					pStream->ReadString(kEvent.m_szEventType);
 					pStream->ReadString(kEvent.m_szSummary);
+					if (iVersion >= 2)
+					{
+						pStream->ReadString(kEvent.m_szFactsJson);
+					}
+					else
+					{
+						kEvent.m_szFactsJson = "";
+					}
 					m_aAgesBeyondChronicleEvents.push_back(kEvent);
 				}
 			}
@@ -7983,6 +7994,7 @@ void CvGame::write(FDataStreamBase* pStream)
 		pStream->Write((*it).m_iData2);
 		pStream->WriteString((*it).m_szEventType);
 		pStream->WriteString((*it).m_szSummary);
+		pStream->WriteString((*it).m_szFactsJson);
 	}
 }
 
