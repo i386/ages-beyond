@@ -13,13 +13,15 @@ def getEventManager():
 
 def onEvent(argsList):
 	"""Called when a game event happens - return 1 if the event was consumed."""
-	if argsList and argsList[0] == "gameUpdate":
-		try:
+	try:
+		if argsList and argsList[0] in ("GameStart", "OnLoad"):
+			AgesBeyondNotifications.reset()
+		if argsList and argsList[0] == "gameUpdate":
 			AgesBeyondNotifications.poll(argsList[1][0])
-		except:
-			print "Ages Beyond notification poll failed"
-	elif argsList and argsList[0] in ("GameStart", "OnLoad"):
-		AgesBeyondNotifications.reset()
+		else:
+			AgesBeyondNotifications.poll(0)
+	except:
+		print "Ages Beyond notification poll failed"
 
 	return getEventManager().handleEvent(argsList)
 
