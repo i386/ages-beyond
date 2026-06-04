@@ -6,6 +6,7 @@ use ages_beyond_protocol::{GameEvent, RequestBody};
 use anyhow::{anyhow, Context};
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use tracing::warn;
 
 pub trait LlmClient: Clone + Send + Sync + 'static {
@@ -77,7 +78,7 @@ impl LlmClient for OllamaClient {
             RequestBody::Ping => Ok("Ages Beyond Companion ready.".to_owned()),
             RequestBody::GameEvent { event } => match self.generate(game_event_prompt(event)).await
             {
-                Ok(text) => Ok(text),
+                Ok(text) => Ok(sanitize_player_text(&text)),
                 Err(err) => {
                     warn!(event_type = %event.event_type, error = %err, "using fallback chronicle text");
                     Ok(fallback_game_event_text(event))
@@ -88,9 +89,14 @@ impl LlmClient for OllamaClient {
 }
 
 fn game_event_prompt(event: &GameEvent) -> String {
-    let facts = serde_json::to_string_pretty(&event.facts).unwrap_or_else(|_| "{}".to_owned());
+    let facts = serde_json::to_string_pretty(&player_visible_facts(event))
+        .unwrap_or_else(|_| "{}".to_owned());
     let actors = serde_json::to_string_pretty(&event.actors).unwrap_or_else(|_| "[]".to_owned());
-    let summary = event.summary.as_deref().unwrap_or("");
+    let summary = event
+        .summary
+        .as_deref()
+        .map(sanitize_player_text)
+        .unwrap_or_default();
 
     format!(
         "Write one short in-world chronicle entry for this Civilization IV game event.\n\
@@ -102,6 +108,7 @@ fn game_event_prompt(event: &GameEvent) -> String {
          - If facts.dynamic_quest_seed exists, include a subtle unresolved hook without claiming game effects were applied.\n\
          - Treat facts.data1 as target_team_id for war_declared/peace_signed, tech_id for tech_discovered, religion_id for religion_founded, and building_id for wonder_built.\n\
          - Treat facts.data1/data2 according to named facts when a clearer *_id field is present.\n\
+         - Never mention map coordinates, tile coordinates, plot positions, x/y values, or coordinate pairs.\n\
          - Use plain ASCII punctuation.\n\
          - No bullet points.\n\n\
          Event type: {event_type}\n\
@@ -122,11 +129,103 @@ fn game_event_prompt(event: &GameEvent) -> String {
 
 fn fallback_game_event_text(event: &GameEvent) -> String {
     match event.summary.as_deref() {
-        Some(summary) if !summary.trim().is_empty() => summary.trim().to_owned(),
+        Some(summary) if !summary.trim().is_empty() => sanitize_player_text(summary),
         _ => format!(
             "A {} event was recorded.",
             event.event_type.replace('_', " ")
         ),
+    }
+}
+
+fn player_visible_facts(event: &GameEvent) -> serde_json::Map<String, Value> {
+    event
+        .facts
+        .iter()
+        .filter(|(key, _)| is_player_visible_fact(key))
+        .map(|(key, value)| (key.clone(), value.clone()))
+        .collect()
+}
+
+fn is_player_visible_fact(key: &str) -> bool {
+    !matches!(
+        key,
+        "x" | "y" | "plot_x" | "plot_y" | "city_x" | "city_y" | "map_x" | "map_y"
+    )
+}
+
+fn sanitize_player_text(text: &str) -> String {
+    let without_coordinate_pairs = remove_coordinate_pairs(text);
+    let mut cleaned = without_coordinate_pairs
+        .replace(" at the coordinates .", ".")
+        .replace(" at coordinates .", ".")
+        .replace(" at coordinate .", ".")
+        .replace(" at .", ".")
+        .replace(" coordinates .", ".")
+        .replace(" coordinate .", ".")
+        .replace("  ", " ");
+
+    while cleaned.contains("  ") {
+        cleaned = cleaned.replace("  ", " ");
+    }
+
+    cleaned.trim().to_owned()
+}
+
+fn remove_coordinate_pairs(text: &str) -> String {
+    let chars: Vec<char> = text.chars().collect();
+    let mut output = String::new();
+    let mut index = 0;
+
+    while index < chars.len() {
+        if chars[index] == '(' {
+            if let Some(end) = coordinate_pair_end(&chars, index) {
+                index = end + 1;
+                continue;
+            }
+        }
+
+        output.push(chars[index]);
+        index += 1;
+    }
+
+    output
+}
+
+fn coordinate_pair_end(chars: &[char], start: usize) -> Option<usize> {
+    let mut index = start + 1;
+    index = skip_spaces(chars, index);
+    index = consume_digits(chars, index)?;
+    index = skip_spaces(chars, index);
+    if chars.get(index) != Some(&',') {
+        return None;
+    }
+    index += 1;
+    index = skip_spaces(chars, index);
+    index = consume_digits(chars, index)?;
+    index = skip_spaces(chars, index);
+    if chars.get(index) == Some(&')') {
+        Some(index)
+    } else {
+        None
+    }
+}
+
+fn skip_spaces(chars: &[char], mut index: usize) -> usize {
+    while chars.get(index).is_some_and(|ch| ch.is_ascii_whitespace()) {
+        index += 1;
+    }
+    index
+}
+
+fn consume_digits(chars: &[char], mut index: usize) -> Option<usize> {
+    let start = index;
+    while chars.get(index).is_some_and(|ch| ch.is_ascii_digit()) {
+        index += 1;
+    }
+    if index > start {
+        Some(index)
+    } else {
+        None
     }
 }
 
@@ -148,4 +247,57 @@ struct OllamaOptions {
 #[derive(Debug, Deserialize)]
 struct OllamaGenerateResponse {
     response: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeMap;
+
+    use ages_beyond_protocol::GameEvent;
+    use serde_json::json;
+
+    use super::{fallback_game_event_text, game_event_prompt, sanitize_player_text};
+
+    fn event_with_coordinates() -> GameEvent {
+        GameEvent {
+            event_type: "city_founded".to_owned(),
+            turn: Some(0),
+            actors: Vec::new(),
+            summary: Some("Zulu Empire founded Ulundi at (12,23).".to_owned()),
+            facts: BTreeMap::from([
+                ("event_id".to_owned(), json!(2)),
+                ("x".to_owned(), json!(12)),
+                ("y".to_owned(), json!(23)),
+                ("city_name".to_owned(), json!("Ulundi")),
+                ("importance".to_owned(), json!("epochal")),
+            ]),
+        }
+    }
+
+    #[test]
+    fn prompt_excludes_map_coordinates() {
+        let prompt = game_event_prompt(&event_with_coordinates());
+
+        assert!(!prompt.contains("\"x\""));
+        assert!(!prompt.contains("\"y\""));
+        assert!(!prompt.contains("(12,23)"));
+        assert!(prompt.contains("\"city_name\""));
+        assert!(prompt.contains("Never mention map coordinates"));
+    }
+
+    #[test]
+    fn fallback_text_excludes_coordinate_pairs() {
+        assert_eq!(
+            fallback_game_event_text(&event_with_coordinates()),
+            "Zulu Empire founded Ulundi."
+        );
+    }
+
+    #[test]
+    fn generated_text_sanitizer_removes_coordinate_pairs() {
+        assert_eq!(
+            sanitize_player_text("Ulundi rose at the coordinates (12, 23)."),
+            "Ulundi rose."
+        );
+    }
 }
