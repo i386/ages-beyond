@@ -1,4 +1,4 @@
-name: Build CvGameCoreDLL
+name: Build Ages Beyond
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-vc71:
-    name: VC7.1 Win32 DLL
+  build-mod:
+    name: Build DLL, companion, and mod zip
     runs-on: windows-2022
 
     defaults:
@@ -35,7 +35,7 @@ jobs:
           VCTOOLKIT2003_URL: ${{ vars.VCTOOLKIT2003_URL }}
           PLATFORM_SDK_URL: ${{ vars.PLATFORM_SDK_URL }}
         run: |
-          powershell -NoProfile -ExecutionPolicy Bypass -File scripts\prepare_vc71_toolchain.ps1 -OutputDir "%RUNNER_TEMP%\vc71" -DownloadCacheDir "%RUNNER_TEMP%\vc71-downloads" -DownloadOnly
+          powershell -NoProfile -ExecutionPolicy Bypass -File CvGameCoreDLL\scripts\prepare_vc71_toolchain.ps1 -OutputDir "%RUNNER_TEMP%\vc71" -DownloadCacheDir "%RUNNER_TEMP%\vc71-downloads" -DownloadOnly
 
       - name: Save VC7.1 source archive cache
         if: steps.restore-vc71-downloads.outputs.cache-hit != 'true'
@@ -49,7 +49,7 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: ${{ runner.temp }}\vc71
-          key: vc71-toolchain-${{ runner.os }}-${{ hashFiles('scripts/prepare_vc71_toolchain.ps1') }}-v1
+          key: vc71-toolchain-${{ runner.os }}-${{ hashFiles('CvGameCoreDLL/scripts/prepare_vc71_toolchain.ps1') }}-v1
           restore-keys: |
             vc71-toolchain-${{ runner.os }}-
 
@@ -61,21 +61,34 @@ jobs:
           VCTOOLKIT2003_URL: ${{ vars.VCTOOLKIT2003_URL }}
           PLATFORM_SDK_URL: ${{ vars.PLATFORM_SDK_URL }}
         run: |
-          powershell -NoProfile -ExecutionPolicy Bypass -File scripts\prepare_vc71_toolchain.ps1 -OutputDir "%RUNNER_TEMP%\vc71" -DownloadCacheDir "%RUNNER_TEMP%\vc71-downloads"
+          powershell -NoProfile -ExecutionPolicy Bypass -File CvGameCoreDLL\scripts\prepare_vc71_toolchain.ps1 -OutputDir "%RUNNER_TEMP%\vc71" -DownloadCacheDir "%RUNNER_TEMP%\vc71-downloads"
 
       - name: Save prepared VC7.1 toolchain cache
         if: steps.restore-vc71-toolchain.outputs.cache-hit != 'true'
         uses: actions/cache/save@v5
         with:
           path: ${{ runner.temp }}\vc71
-          key: vc71-toolchain-${{ runner.os }}-${{ hashFiles('scripts/prepare_vc71_toolchain.ps1') }}-v1
+          key: vc71-toolchain-${{ runner.os }}-${{ hashFiles('CvGameCoreDLL/scripts/prepare_vc71_toolchain.ps1') }}-v1
 
-      - name: Build Final Release
-        run: scripts\build_vc71_nmake.bat "%RUNNER_TEMP%\vc71"
+      - name: Build CvGameCoreDLL
+        run: CvGameCoreDLL\scripts\build_vc71_nmake.bat "%RUNNER_TEMP%\vc71"
+
+      - name: Build AgesBeyondCompanion
+        run: cargo build --release --package ages-beyond-companion
+
+      - name: Package mod zip
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\package_mod.ps1
+
+      - name: Upload mod zip
+        uses: actions/upload-artifact@v7
+        with:
+          name: Civilization-IV-Ages-Beyond
+          path: dist\Civilization-IV-Ages-Beyond.zip
+          if-no-files-found: error
 
       - name: Upload CvGameCoreDLL
         uses: actions/upload-artifact@v7
         with:
           name: CvGameCoreDLL-win32
-          path: artifacts/CvGameCoreDLL.dll
+          path: CvGameCoreDLL\artifacts\CvGameCoreDLL.dll
           if-no-files-found: error

@@ -23,6 +23,7 @@ RES = $(INTDIR)\CvGameCoreDLL.res
 
 OBJECTS = \
 	$(INTDIR)\_precompile.obj \
+	$(INTDIR)\AgesBeyondCompanion.obj \
 	$(INTDIR)\CvArea.obj \
 	$(INTDIR)\CvArtFileMgr.obj \
 	$(INTDIR)\CvCity.obj \

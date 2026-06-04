@@ -24,6 +24,7 @@
 #include <set>
 #include "CvEventReporter.h"
 #include "CvMessageControl.h"
+#include "AgesBeyondCompanion.h"
 
 // interface uses
 #include "CvDLLInterfaceIFaceBase.h"
@@ -261,6 +262,9 @@ void CvGame::init(HandicapTypes eHandicap)
 	AI_init();
 
 	doUpdateCacheOnTurn();
+
+	AgesBeyond::StartCompanion();
+	AgesBeyond::SendGameEvent("game_started", getGameTurn(), "A new game of Civilization IV: Ages Beyond has begun.");
 }
 
 //
@@ -362,6 +366,8 @@ void CvGame::regenerateMap()
 
 void CvGame::uninit()
 {
+	AgesBeyond::StopCompanion();
+
 	SAFE_DELETE_ARRAY(m_aiShrineBuilding);
 	SAFE_DELETE_ARRAY(m_aiShrineReligion);
 	SAFE_DELETE_ARRAY(m_paiUnitCreatedCount);

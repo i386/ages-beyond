@@ -306,6 +306,9 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\AgesBeyondCompanion.cpp">
+			</File>
+			<File
 				RelativePath=".\CvArea.cpp">
 				<FileConfiguration
 					Name="Debug|Win32">
@@ -1023,6 +1026,9 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
 			<File
 				RelativePath=".\AI_Defines.h">
+			</File>
+			<File
+				RelativePath=".\AgesBeyondCompanion.h">
 			</File>
 			<File
 				RelativePath=".\CvArea.h">
