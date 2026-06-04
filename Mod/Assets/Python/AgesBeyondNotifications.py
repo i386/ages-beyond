@@ -135,9 +135,7 @@ def showLine(line):
 	except:
 		pass
 
-	message = "Ages Beyond: %s" % text
-
-	CyInterface().addImmediateMessage(message, "AS2D_POSITIVE_DINK")
+	CyInterface().addImmediateMessage(text, "AS2D_POSITIVE_DINK")
 
 	_shownCount += 1
 	writeProbe("shown notification %d" % _shownCount)
