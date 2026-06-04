@@ -1,6 +1,6 @@
 #![cfg_attr(not(windows), allow(dead_code))]
 
-use std::time::Duration;
+use std::{future::Future, time::Duration};
 
 use ages_beyond_protocol::{
     DiplomacyTextRequest, GameEvent, HistoricalNameRequest, RequestBody, WorldArcRequest,
@@ -12,7 +12,10 @@ use serde_json::Value;
 use tracing::warn;
 
 pub trait LlmClient: Clone + Send + Sync + 'static {
-    async fn respond(&self, body: &RequestBody) -> anyhow::Result<String>;
+    fn respond<'a>(
+        &'a self,
+        body: &'a RequestBody,
+    ) -> impl Future<Output = anyhow::Result<String>> + Send + 'a;
 }
 
 #[derive(Clone)]
