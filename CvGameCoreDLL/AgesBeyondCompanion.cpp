@@ -87,7 +87,7 @@ namespace
 	CvString QuoteCommandArgument(const CvString& szArgument)
 	{
 		CvString szQuoted = "\"";
-		for (size_t iI = 0; iI < szArgument.length(); ++iI)
+		for (int iI = 0; iI < (int)szArgument.length(); ++iI)
 		{
 			if (szArgument[iI] == '"')
 			{
