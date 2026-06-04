@@ -79,11 +79,11 @@ jobs:
       - name: Package mod zip
         run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\package_mod.ps1
 
-      - name: Upload mod zip
+      - name: Upload packaged mod
         uses: actions/upload-artifact@v7
         with:
           name: Civilization-IV-Ages-Beyond
-          path: dist\Civilization-IV-Ages-Beyond.zip
+          path: dist\stage\*
           if-no-files-found: error
 
       - name: Upload CvGameCoreDLL
