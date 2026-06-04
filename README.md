@@ -20,8 +20,8 @@ chronicle.
 - Diplomacy text can request generated replacements through the existing named
   pipe and fall back to vanilla XML text when no cached line is ready.
 - Rust maintains in-memory diplomacy memories, named conflicts, treaty names,
-  per-civilization arcs, and an LLM-named current world arc director from
-  accepted game events.
+  per-civilization arcs, era transition memories, and an LLM-named current
+  world arc director from accepted game events.
 - A Markdown chronicle is written to `Chronicle/AgesBeyondChronicle.md`.
 - Chronicle source events are stored in save-game state by event id.
 - Fog-of-war audience facts gate whether an event can be narrated.
@@ -81,7 +81,7 @@ or writing extra diplomacy cache files.
 ## Diplomacy memory, named conflicts, and arcs
 
 The Rust companion observes accepted, player-legal game events and maintains
-four in-memory director systems:
+five in-memory director systems:
 
 - **Diplomacy memory** records relationship facts such as wars, peace treaties,
   captured cities, and razed cities.
@@ -91,6 +91,9 @@ four in-memory director systems:
 - **Civilization arcs** ask Ollama to name each civilization's current story
   from its own events, such as settlements, wars, discoveries, wonders, faiths,
   conquests, and golden ages.
+- **Era transition narrator** detects when a civilization crosses into a new
+  tech era, emits an internal chronicle event, and remembers the transition for
+  later diplomacy.
 - **World arc director** tracks recent world events and asks Ollama to name the
   current historical arc from the civilizations, places, faiths, wonders, and
   conflicts actually present in the game.

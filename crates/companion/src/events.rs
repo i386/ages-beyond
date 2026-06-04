@@ -102,6 +102,8 @@ where
                 director.apply_world_arc_title(&request, title);
             }
 
+            let era_transition = observation.era_transition().cloned();
+
             let event_for_prompt = {
                 let director = director.lock().await;
                 director.enrich_event(event)
@@ -133,6 +135,42 @@ where
                 writer.append_event(event, &notification).await?;
             }
 
+            if let Some(era_event) = era_transition {
+                let era_event_for_prompt = {
+                    let director = director.lock().await;
+                    director.enrich_event(&era_event)
+                };
+
+                let era_text = llm
+                    .respond(&RequestBody::GameEvent {
+                        event: era_event_for_prompt,
+                    })
+                    .await
+                    .with_context(|| format!("failed to render {listener} era transition"))?;
+
+                if let Some(writer) = chronicle {
+                    match writer
+                        .append_event(&era_event, "Era Transition", &era_text)
+                        .await?
+                    {
+                        ChronicleWrite::Appended => {}
+                        ChronicleWrite::DuplicateSkipped => {
+                            info!(
+                                listener = listener,
+                                event_type = %era_event.event_type,
+                                event_id = ?event_id(&era_event),
+                                "skipped duplicate era transition projection, keeping session notification"
+                            );
+                        }
+                    }
+                }
+
+                if let Some(writer) = notifications {
+                    let notification = notification_excerpt(&era_text);
+                    writer.append_event(&era_event, &notification).await?;
+                }
+            }
+
             Ok(text)
         }
     }
@@ -154,6 +192,7 @@ fn classify_event(event: &GameEvent) -> EventHandling {
         "city_razed" => chronicle(event, "territory", "City Razed"),
         "religion_founded" => chronicle(event, "faith", "Religion Founded"),
         "tech_discovered" => chronicle(event, "knowledge", "Technology Discovered"),
+        "era_transition" => chronicle(event, "era", "Era Transition"),
         "wonder_built" => chronicle(event, "achievement", "World Wonder Built"),
         "project_built" => chronicle(event, "achievement", "Great Project Built"),
         "golden_age_started" => chronicle(event, "society", "Golden Age Started"),

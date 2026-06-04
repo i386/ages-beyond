@@ -10,6 +10,7 @@ use serde_json::{json, Value};
 const MAX_RELATIONSHIP_MEMORIES: usize = 8;
 const MAX_RECENT_WORLD_EVENTS: usize = 12;
 const MAX_RECENT_CONFLICTS: usize = 8;
+const MAX_ERA_MEMORIES: usize = 6;
 
 #[derive(Debug, Clone, Default)]
 pub struct DirectorState {
@@ -18,12 +19,15 @@ pub struct DirectorState {
     active_conflicts: HashMap<RelationshipKey, NamedConflict>,
     recent_conflicts: VecDeque<NamedConflict>,
     civilization_arcs: HashMap<i32, CivilizationArc>,
+    player_eras: HashMap<i32, PlayerEraState>,
+    era_memories: HashMap<i32, VecDeque<String>>,
     world_arc: Option<WorldArc>,
 }
 
 #[derive(Debug, Clone, Default)]
 pub struct DirectorObservation {
     historical_names: Vec<HistoricalNameProposal>,
+    era_transition: Option<GameEvent>,
     world_arc: Option<WorldArcRequest>,
 }
 
@@ -33,7 +37,7 @@ pub struct HistoricalNameProposal {
     target: HistoricalNameTarget,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 enum HistoricalNameTarget {
     Relationship(RelationshipKey),
     Civilization(i32),
@@ -73,6 +77,12 @@ struct CivilizationArc {
     updated_turn: Option<i32>,
 }
 
+#[derive(Debug, Clone)]
+struct PlayerEraState {
+    era_id: i32,
+    era_name: String,
+}
+
 impl DirectorState {
     pub fn observe_event(&mut self, event: &GameEvent) -> DirectorObservation {
         if let Some(memory) = relationship_memory(event) {
@@ -83,8 +93,11 @@ impl DirectorState {
             self.remember_world_event(summary);
         }
 
+        let era_transition = self.observe_era_transition(event);
+
         DirectorObservation {
             historical_names: self.propose_historical_names(event),
+            era_transition,
             world_arc: self.propose_world_arc(event),
         }
     }
@@ -246,6 +259,14 @@ impl DirectorState {
                 .insert("diplomacy_memory".to_owned(), json!(memory));
         }
 
+        if let Some(player_id) = fact_i32(event, "player_id") {
+            if let Some(memory) = self.era_memory_summary(player_id) {
+                enriched
+                    .facts
+                    .insert("civilization_era_memory".to_owned(), json!(memory));
+            }
+        }
+
         if let Some(conflict) = self.event_conflict(event) {
             enriched
                 .facts
@@ -347,6 +368,114 @@ impl DirectorState {
         while self.recent_conflicts.len() > MAX_RECENT_CONFLICTS {
             self.recent_conflicts.pop_front();
         }
+    }
+
+    fn remember_era_memory(&mut self, player_id: i32, text: String) {
+        if player_id < 0 || text.trim().is_empty() {
+            return;
+        }
+
+        let memories = self.era_memories.entry(player_id).or_default();
+        if memories.iter().any(|memory| memory == &text) {
+            return;
+        }
+
+        memories.push_back(text);
+        while memories.len() > MAX_ERA_MEMORIES {
+            memories.pop_front();
+        }
+    }
+
+    fn observe_era_transition(&mut self, event: &GameEvent) -> Option<GameEvent> {
+        if event.event_type != "tech_discovered" {
+            return None;
+        }
+
+        let player_id =
+            fact_i32(event, "discoverer_id").or_else(|| fact_i32(event, "player_id"))?;
+        let new_era_id = fact_i32(event, "tech_era_id")?;
+        if new_era_id < 0 {
+            return None;
+        }
+
+        let current_era_id = fact_i32(event, "era_id");
+        let current_era_name = fact_string(event, "era_name");
+        let previous = self.player_eras.get(&player_id).cloned().or_else(|| {
+            current_era_id.map(|era_id| PlayerEraState {
+                era_id,
+                era_name: current_era_name
+                    .clone()
+                    .unwrap_or_else(|| era_label(era_id)),
+            })
+        });
+
+        let new_era_name = fact_string(event, "tech_era_name")
+            .or_else(|| {
+                (current_era_id == Some(new_era_id))
+                    .then(|| current_era_name.clone())
+                    .flatten()
+            })
+            .unwrap_or_else(|| era_label(new_era_id));
+
+        self.player_eras.insert(
+            player_id,
+            PlayerEraState {
+                era_id: new_era_id,
+                era_name: new_era_name.clone(),
+            },
+        );
+
+        let previous = previous?;
+        if new_era_id <= previous.era_id {
+            return None;
+        }
+
+        let civilization = fact_string(event, "discoverer_civilization")
+            .or_else(|| fact_string(event, "player_civilization"))
+            .unwrap_or_else(|| format!("Player {player_id}"));
+        let tech_name = fact_string(event, "tech_name").unwrap_or_else(|| "a discovery".to_owned());
+        let memory = format!(
+            "{} entered the {} after {}.",
+            civilization, new_era_name, tech_name
+        );
+        self.remember_era_memory(player_id, memory);
+
+        let mut facts = event.facts.clone();
+        facts.insert(
+            "event_id".to_owned(),
+            json!(format!(
+                "era:{player_id}:{}:{new_era_id}:{}",
+                previous.era_id,
+                event.turn.unwrap_or(-1)
+            )),
+        );
+        facts.insert("internal_event".to_owned(), json!(true));
+        facts.insert("importance".to_owned(), json!("epochal"));
+        facts.insert("chapter".to_owned(), json!("Era Transitions"));
+        facts.insert("story_arc".to_owned(), json!("era_transition"));
+        facts.insert("player_id".to_owned(), json!(player_id));
+        facts.insert(
+            "player_civilization".to_owned(),
+            json!(civilization.clone()),
+        );
+        facts.insert("old_era_id".to_owned(), json!(previous.era_id));
+        facts.insert("old_era_name".to_owned(), json!(previous.era_name.clone()));
+        facts.insert("new_era_id".to_owned(), json!(new_era_id));
+        facts.insert("new_era_name".to_owned(), json!(new_era_name.clone()));
+        facts.insert("triggering_tech_name".to_owned(), json!(tech_name.clone()));
+        facts.insert("location_known_to_active_player".to_owned(), json!(false));
+        facts.insert("is_global_announcement".to_owned(), json!(false));
+
+        Some(GameEvent {
+            event_type: "era_transition".to_owned(),
+            turn: event.turn,
+            actors: event.actors.clone(),
+            summary: Some(format!(
+                "{} entered the {} from the {} after {}.",
+                civilization, new_era_name, previous.era_name, tech_name
+            )),
+            facts,
+        })
     }
 
     fn propose_historical_names(&self, event: &GameEvent) -> Vec<HistoricalNameProposal> {
@@ -579,10 +708,27 @@ impl DirectorState {
             ));
         }
 
+        if let Some(memory) = self.era_memory_summary(active_player_id) {
+            parts.push(format!("Active player era memory: {memory}"));
+        }
+
+        if let Some(memory) = self.era_memory_summary(leader_player_id) {
+            parts.push(format!("Rival leader era memory: {memory}"));
+        }
+
         if parts.is_empty() {
             None
         } else {
             Some(parts.join(" | "))
+        }
+    }
+
+    fn era_memory_summary(&self, player_id: i32) -> Option<String> {
+        let memories = self.era_memories.get(&player_id)?;
+        if memories.is_empty() {
+            None
+        } else {
+            Some(memories.iter().cloned().collect::<Vec<_>>().join(" | "))
         }
     }
 
@@ -605,6 +751,10 @@ impl DirectorObservation {
 
     pub fn world_arc(&self) -> Option<&WorldArcRequest> {
         self.world_arc.as_ref()
+    }
+
+    pub fn era_transition(&self) -> Option<&GameEvent> {
+        self.era_transition.as_ref()
     }
 }
 
@@ -939,7 +1089,7 @@ fn civilization_arc_player_ids(event: &GameEvent) -> Vec<i32> {
             fact_i32(event, "old_owner_id").or_else(|| fact_i32(event, "data1")),
         ],
         "city_founded" | "religion_founded" | "wonder_built" | "project_built"
-        | "golden_age_started" | "great_person_born" | "tech_discovered" => {
+        | "era_transition" | "golden_age_started" | "great_person_born" | "tech_discovered" => {
             vec![fact_i32(event, "player_id")
                 .or_else(|| fact_i32(event, "owner_id"))
                 .or_else(|| fact_i32(event, "discoverer_id"))]
@@ -1060,6 +1210,14 @@ fn civilization_arc_summary(arc: &CivilizationArc) -> String {
         "{}: {} for {}; pressure {}{}",
         arc.title, arc.theme, arc.civilization, arc.pressure, turn
     )
+}
+
+fn era_label(era_id: i32) -> String {
+    if era_id >= 0 {
+        format!("Era {era_id}")
+    } else {
+        "an unknown era".to_owned()
+    }
 }
 
 fn unique_nonempty<const N: usize>(values: [Option<String>; N]) -> Vec<String> {
@@ -1355,5 +1513,63 @@ mod tests {
 
         assert!(context.contains("Active player civilization arc: The Nile Reckoning"));
         assert!(context.contains("Rival leader civilization arc: The Iron Mandate"));
+    }
+
+    #[test]
+    fn tech_discovery_can_emit_era_transition_event() {
+        let mut director = DirectorState::default();
+        assert!(director
+            .observe_event(&event(
+                "tech_discovered",
+                BTreeMap::from([
+                    ("discoverer_id".to_owned(), json!(2)),
+                    ("discoverer_civilization".to_owned(), json!("Mali")),
+                    ("tech_name".to_owned(), json!("Pottery")),
+                    ("tech_era_id".to_owned(), json!(0)),
+                    ("tech_era_name".to_owned(), json!("Ancient Era")),
+                    ("era_id".to_owned(), json!(0)),
+                    ("era_name".to_owned(), json!("Ancient Era")),
+                ]),
+            ))
+            .era_transition()
+            .is_none());
+
+        let observation = director.observe_event(&event(
+            "tech_discovered",
+            BTreeMap::from([
+                ("discoverer_id".to_owned(), json!(2)),
+                ("discoverer_civilization".to_owned(), json!("Mali")),
+                ("tech_name".to_owned(), json!("Writing")),
+                ("tech_era_id".to_owned(), json!(1)),
+                ("tech_era_name".to_owned(), json!("Classical Era")),
+                ("era_id".to_owned(), json!(0)),
+                ("era_name".to_owned(), json!("Ancient Era")),
+            ]),
+        ));
+        let era_event = observation.era_transition().unwrap();
+
+        assert_eq!(era_event.event_type, "era_transition");
+        assert_eq!(
+            era_event
+                .facts
+                .get("old_era_name")
+                .and_then(|value| value.as_str()),
+            Some("Ancient Era")
+        );
+        assert_eq!(
+            era_event
+                .facts
+                .get("new_era_name")
+                .and_then(|value| value.as_str()),
+            Some("Classical Era")
+        );
+
+        let enriched = director.enrich_event(era_event);
+        assert!(enriched
+            .facts
+            .get("civilization_era_memory")
+            .and_then(|value| value.as_str())
+            .unwrap()
+            .contains("Mali entered the Classical Era after Writing."));
     }
 }

@@ -567,6 +567,11 @@ namespace AgesBeyond
 		kFacts.addString("tech_type", GC.getTechInfo(eTech).getType());
 		kFacts.addWideString("tech_name", GC.getTechInfo(eTech).getDescription());
 		kFacts.addInt("tech_era_id", GC.getTechInfo(eTech).getEra());
+		if (GC.getTechInfo(eTech).getEra() != NO_ERA)
+		{
+			kFacts.addString("tech_era_type", GC.getEraInfo((EraTypes)GC.getTechInfo(eTech).getEra()).getType());
+			kFacts.addWideString("tech_era_name", GC.getEraInfo((EraTypes)GC.getTechInfo(eTech).getEra()).getDescription());
+		}
 		kFacts.addString("dynamic_quest_seed", "new_knowledge");
 		kFacts.addString("quest_policy", "suggest_only");
 		AddAudienceFacts(
