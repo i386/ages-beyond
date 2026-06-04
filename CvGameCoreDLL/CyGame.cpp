@@ -13,6 +13,27 @@
 #include "CyReplayInfo.h"
 #include "CvReplayInfo.h"
 #include "CyPlot.h"
+#include "AgesBeyondCompanion.h"
+
+namespace
+{
+	CvString NarrowString(const std::wstring& szWide)
+	{
+		CvString szNarrow;
+		szNarrow.Copy(szWide.c_str());
+		return szNarrow;
+	}
+
+	std::wstring WidenAscii(const CvString& szNarrow)
+	{
+		std::wstring szWide;
+		for (int iI = 0; iI < (int)szNarrow.length(); ++iI)
+		{
+			szWide += (wchar_t)(unsigned char)szNarrow[iI];
+		}
+		return szWide;
+	}
+}
 
 CyGame::CyGame() : m_pGame(NULL)
 {
@@ -635,6 +656,24 @@ void CyGame::setActivePlayer(int /*PlayerTypes*/ eNewValue, bool bForceHotSeat)
 {
 	if (m_pGame)
 		m_pGame->setActivePlayer((PlayerTypes)eNewValue, bForceHotSeat);
+}
+
+std::wstring CyGame::getAgesBeyondDiplomacyText(std::wstring szCommentType, int iActivePlayer, int iLeaderPlayer, int iTurn, std::wstring szActivePlayerName, std::wstring szActiveCivilization, std::wstring szLeaderName, std::wstring szLeaderCivilization, std::wstring szAttitude, bool bAtWar, std::wstring szPowerRelation, std::wstring szFallbackText)
+{
+	CvString szText = AgesBeyond::RequestDiplomacyText(
+		NarrowString(szCommentType).c_str(),
+		iActivePlayer,
+		iLeaderPlayer,
+		iTurn,
+		NarrowString(szActivePlayerName).c_str(),
+		NarrowString(szActiveCivilization).c_str(),
+		NarrowString(szLeaderName).c_str(),
+		NarrowString(szLeaderCivilization).c_str(),
+		NarrowString(szAttitude).c_str(),
+		bAtWar,
+		NarrowString(szPowerRelation).c_str(),
+		NarrowString(szFallbackText).c_str());
+	return WidenAscii(szText);
 }
 
 int CyGame::getPausePlayer()

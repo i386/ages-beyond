@@ -3,11 +3,17 @@ use ages_beyond_protocol::{CompanionRequest, CompanionResponse};
 #[cfg(windows)]
 use anyhow::Context;
 #[cfg(windows)]
+use std::{collections::HashMap, sync::Arc};
+#[cfg(windows)]
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 #[cfg(windows)]
-use tracing::{error, info};
+use tokio::sync::Mutex;
+#[cfg(windows)]
+use tracing::{debug, error, info, warn};
 
 use crate::chronicle::ChronicleWriter;
+#[cfg(windows)]
+use crate::director::DirectorState;
 #[cfg(windows)]
 use crate::events;
 use crate::llm::LlmClient;
@@ -36,7 +42,17 @@ where
         .with_context(|| format!("failed while waiting for pipe client {pipe_name}"))?;
     info!("DLL connected");
 
-    handle_connection(pipe, llm, chronicle, notifications).await
+    let diplomacy_cache = Arc::new(Mutex::new(HashMap::new()));
+    let director = Arc::new(Mutex::new(DirectorState::default()));
+    handle_connection(
+        pipe,
+        llm,
+        chronicle,
+        notifications,
+        diplomacy_cache,
+        director,
+    )
+    .await
 }
 
 #[cfg(not(windows))]
@@ -58,6 +74,8 @@ async fn handle_connection<S, L>(
     llm: L,
     chronicle: Option<ChronicleWriter>,
     notifications: Option<NotificationWriter>,
+    diplomacy_cache: Arc<Mutex<HashMap<String, String>>>,
+    director: Arc<Mutex<DirectorState>>,
 ) -> anyhow::Result<()>
 where
     S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin,
@@ -79,6 +97,8 @@ where
                     &llm,
                     chronicle.as_ref(),
                     notifications.as_ref(),
+                    diplomacy_cache.clone(),
+                    director.clone(),
                 )
                 .await
                 {
@@ -117,14 +137,63 @@ async fn handle_request<L>(
     llm: &L,
     chronicle: Option<&ChronicleWriter>,
     notifications: Option<&NotificationWriter>,
+    diplomacy_cache: Arc<Mutex<HashMap<String, String>>>,
+    director: Arc<Mutex<DirectorState>>,
 ) -> anyhow::Result<String>
 where
     L: LlmClient,
 {
     match body {
         ages_beyond_protocol::RequestBody::Ping => llm.respond(body).await,
+        ages_beyond_protocol::RequestBody::WorldArcTitle { .. } => llm.respond(body).await,
         ages_beyond_protocol::RequestBody::GameEvent { event } => {
-            events::process_game_event(event, llm, chronicle, notifications).await
+            events::process_game_event(event, llm, chronicle, notifications, &director).await
+        }
+        ages_beyond_protocol::RequestBody::DiplomacyText { request } => {
+            let key = diplomacy_cache_key(request);
+            if let Some(text) = diplomacy_cache.lock().await.get(&key).cloned() {
+                debug!(comment_type = %request.comment_type, key = %key, "served cached diplomacy text");
+                return Ok(text);
+            }
+
+            let llm = llm.clone();
+            let enriched_request = {
+                let director = director.lock().await;
+                director.enrich_diplomacy_request(request)
+            };
+            let body = ages_beyond_protocol::RequestBody::DiplomacyText {
+                request: enriched_request,
+            };
+            let cache = diplomacy_cache.clone();
+            let key_for_task = key.clone();
+            let comment_type = request.comment_type.clone();
+            tokio::spawn(async move {
+                match llm.respond(&body).await {
+                    Ok(text) if !text.trim().is_empty() => {
+                        cache.lock().await.insert(key_for_task, text);
+                    }
+                    Ok(_) => {
+                        debug!(comment_type = %comment_type, "diplomacy generation returned empty text");
+                    }
+                    Err(err) => {
+                        warn!(comment_type = %comment_type, error = %err, "failed to generate diplomacy text");
+                    }
+                }
+            });
+
+            Ok(String::new())
         }
     }
+}
+
+#[cfg(windows)]
+fn diplomacy_cache_key(request: &ages_beyond_protocol::DiplomacyTextRequest) -> String {
+    format!(
+        "{}:{}:{}:{}:{}",
+        request.comment_type,
+        request.active_player_id,
+        request.leader_player_id,
+        request.turn.unwrap_or(-1) / 10,
+        request.attitude.as_deref().unwrap_or("unknown")
+    )
 }

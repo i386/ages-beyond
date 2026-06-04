@@ -10,14 +10,27 @@ namespace
 	const DWORD CONNECT_TIMEOUT_MS = 5000;
 	const DWORD CONNECT_POLL_MS = 100;
 	const DWORD SHUTDOWN_TIMEOUT_MS = 2000;
+	const DWORD RESPONSE_TIMEOUT_MS = 120;
 
 	HANDLE g_hPipe = INVALID_HANDLE_VALUE;
 	HANDLE g_hReaderThread = NULL;
+	HANDLE g_hResponseEvent = NULL;
 	PROCESS_INFORMATION g_kProcessInfo;
 	CRITICAL_SECTION g_kPipeSection;
+	CRITICAL_SECTION g_kResponseSection;
 	bool g_bPipeSectionInitialized = false;
+	bool g_bResponseSectionInitialized = false;
 	bool g_bStopReader = false;
 	volatile LONG g_iNextRequestId = 1;
+
+	struct PipeResponse
+	{
+		CvString m_szId;
+		CvString m_szText;
+		bool m_bOk;
+	};
+
+	std::vector<PipeResponse> g_aResponses;
 
 	void Trace(const char* szMessage)
 	{
@@ -165,6 +178,161 @@ namespace
 		return szEscaped;
 	}
 
+	CvString JsonUnescape(const CvString& szText)
+	{
+		CvString szOutput;
+		for (int iI = 0; iI < (int)szText.length(); ++iI)
+		{
+			if (szText[iI] == '\\' && iI + 1 < (int)szText.length())
+			{
+				++iI;
+				switch (szText[iI])
+				{
+				case 'n':
+					szOutput += '\n';
+					break;
+				case 'r':
+					szOutput += '\r';
+					break;
+				case 't':
+					szOutput += '\t';
+					break;
+				case '"':
+				case '\\':
+				case '/':
+					szOutput += szText[iI];
+					break;
+				default:
+					szOutput += szText[iI];
+					break;
+				}
+			}
+			else
+			{
+				szOutput += szText[iI];
+			}
+		}
+		return szOutput;
+	}
+
+	bool ExtractJsonString(const CvString& szJson, const char* szKey, CvString& szValue)
+	{
+		CvString szNeedle = CvString::format("\"%s\"", szKey);
+		size_t iKey = szJson.find(szNeedle);
+		if (iKey == CvString::npos)
+		{
+			return false;
+		}
+
+		size_t iColon = szJson.find(':', iKey + szNeedle.length());
+		if (iColon == CvString::npos)
+		{
+			return false;
+		}
+
+		size_t iStart = szJson.find('"', iColon + 1);
+		if (iStart == CvString::npos)
+		{
+			return false;
+		}
+
+		CvString szRaw;
+		bool bEscaped = false;
+		for (size_t iI = iStart + 1; iI < szJson.length(); ++iI)
+		{
+			char ch = szJson[iI];
+			if (bEscaped)
+			{
+				szRaw += '\\';
+				szRaw += ch;
+				bEscaped = false;
+			}
+			else if (ch == '\\')
+			{
+				bEscaped = true;
+			}
+			else if (ch == '"')
+			{
+				szValue = JsonUnescape(szRaw);
+				return true;
+			}
+			else
+			{
+				szRaw += ch;
+			}
+		}
+
+		return false;
+	}
+
+	void StoreResponseLine(const CvString& szLine)
+	{
+		CvString szId;
+		if (!ExtractJsonString(szLine, "id", szId))
+		{
+			return;
+		}
+		if (szId.find("diplo-") != 0)
+		{
+			return;
+		}
+
+		CvString szStatus;
+		ExtractJsonString(szLine, "status", szStatus);
+
+		PipeResponse kResponse;
+		kResponse.m_szId = szId;
+		kResponse.m_bOk = (szStatus == "ok");
+		ExtractJsonString(szLine, "text", kResponse.m_szText);
+
+		EnterCriticalSection(&g_kResponseSection);
+		g_aResponses.push_back(kResponse);
+		LeaveCriticalSection(&g_kResponseSection);
+
+		if (g_hResponseEvent != NULL)
+		{
+			SetEvent(g_hResponseEvent);
+		}
+	}
+
+	bool TakeResponse(const CvString& szId, CvString& szText)
+	{
+		bool bFound = false;
+		EnterCriticalSection(&g_kResponseSection);
+		for (std::vector<PipeResponse>::iterator it = g_aResponses.begin(); it != g_aResponses.end(); ++it)
+		{
+			if (it->m_szId == szId)
+			{
+				if (it->m_bOk)
+				{
+					szText = it->m_szText;
+				}
+				g_aResponses.erase(it);
+				bFound = true;
+				break;
+			}
+		}
+		LeaveCriticalSection(&g_kResponseSection);
+		return bFound;
+	}
+
+	bool WaitForResponse(const CvString& szId, DWORD dwTimeoutMs, CvString& szText)
+	{
+		DWORD dwStart = GetTickCount();
+		while (GetTickCount() - dwStart < dwTimeoutMs)
+		{
+			if (TakeResponse(szId, szText))
+			{
+				return true;
+			}
+
+			DWORD dwRemaining = dwTimeoutMs - (GetTickCount() - dwStart);
+			WaitForSingleObject(g_hResponseEvent, (dwRemaining < 20) ? dwRemaining : 20);
+		}
+
+		return TakeResponse(szId, szText);
+	}
+
 	bool LaunchCompanionProcess(const CvString& szExePath, const CvString& szPipeName, const CvString& szChroniclePath)
 	{
 		CvString szCommandLine = QuoteCommandArgument(szExePath);
@@ -241,6 +409,7 @@ namespace
 	DWORD WINAPI ReaderThreadProc(LPVOID)
 	{
 		char szBuffer[512];
+		CvString szPending;
 
 		while (!g_bStopReader)
 		{
@@ -252,10 +421,24 @@ namespace
 			}
 
 			szBuffer[dwBytesRead] = 0;
+			szPending += szBuffer;
+			for (;;)
+			{
+				size_t iLineEnd = szPending.find('\n');
+				if (iLineEnd == CvString::npos)
+				{
+					break;
+				}
+
+				CvString szLine = szPending.substr(0, iLineEnd);
+				szPending = szPending.substr(iLineEnd + 1);
+				StoreResponseLine(szLine);
 #ifndef FINAL_RELEASE
-			OutputDebugStringA("Ages Beyond Companion response: ");
-			OutputDebugStringA(szBuffer);
+				OutputDebugStringA("Ages Beyond Companion response: ");
+				OutputDebugStringA(szLine.c_str());
+				OutputDebugStringA("\n");
 #endif
+			}
 		}
 
 		return 0;
@@ -312,6 +495,15 @@ namespace AgesBeyond
 		{
 			InitializeCriticalSection(&g_kPipeSection);
 			g_bPipeSectionInitialized = true;
+		}
+		if (!g_bResponseSectionInitialized)
+		{
+			InitializeCriticalSection(&g_kResponseSection);
+			g_bResponseSectionInitialized = true;
+		}
+		if (g_hResponseEvent == NULL)
+		{
+			g_hResponseEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 		}
 
 		CvString szPipeName = CvString::format("\\\\.\\pipe\\AgesBeyond-%lu-%lu", GetCurrentProcessId(), GetTickCount());
@@ -377,6 +569,17 @@ namespace AgesBeyond
 			DeleteCriticalSection(&g_kPipeSection);
 			g_bPipeSectionInitialized = false;
 		}
+		if (g_bResponseSectionInitialized)
+		{
+			DeleteCriticalSection(&g_kResponseSection);
+			g_bResponseSectionInitialized = false;
+		}
+		if (g_hResponseEvent != NULL)
+		{
+			CloseHandle(g_hResponseEvent);
+			g_hResponseEvent = NULL;
+		}
+		g_aResponses.clear();
 	}
 
 	bool IsCompanionRunning()
@@ -403,7 +606,7 @@ namespace AgesBeyond
 		}
 
 		CvString szRequest = CvString::format(
-			"{\"version\":%d,\"id\":\"%s\",\"kind\":\"game_event\",\"event\":{\"event_type\":\"%s\",\"turn\":%d,\"actors\":[],\"summary\":\"%s\",\"facts\":{\"contract_version\":2,\"event_id\":%d,\"player_id\":%d,\"team_id\":%d,\"city_id\":%d,\"x\":%d,\"y\":%d,\"data1\":%d,\"data2\":%d,\"max_civ_players\":%d,\"barbarian_team_id\":%d%s}}}",
+			"{\"version\":%d,\"id\":\"%s\",\"kind\":\"game_event\",\"event\":{\"event_type\":\"%s\",\"turn\":%d,\"actors\":[],\"summary\":\"%s\",\"facts\":{\"contract_version\":3,\"event_id\":%d,\"player_id\":%d,\"team_id\":%d,\"city_id\":%d,\"x\":%d,\"y\":%d,\"data1\":%d,\"data2\":%d,\"max_civ_players\":%d,\"barbarian_team_id\":%d%s}}}",
 			PROTOCOL_VERSION,
 			NextRequestId("event").c_str(),
 			JsonEscape(szEventType).c_str(),
@@ -421,5 +624,44 @@ namespace AgesBeyond
 			BARBARIAN_TEAM,
 			szExtraFacts.c_str());
 		return WriteLine(szRequest);
+	}
+
+	CvString RequestDiplomacyText(const char* szCommentType, int iActivePlayer, int iLeaderPlayer, int iTurn, const char* szActivePlayerName, const char* szActiveCivilization, const char* szLeaderName, const char* szLeaderCivilization, const char* szAttitude, bool bAtWar, const char* szPowerRelation, const char* szFallbackText)
+	{
+		if (g_hPipe == INVALID_HANDLE_VALUE)
+		{
+			return "";
+		}
+
+		CvString szId = NextRequestId("diplo");
+		CvString szRequest = CvString::format(
+			"{\"version\":%d,\"id\":\"%s\",\"kind\":\"diplomacy_text\",\"request\":{\"comment_type\":\"%s\",\"active_player_id\":%d,\"leader_player_id\":%d,\"turn\":%d,\"active_player_name\":\"%s\",\"active_civilization\":\"%s\",\"leader_name\":\"%s\",\"leader_civilization\":\"%s\",\"attitude\":\"%s\",\"at_war\":%s,\"power_relation\":\"%s\",\"fallback_text\":\"%s\"}}",
+			PROTOCOL_VERSION,
+			szId.c_str(),
+			JsonEscape(szCommentType).c_str(),
+			iActivePlayer,
+			iLeaderPlayer,
+			iTurn,
+			JsonEscape(szActivePlayerName).c_str(),
+			JsonEscape(szActiveCivilization).c_str(),
+			JsonEscape(szLeaderName).c_str(),
+			JsonEscape(szLeaderCivilization).c_str(),
+			JsonEscape(szAttitude).c_str(),
+			bAtWar ? "true" : "false",
+			JsonEscape(szPowerRelation).c_str(),
+			JsonEscape(szFallbackText).c_str());
+
+		if (!WriteLine(szRequest))
+		{
+			return "";
+		}
+
+		CvString szResponse;
+		if (!WaitForResponse(szId, RESPONSE_TIMEOUT_MS, szResponse))
+		{
+			return "";
+		}
+
+		return szResponse;
 	}
 }

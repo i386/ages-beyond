@@ -1,4 +1,5 @@
 mod chronicle;
+mod director;
 mod events;
 mod ipc;
 mod llm;

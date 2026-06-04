@@ -161,6 +161,7 @@ public:
 
 	int /*PlayerTypes*/ getActivePlayer();
 	void setActivePlayer(int /*PlayerTypes*/ eNewValue, bool bForceHotSeat);
+	std::wstring getAgesBeyondDiplomacyText(std::wstring szCommentType, int iActivePlayer, int iLeaderPlayer, int iTurn, std::wstring szActivePlayerName, std::wstring szActiveCivilization, std::wstring szLeaderName, std::wstring szLeaderCivilization, std::wstring szAttitude, bool bAtWar, std::wstring szPowerRelation, std::wstring szFallbackText);
 	int getPausePlayer();
 	bool isPaused();
 	int /*UnitTypes*/ getBestLandUnit();

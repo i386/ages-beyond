@@ -347,10 +347,69 @@ class CvDiplomacy:
 		" Helper for adding User Comments "
 		iComment = self.getCommentID( eComment )
 		self.diploScreen.addUserComment( iComment, iData1, iData2, self.getDiplomacyComment(iComment), args)
+
+	def getAttitudeLabel(self, eAttitude):
+		if (eAttitude == AttitudeTypes.ATTITUDE_FURIOUS):
+			return "furious"
+		elif (eAttitude == AttitudeTypes.ATTITUDE_ANNOYED):
+			return "annoyed"
+		elif (eAttitude == AttitudeTypes.ATTITUDE_CAUTIOUS):
+			return "cautious"
+		elif (eAttitude == AttitudeTypes.ATTITUDE_PLEASED):
+			return "pleased"
+		elif (eAttitude == AttitudeTypes.ATTITUDE_FRIENDLY):
+			return "friendly"
+		return "unknown"
+
+	def getPowerRelationLabel(self, ourPower, theirPower):
+		if (ourPower > theirPower * 2):
+			return "active_player_stronger"
+		elif (theirPower > ourPower * 2):
+			return "leader_stronger"
+		return "roughly_equal"
+
+	def getAgesBeyondAIComment(self, eComment, fallbackText):
+		try:
+			iLeader = self.diploScreen.getWhoTradingWith()
+			if (iLeader == -1):
+				return ""
+
+			game = gc.getGame()
+			iActivePlayer = game.getActivePlayer()
+			if (iActivePlayer == -1):
+				return ""
+
+			activePlayer = gc.getPlayer(iActivePlayer)
+			leaderPlayer = gc.getPlayer(iLeader)
+			activeTeam = gc.getTeam(activePlayer.getTeam())
+			leaderTeam = gc.getTeam(leaderPlayer.getTeam())
+			commentType = gc.getDiplomacyInfo(int(eComment)).getType()
+			attitude = self.getAttitudeLabel(leaderPlayer.AI_getAttitude(iActivePlayer))
+			powerRelation = self.getPowerRelationLabel(activePlayer.getPower(), leaderPlayer.getPower())
+			atWar = activeTeam.isAtWar(leaderPlayer.getTeam())
+
+			return game.getAgesBeyondDiplomacyText(
+				commentType,
+				iActivePlayer,
+				iLeader,
+				game.getGameTurn(),
+				activePlayer.getName(),
+				activePlayer.getCivilizationDescription(0),
+				leaderPlayer.getName(),
+				leaderPlayer.getCivilizationDescription(0),
+				attitude,
+				atWar,
+				powerRelation,
+				fallbackText)
+		except:
+			return ""
 		
 	def setAIComment (self, eComment, *args):
 		" Handles the determining the AI comments"
 		AIString = self.getDiplomacyComment(eComment)
+		AgesBeyondAIString = self.getAgesBeyondAIComment(eComment, AIString)
+		if (AgesBeyondAIString):
+			AIString = AgesBeyondAIString
 
 		if DebugLogging:
 			print "CvDiplomacy.setAIComment: %s" %(eComment,)

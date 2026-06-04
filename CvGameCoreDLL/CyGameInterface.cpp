@@ -150,6 +150,7 @@ void CyGamePythonInterface()
 
 		.def("getActivePlayer", &CyGame::getActivePlayer, "returns index of the active player")
 		.def("setActivePlayer", &CyGame::setActivePlayer, "void (int /*PlayerTypes*/ eNewValue, bool bForceHotSeat)")
+		.def("getAgesBeyondDiplomacyText", &CyGame::getAgesBeyondDiplomacyText, "wstring (commentType, activePlayer, leaderPlayer, turn, activePlayerName, activeCivilization, leaderName, leaderCivilization, attitude, atWar, powerRelation, fallbackText)")
 		.def("getPausePlayer", &CyGame::getPausePlayer, "int () - will get who paused us")
 		.def("isPaused", &CyGame::isPaused, "bool () - will say if the game is paused")
 		.def("getBestLandUnit", &CyGame::getBestLandUnit, "returns index of the best unit")

@@ -3,6 +3,7 @@
 #include "CvCity.h"
 #include "CvGame.h"
 #include "CvPlayer.h"
+#include "CvPlot.h"
 #include "CvTeam.h"
 #include "CvUnit.h"
 
@@ -161,6 +162,102 @@ namespace
 		return GC.getGameINLINE().isFinalInitialized() && !gDLL->GetWorldBuilderMode();
 	}
 
+	PlayerTypes ActivePlayer()
+	{
+		return GC.getGameINLINE().getActivePlayer();
+	}
+
+	TeamTypes ActiveTeam()
+	{
+		return GC.getGameINLINE().getActiveTeam();
+	}
+
+	bool IsActivePlayer(PlayerTypes ePlayer)
+	{
+		return IsValidPlayer(ePlayer) && ePlayer == ActivePlayer();
+	}
+
+	bool IsActiveTeam(TeamTypes eTeam)
+	{
+		return IsValidTeam(eTeam) && eTeam == ActiveTeam();
+	}
+
+	bool ActiveTeamHasMet(TeamTypes eTeam)
+	{
+		TeamTypes eActiveTeam = ActiveTeam();
+		return IsValidTeam(eActiveTeam) && IsValidTeam(eTeam) && (eTeam == eActiveTeam || GET_TEAM(eActiveTeam).isHasMet(eTeam));
+	}
+
+	bool ActiveTeamHasMetPlayer(PlayerTypes ePlayer)
+	{
+		if (!IsValidPlayer(ePlayer))
+		{
+			return false;
+		}
+		return ActiveTeamHasMet(GET_PLAYER(ePlayer).getTeam());
+	}
+
+	bool IsPlotVisibleToActiveTeam(CvPlot* pPlot)
+	{
+		TeamTypes eActiveTeam = ActiveTeam();
+		return pPlot != NULL && IsValidTeam(eActiveTeam) && pPlot->isVisible(eActiveTeam, false);
+	}
+
+	bool IsPlotRevealedToActiveTeam(CvPlot* pPlot)
+	{
+		TeamTypes eActiveTeam = ActiveTeam();
+		return pPlot != NULL && IsValidTeam(eActiveTeam) && pPlot->isRevealed(eActiveTeam, false);
+	}
+
+	bool IsPlotKnownToActiveTeam(CvPlot* pPlot)
+	{
+		return pPlot == NULL || IsPlotVisibleToActiveTeam(pPlot) || IsPlotRevealedToActiveTeam(pPlot) || GC.getGameINLINE().isDebugMode();
+	}
+
+	const char* PlotVisibility(CvPlot* pPlot)
+	{
+		if (pPlot == NULL)
+		{
+			return "none";
+		}
+		if (IsPlotVisibleToActiveTeam(pPlot) || GC.getGameINLINE().isDebugMode())
+		{
+			return "visible";
+		}
+		if (IsPlotRevealedToActiveTeam(pPlot))
+		{
+			return "revealed";
+		}
+		return "hidden";
+	}
+
+	CvPlot* PlotAt(int iX, int iY)
+	{
+		if (!GC.getMapINLINE().isPlot(iX, iY))
+		{
+			return NULL;
+		}
+		return GC.getMapINLINE().plotINLINE(iX, iY);
+	}
+
+	void AddAudienceFacts(JsonFacts& kFacts, const char* szScope, bool bInvolvesActivePlayer, bool bInvolvesActiveTeam, bool bGlobalAnnouncement, bool bKnownToActivePlayer, CvPlot* pPlot)
+	{
+		PlayerTypes eActivePlayer = ActivePlayer();
+		TeamTypes eActiveTeam = ActiveTeam();
+		bool bLocationKnown = IsPlotKnownToActiveTeam(pPlot);
+
+		kFacts.addString("audience", "active_player");
+		kFacts.addString("visibility_scope", szScope);
+		kFacts.addInt("active_player_id", eActivePlayer);
+		kFacts.addInt("active_team_id", eActiveTeam);
+		kFacts.addBool("involves_active_player", bInvolvesActivePlayer);
+		kFacts.addBool("involves_active_team", bInvolvesActiveTeam);
+		kFacts.addBool("is_global_announcement", bGlobalAnnouncement);
+		kFacts.addBool("known_to_active_player", bKnownToActivePlayer || GC.getGameINLINE().isDebugMode());
+		kFacts.addString("plot_visibility", PlotVisibility(pPlot));
+		kFacts.addBool("location_known_to_active_player", bLocationKnown);
+	}
+
 	void AddWorldFacts(JsonFacts& kFacts, const char* szImportance, const char* szChapter, const char* szArc)
 	{
 		EraTypes eEra = GC.getGameINLINE().getCurrentEra();
@@ -259,6 +356,7 @@ namespace AgesBeyond
 		kFacts.addInt("world_size_id", GC.getMapINLINE().getWorldSize());
 		kFacts.addInt("land_plots", GC.getMapINLINE().getLandPlots());
 		kFacts.addInt("alive_civilization_count", GC.getGameINLINE().countCivPlayersAlive());
+		AddAudienceFacts(kFacts, "global", false, false, true, true, NULL);
 
 		RecordEvent(
 			"game_started",
@@ -286,6 +384,14 @@ namespace AgesBeyond
 		AddCityFacts(kFacts, pCity);
 		kFacts.addString("dynamic_quest_seed", "settlement_identity");
 		kFacts.addString("quest_policy", "suggest_only");
+		AddAudienceFacts(
+			kFacts,
+			"plot_event",
+			IsActivePlayer(pCity->getOwnerINLINE()),
+			IsActiveTeam(pCity->getTeam()),
+			false,
+			IsActivePlayer(pCity->getOwnerINLINE()) || IsPlotKnownToActiveTeam(pCity->plot()),
+			pCity->plot());
 
 		RecordEvent(
 			"city_founded",
@@ -316,6 +422,14 @@ namespace AgesBeyond
 		kFacts.addBool("is_trade", bTrade);
 		kFacts.addString("dynamic_quest_seed", bConquest ? "occupation_aftermath" : "city_transition");
 		kFacts.addString("quest_policy", "suggest_only");
+		AddAudienceFacts(
+			kFacts,
+			"plot_event",
+			IsActivePlayer(eOldOwner) || IsActivePlayer(eNewOwner),
+			IsActiveTeam(IsValidPlayer(eOldOwner) ? GET_PLAYER(eOldOwner).getTeam() : NO_TEAM) || IsActiveTeam(GET_PLAYER(eNewOwner).getTeam()),
+			false,
+			IsActivePlayer(eOldOwner) || IsActivePlayer(eNewOwner) || IsPlotKnownToActiveTeam(pCity->plot()),
+			pCity->plot());
 
 		RecordEvent(
 			bConquest ? "city_captured" : "city_acquired",
@@ -344,6 +458,14 @@ namespace AgesBeyond
 		AddCityFacts(kFacts, pCity);
 		kFacts.addString("dynamic_quest_seed", "city_ruins_legacy");
 		kFacts.addString("quest_policy", "suggest_only");
+		AddAudienceFacts(
+			kFacts,
+			"plot_event",
+			IsActivePlayer(eRazingPlayer) || IsActivePlayer(pCity->getOwnerINLINE()),
+			IsActiveTeam(GET_PLAYER(eRazingPlayer).getTeam()) || IsActiveTeam(pCity->getTeam()),
+			false,
+			IsActivePlayer(eRazingPlayer) || IsActivePlayer(pCity->getOwnerINLINE()) || IsPlotKnownToActiveTeam(pCity->plot()),
+			pCity->plot());
 
 		RecordEvent(
 			"city_razed",
@@ -373,6 +495,14 @@ namespace AgesBeyond
 		kFacts.addInt("war_plan_id", eWarPlan);
 		kFacts.addString("dynamic_quest_seed", "war_aims");
 		kFacts.addString("quest_policy", "suggest_only");
+		AddAudienceFacts(
+			kFacts,
+			"diplomacy",
+			false,
+			IsActiveTeam(eDeclaringTeam) || IsActiveTeam(eTargetTeam),
+			false,
+			IsActiveTeam(eDeclaringTeam) || IsActiveTeam(eTargetTeam) || (ActiveTeamHasMet(eDeclaringTeam) && ActiveTeamHasMet(eTargetTeam)),
+			NULL);
 
 		RecordEvent(
 			"war_declared",
@@ -401,6 +531,14 @@ namespace AgesBeyond
 		kFacts.addInt("target_team_id", eSecondTeam);
 		kFacts.addString("dynamic_quest_seed", "peace_terms");
 		kFacts.addString("quest_policy", "suggest_only");
+		AddAudienceFacts(
+			kFacts,
+			"diplomacy",
+			false,
+			IsActiveTeam(eFirstTeam) || IsActiveTeam(eSecondTeam),
+			false,
+			IsActiveTeam(eFirstTeam) || IsActiveTeam(eSecondTeam) || (ActiveTeamHasMet(eFirstTeam) && ActiveTeamHasMet(eSecondTeam)),
+			NULL);
 
 		RecordEvent(
 			"peace_signed",
@@ -431,6 +569,14 @@ namespace AgesBeyond
 		kFacts.addInt("tech_era_id", GC.getTechInfo(eTech).getEra());
 		kFacts.addString("dynamic_quest_seed", "new_knowledge");
 		kFacts.addString("quest_policy", "suggest_only");
+		AddAudienceFacts(
+			kFacts,
+			"team_progress",
+			IsActivePlayer(ePlayer),
+			IsActiveTeam(eTeam),
+			false,
+			IsActivePlayer(ePlayer) || IsActiveTeam(eTeam),
+			NULL);
 
 		RecordEvent(
 			"tech_discovered",
@@ -460,6 +606,14 @@ namespace AgesBeyond
 		kFacts.addWideString("religion_name", GC.getReligionInfo(eReligion).getDescription());
 		kFacts.addString("dynamic_quest_seed", "holy_city");
 		kFacts.addString("quest_policy", "suggest_only");
+		AddAudienceFacts(
+			kFacts,
+			"global_announcement",
+			IsActivePlayer(pHolyCity->getOwnerINLINE()),
+			IsActiveTeam(pHolyCity->getTeam()),
+			true,
+			true,
+			pHolyCity->plot());
 
 		RecordEvent(
 			"religion_founded",
@@ -489,6 +643,14 @@ namespace AgesBeyond
 		kFacts.addWideString("building_name", GC.getBuildingInfo(eBuilding).getDescription());
 		kFacts.addString("dynamic_quest_seed", "wonder_legacy");
 		kFacts.addString("quest_policy", "suggest_only");
+		AddAudienceFacts(
+			kFacts,
+			"global_announcement",
+			IsActivePlayer(pCity->getOwnerINLINE()),
+			IsActiveTeam(pCity->getTeam()),
+			true,
+			true,
+			pCity->plot());
 
 		RecordEvent(
 			"wonder_built",
@@ -521,6 +683,14 @@ namespace AgesBeyond
 		kFacts.addInt("project_victory_prereq_id", GC.getProjectInfo(eProject).getVictoryPrereq());
 		kFacts.addString("dynamic_quest_seed", "great_project_consequences");
 		kFacts.addString("quest_policy", "suggest_only");
+		AddAudienceFacts(
+			kFacts,
+			"global_announcement",
+			IsActivePlayer(pCity->getOwnerINLINE()),
+			IsActiveTeam(pCity->getTeam()),
+			true,
+			true,
+			pCity->plot());
 
 		RecordEvent(
 			"project_built",
@@ -547,6 +717,14 @@ namespace AgesBeyond
 		AddPlayerFacts(kFacts, "player", ePlayer);
 		kFacts.addString("dynamic_quest_seed", "golden_age_mandate");
 		kFacts.addString("quest_policy", "suggest_only");
+		AddAudienceFacts(
+			kFacts,
+			"society",
+			IsActivePlayer(ePlayer),
+			IsActiveTeam(GET_PLAYER(ePlayer).getTeam()),
+			false,
+			IsActivePlayer(ePlayer) || ActiveTeamHasMetPlayer(ePlayer),
+			NULL);
 
 		RecordEvent(
 			"golden_age_started",
@@ -577,6 +755,14 @@ namespace AgesBeyond
 		kFacts.addWideString("unit_type_name", GC.getUnitInfo(pGreatPerson->getUnitType()).getDescription());
 		kFacts.addString("dynamic_quest_seed", "great_person_legacy");
 		kFacts.addString("quest_policy", "suggest_only");
+		AddAudienceFacts(
+			kFacts,
+			"plot_event",
+			IsActivePlayer(ePlayer),
+			IsActiveTeam(GET_PLAYER(ePlayer).getTeam()),
+			false,
+			IsActivePlayer(ePlayer) || IsPlotKnownToActiveTeam((pCity != NULL) ? pCity->plot() : PlotAt(iX, iY)),
+			(pCity != NULL) ? pCity->plot() : PlotAt(iX, iY));
 
 		RecordEvent(
 			"great_person_born",
@@ -605,6 +791,14 @@ namespace AgesBeyond
 		kFacts.addWideString("event_name", GC.getEventInfo(eEvent).getDescription());
 		kFacts.addBool("event_is_quest", GC.getEventInfo(eEvent).isQuest());
 		kFacts.addString("quest_policy", "observe_existing_game_quest");
+		AddAudienceFacts(
+			kFacts,
+			"player_event",
+			IsActivePlayer(ePlayer),
+			IsActiveTeam(GET_PLAYER(ePlayer).getTeam()),
+			false,
+			IsActivePlayer(ePlayer),
+			NULL);
 
 		RecordEvent(
 			GC.getEventInfo(eEvent).isQuest() ? "quest_started" : "event_triggered",
@@ -632,6 +826,14 @@ namespace AgesBeyond
 		kFacts.addString("victory_type", GC.getVictoryInfo(eVictory).getType());
 		kFacts.addWideString("victory_name", GC.getVictoryInfo(eVictory).getDescription());
 		kFacts.addString("quest_policy", "finale");
+		AddAudienceFacts(
+			kFacts,
+			"global_announcement",
+			IsActivePlayer(GET_TEAM(eTeam).getLeaderID()),
+			IsActiveTeam(eTeam),
+			true,
+			true,
+			NULL);
 
 		RecordEvent(
 			"victory",

@@ -18,6 +18,8 @@ pub struct CompanionRequest {
 pub enum RequestBody {
     Ping,
     GameEvent { event: GameEvent },
+    DiplomacyText { request: DiplomacyTextRequest },
+    WorldArcTitle { request: WorldArcRequest },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -40,6 +42,53 @@ pub struct EventActor {
     pub civilization: Option<String>,
     #[serde(default)]
     pub leader: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DiplomacyTextRequest {
+    pub comment_type: String,
+    pub active_player_id: i32,
+    pub leader_player_id: i32,
+    pub turn: Option<i32>,
+    #[serde(default)]
+    pub active_player_name: Option<String>,
+    #[serde(default)]
+    pub active_civilization: Option<String>,
+    #[serde(default)]
+    pub leader_name: Option<String>,
+    #[serde(default)]
+    pub leader_civilization: Option<String>,
+    #[serde(default)]
+    pub attitude: Option<String>,
+    #[serde(default)]
+    pub at_war: bool,
+    #[serde(default)]
+    pub power_relation: Option<String>,
+    #[serde(default)]
+    pub fallback_text: Option<String>,
+    #[serde(default)]
+    pub diplomacy_memory: Option<String>,
+    #[serde(default)]
+    pub world_arc: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WorldArcRequest {
+    pub trigger_event_type: String,
+    pub turn: Option<i32>,
+    pub fallback_title: String,
+    pub theme: String,
+    pub pressure: i32,
+    #[serde(default)]
+    pub involved_civilizations: Vec<String>,
+    #[serde(default)]
+    pub notable_places: Vec<String>,
+    #[serde(default)]
+    pub notable_terms: Vec<String>,
+    #[serde(default)]
+    pub recent_events: Vec<String>,
+    #[serde(default)]
+    pub current_title: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

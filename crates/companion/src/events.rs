@@ -3,9 +3,11 @@
 use ages_beyond_protocol::{GameEvent, RequestBody};
 use anyhow::Context;
 use serde_json::Value;
-use tracing::{debug, info};
+use tokio::sync::Mutex;
+use tracing::{debug, info, warn};
 
 use crate::chronicle::{ChronicleWrite, ChronicleWriter};
+use crate::director::DirectorState;
 use crate::llm::LlmClient;
 use crate::notifications::NotificationWriter;
 
@@ -26,6 +28,7 @@ pub async fn process_game_event<L>(
     llm: &L,
     chronicle: Option<&ChronicleWriter>,
     notifications: Option<&NotificationWriter>,
+    director: &Mutex<DirectorState>,
 ) -> anyhow::Result<String>
 where
     L: LlmClient,
@@ -47,9 +50,42 @@ where
                 "handling game event"
             );
 
+            let arc_request = {
+                let mut director = director.lock().await;
+                director.observe_event(event)
+            };
+
+            if let Some(request) = arc_request {
+                let title = match llm
+                    .respond(&RequestBody::WorldArcTitle {
+                        request: request.clone(),
+                    })
+                    .await
+                {
+                    Ok(title) => title,
+                    Err(err) => {
+                        warn!(
+                            listener = listener,
+                            event_type = %event.event_type,
+                            error = %err,
+                            "using fallback world arc title"
+                        );
+                        request.fallback_title.clone()
+                    }
+                };
+
+                let mut director = director.lock().await;
+                director.apply_world_arc_title(&request, title);
+            }
+
+            let event_for_prompt = {
+                let director = director.lock().await;
+                director.enrich_event(event)
+            };
+
             let text = llm
                 .respond(&RequestBody::GameEvent {
-                    event: event.clone(),
+                    event: event_for_prompt,
                 })
                 .await
                 .with_context(|| format!("failed to render {listener} event"))?;
@@ -69,7 +105,8 @@ where
             }
 
             if let Some(writer) = notifications {
-                writer.append_event(event, &text).await?;
+                let notification = notification_excerpt(&text);
+                writer.append_event(event, &notification).await?;
             }
 
             Ok(text)
@@ -78,6 +115,13 @@ where
 }
 
 fn classify_event(event: &GameEvent) -> EventHandling {
+    if let Some(reason) = audience_visibility_reason(event) {
+        return EventHandling::Ignore {
+            listener: "audience",
+            reason,
+        };
+    }
+
     match event.event_type.as_str() {
         "game_started" => chronicle(event, "lifecycle", "Game Started"),
         "city_founded" => chronicle(event, "settlement", "City Founded"),
@@ -133,6 +177,28 @@ fn internal_diplomacy_reason(event: &GameEvent) -> Option<String> {
     None
 }
 
+fn audience_visibility_reason(event: &GameEvent) -> Option<String> {
+    if fact_i64(event, "contract_version").unwrap_or_default() < 3 {
+        return None;
+    }
+
+    if fact_bool(event, "known_to_active_player") == Some(false) {
+        return Some("event is not known to the active player".to_owned());
+    }
+
+    let is_global = fact_bool(event, "is_global_announcement").unwrap_or(false);
+    let involves_active_player = fact_bool(event, "involves_active_player").unwrap_or(false);
+    let involves_active_team = fact_bool(event, "involves_active_team").unwrap_or(false);
+
+    if !is_global && !involves_active_player && !involves_active_team {
+        if fact_str(event, "plot_visibility") == Some("hidden") {
+            return Some("event location is hidden by fog of war".to_owned());
+        }
+    }
+
+    None
+}
+
 fn chronicle(
     _event: &GameEvent,
     listener: &'static str,
@@ -156,6 +222,21 @@ fn fact_i64(event: &GameEvent, key: &str) -> Option<i64> {
     }
 }
 
+fn fact_bool(event: &GameEvent, key: &str) -> Option<bool> {
+    match event.facts.get(key) {
+        Some(Value::Bool(value)) => Some(*value),
+        Some(Value::String(value)) => value.parse().ok(),
+        _ => None,
+    }
+}
+
+fn fact_str<'a>(event: &'a GameEvent, key: &str) -> Option<&'a str> {
+    match event.facts.get(key) {
+        Some(Value::String(value)) => Some(value.as_str()),
+        _ => None,
+    }
+}
+
 fn title_case_event_type(event_type: &str) -> String {
     event_type
         .split('_')
@@ -171,6 +252,29 @@ fn title_case_event_type(event_type: &str) -> String {
         .join(" ")
 }
 
+fn notification_excerpt(text: &str) -> String {
+    text.lines()
+        .map(strip_experiment_label)
+        .find(|line| !line.trim().is_empty())
+        .unwrap_or_else(|| text.trim().to_owned())
+}
+
+fn strip_experiment_label(line: &str) -> String {
+    for label in [
+        "Chronicle:",
+        "Council:",
+        "Quest Hook:",
+        "World Arc:",
+        "Omen:",
+    ] {
+        if let Some(rest) = line.strip_prefix(label) {
+            return rest.trim().to_owned();
+        }
+    }
+
+    line.trim().to_owned()
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
@@ -178,7 +282,7 @@ mod tests {
     use ages_beyond_protocol::GameEvent;
     use serde_json::json;
 
-    use super::{classify_event, EventHandling};
+    use super::{classify_event, notification_excerpt, EventHandling};
 
     fn event(event_type: &str, facts: BTreeMap<String, serde_json::Value>) -> GameEvent {
         GameEvent {
@@ -234,5 +338,15 @@ mod tests {
                 ..
             }
         ));
+    }
+
+    #[test]
+    fn notification_uses_first_rendered_line_without_label() {
+        assert_eq!(
+            notification_excerpt(
+                "Chronicle: The city rose beside the river.\nCouncil: Let its walls speak first."
+            ),
+            "The city rose beside the river."
+        );
     }
 }
