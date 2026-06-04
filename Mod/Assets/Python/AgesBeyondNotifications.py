@@ -135,26 +135,9 @@ def showLine(line):
 	except:
 		pass
 
-	iX = toInt(parts[1], -1)
-	iY = toInt(parts[2], -1)
-	bHasPlot = iX >= 0 and iY >= 0
 	message = "Ages Beyond: %s" % text
 
 	CyInterface().addImmediateMessage(message, "AS2D_POSITIVE_DINK")
-
-	CyInterface().addMessage(
-		iPlayer,
-		True,
-		gc.getEVENT_MESSAGE_TIME(),
-		message,
-		"AS2D_POSITIVE_DINK",
-		InterfaceMessageTypes.MESSAGE_TYPE_INFO,
-		"",
-		gc.getInfoTypeForString("COLOR_HIGHLIGHT_TEXT"),
-		iX,
-		iY,
-		bHasPlot,
-		bHasPlot)
 
 	_shownCount += 1
 	writeProbe("shown notification %d" % _shownCount)
