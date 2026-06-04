@@ -19,6 +19,7 @@ pub enum RequestBody {
     Ping,
     GameEvent { event: GameEvent },
     DiplomacyText { request: DiplomacyTextRequest },
+    HistoricalName { request: HistoricalNameRequest },
     WorldArcTitle { request: WorldArcRequest },
 }
 
@@ -70,6 +71,26 @@ pub struct DiplomacyTextRequest {
     pub diplomacy_memory: Option<String>,
     #[serde(default)]
     pub world_arc: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HistoricalNameRequest {
+    pub name_kind: String,
+    pub trigger_event_type: String,
+    pub turn: Option<i32>,
+    pub fallback_title: String,
+    pub subject: String,
+    pub theme: String,
+    #[serde(default)]
+    pub involved_civilizations: Vec<String>,
+    #[serde(default)]
+    pub notable_places: Vec<String>,
+    #[serde(default)]
+    pub notable_terms: Vec<String>,
+    #[serde(default)]
+    pub recent_events: Vec<String>,
+    #[serde(default)]
+    pub current_name: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

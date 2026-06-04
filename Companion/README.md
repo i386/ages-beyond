@@ -49,14 +49,18 @@ generation and returns an empty string so the diplomacy screen keeps its vanilla
 XML fallback.
 
 The companion also keeps an in-memory director state. Accepted game events feed
-relationship memories and a current world arc. When a major trigger appears,
-Rust asks Ollama to name the arc from the actual civilizations, places, faiths,
-wonders, and conflicts in the game, then stores the result in memory. Rust only
-applies structural cleanup to arc titles: one line, bounded length, non-empty,
-and no raw coordinate leaks. Diplomacy generation receives the relevant
-relationship memory between the active player and leader, plus the current
-world arc. Chronicle generation receives the current arc and recent world-event
-summaries as continuity context.
+relationship memories, named conflicts, and a current world arc. When war
+starts, Rust asks Ollama to name the conflict and keeps that name active for
+later chronicle and diplomacy prompts. When peace is signed, Rust asks for a
+treaty or peace name and records the closed conflict as relationship memory.
+When a major world trigger appears, Rust asks Ollama to name the arc from the
+actual civilizations, places, faiths, wonders, and conflicts in the game, then
+stores the result in memory. Rust only applies structural cleanup to generated
+names: one line, bounded length, non-empty, and no raw coordinate leaks.
+Diplomacy generation receives the relevant relationship memory between the
+active player and leader, plus active/recent conflict names and the current
+world arc. Chronicle generation receives the current arc, conflict context, and
+recent world-event summaries as continuity context.
 
 Example:
 

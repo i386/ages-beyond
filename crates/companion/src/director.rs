@@ -2,17 +2,34 @@
 
 use std::collections::{HashMap, HashSet, VecDeque};
 
-use ages_beyond_protocol::{DiplomacyTextRequest, GameEvent, WorldArcRequest};
+use ages_beyond_protocol::{
+    DiplomacyTextRequest, GameEvent, HistoricalNameRequest, WorldArcRequest,
+};
 use serde_json::{json, Value};
 
 const MAX_RELATIONSHIP_MEMORIES: usize = 8;
 const MAX_RECENT_WORLD_EVENTS: usize = 12;
+const MAX_RECENT_CONFLICTS: usize = 8;
 
 #[derive(Debug, Clone, Default)]
 pub struct DirectorState {
     relationship_memories: HashMap<RelationshipKey, VecDeque<String>>,
     recent_world_events: VecDeque<String>,
+    active_conflicts: HashMap<RelationshipKey, NamedConflict>,
+    recent_conflicts: VecDeque<NamedConflict>,
     world_arc: Option<WorldArc>,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct DirectorObservation {
+    historical_name: Option<HistoricalNameProposal>,
+    world_arc: Option<WorldArcRequest>,
+}
+
+#[derive(Debug, Clone)]
+pub struct HistoricalNameProposal {
+    request: HistoricalNameRequest,
+    relationship_key: RelationshipKey,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -28,8 +45,19 @@ struct WorldArc {
     pressure: i32,
 }
 
+#[derive(Debug, Clone)]
+struct NamedConflict {
+    key: RelationshipKey,
+    title: String,
+    first_civilization: String,
+    second_civilization: String,
+    started_turn: Option<i32>,
+    ended_turn: Option<i32>,
+    treaty_title: Option<String>,
+}
+
 impl DirectorState {
-    pub fn observe_event(&mut self, event: &GameEvent) -> Option<WorldArcRequest> {
+    pub fn observe_event(&mut self, event: &GameEvent) -> DirectorObservation {
         if let Some(memory) = relationship_memory(event) {
             self.remember_relationship(memory.first_player, memory.second_player, memory.text);
         }
@@ -38,7 +66,10 @@ impl DirectorState {
             self.remember_world_event(summary);
         }
 
-        self.propose_world_arc(event)
+        DirectorObservation {
+            historical_name: self.propose_historical_name(event),
+            world_arc: self.propose_world_arc(event),
+        }
     }
 
     pub fn apply_world_arc_title(&mut self, request: &WorldArcRequest, title: String) {
@@ -60,6 +91,85 @@ impl DirectorState {
                     pressure: request.pressure,
                 });
             }
+        }
+    }
+
+    pub fn apply_historical_name(&mut self, proposal: &HistoricalNameProposal, title: String) {
+        let title = if title.trim().is_empty() {
+            proposal.request.fallback_title.clone()
+        } else {
+            title.trim().to_owned()
+        };
+
+        match proposal.request.name_kind.as_str() {
+            "war" => {
+                let conflict = NamedConflict {
+                    key: proposal.relationship_key,
+                    title: title.clone(),
+                    first_civilization: proposal
+                        .request
+                        .involved_civilizations
+                        .first()
+                        .cloned()
+                        .unwrap_or_else(|| "One realm".to_owned()),
+                    second_civilization: proposal
+                        .request
+                        .involved_civilizations
+                        .get(1)
+                        .cloned()
+                        .unwrap_or_else(|| "another realm".to_owned()),
+                    started_turn: proposal.request.turn,
+                    ended_turn: None,
+                    treaty_title: None,
+                };
+                self.active_conflicts
+                    .insert(proposal.relationship_key, conflict.clone());
+                self.remember_relationship(
+                    proposal.relationship_key.first_player,
+                    proposal.relationship_key.second_player,
+                    format!(
+                        "{} began between {} and {}.",
+                        conflict.title, conflict.first_civilization, conflict.second_civilization
+                    ),
+                );
+            }
+            "treaty" => {
+                let mut conflict = self
+                    .active_conflicts
+                    .remove(&proposal.relationship_key)
+                    .unwrap_or_else(|| NamedConflict {
+                        key: proposal.relationship_key,
+                        title: proposal
+                            .request
+                            .current_name
+                            .clone()
+                            .unwrap_or_else(|| proposal.request.fallback_title.clone()),
+                        first_civilization: proposal
+                            .request
+                            .involved_civilizations
+                            .first()
+                            .cloned()
+                            .unwrap_or_else(|| "One realm".to_owned()),
+                        second_civilization: proposal
+                            .request
+                            .involved_civilizations
+                            .get(1)
+                            .cloned()
+                            .unwrap_or_else(|| "another realm".to_owned()),
+                        started_turn: None,
+                        ended_turn: None,
+                        treaty_title: None,
+                    });
+                conflict.ended_turn = proposal.request.turn;
+                conflict.treaty_title = Some(title.clone());
+                self.remember_relationship(
+                    proposal.relationship_key.first_player,
+                    proposal.relationship_key.second_player,
+                    format!("{} ended under {}.", conflict.title, title),
+                );
+                self.remember_recent_conflict(conflict);
+            }
+            _ => {}
         }
     }
 
@@ -91,13 +201,42 @@ impl DirectorState {
                 .insert("diplomacy_memory".to_owned(), json!(memory));
         }
 
+        if let Some(conflict) = self.event_conflict(event) {
+            enriched
+                .facts
+                .insert("named_conflict_title".to_owned(), json!(conflict.title));
+            enriched.facts.insert(
+                "named_conflict_participants".to_owned(),
+                json!(format!(
+                    "{} and {}",
+                    conflict.first_civilization, conflict.second_civilization
+                )),
+            );
+            if let Some(started_turn) = conflict.started_turn {
+                enriched.facts.insert(
+                    "named_conflict_started_turn".to_owned(),
+                    json!(started_turn),
+                );
+            }
+            if let Some(ended_turn) = conflict.ended_turn {
+                enriched
+                    .facts
+                    .insert("named_conflict_ended_turn".to_owned(), json!(ended_turn));
+            }
+            if let Some(treaty_title) = &conflict.treaty_title {
+                enriched
+                    .facts
+                    .insert("named_treaty_title".to_owned(), json!(treaty_title));
+            }
+        }
+
         enriched
     }
 
     pub fn enrich_diplomacy_request(&self, request: &DiplomacyTextRequest) -> DiplomacyTextRequest {
         let mut enriched = request.clone();
-        enriched.diplomacy_memory =
-            self.relationship_summary(request.active_player_id, request.leader_player_id);
+        enriched.diplomacy_memory = self
+            .relationship_summary_with_conflict(request.active_player_id, request.leader_player_id);
         enriched.world_arc = self.world_arc_summary();
         enriched
     }
@@ -130,6 +269,63 @@ impl DirectorState {
         self.recent_world_events.push_back(text);
         while self.recent_world_events.len() > MAX_RECENT_WORLD_EVENTS {
             self.recent_world_events.pop_front();
+        }
+    }
+
+    fn remember_recent_conflict(&mut self, conflict: NamedConflict) {
+        self.recent_conflicts
+            .retain(|existing| existing.key != conflict.key);
+        self.recent_conflicts.push_back(conflict);
+        while self.recent_conflicts.len() > MAX_RECENT_CONFLICTS {
+            self.recent_conflicts.pop_front();
+        }
+    }
+
+    fn propose_historical_name(&self, event: &GameEvent) -> Option<HistoricalNameProposal> {
+        match event.event_type.as_str() {
+            "war_declared" => {
+                let key = war_relationship_key(event)?;
+                Some(HistoricalNameProposal {
+                    relationship_key: key,
+                    request: HistoricalNameRequest {
+                        name_kind: "war".to_owned(),
+                        trigger_event_type: event.event_type.clone(),
+                        turn: event.turn,
+                        fallback_title: war_fallback_title(event),
+                        subject: war_subject(event),
+                        theme: "a newly declared war".to_owned(),
+                        involved_civilizations: involved_civilizations(event),
+                        notable_places: notable_places(event),
+                        notable_terms: notable_terms(event),
+                        recent_events: self.recent_world_events.iter().cloned().collect(),
+                        current_name: None,
+                    },
+                })
+            }
+            "peace_signed" => {
+                let key = peace_relationship_key(event)?;
+                let current_name = self
+                    .active_conflicts
+                    .get(&key)
+                    .map(|conflict| conflict.title.clone());
+                Some(HistoricalNameProposal {
+                    relationship_key: key,
+                    request: HistoricalNameRequest {
+                        name_kind: "treaty".to_owned(),
+                        trigger_event_type: event.event_type.clone(),
+                        turn: event.turn,
+                        fallback_title: peace_fallback_title(event),
+                        subject: peace_subject(event, current_name.as_deref()),
+                        theme: "a peace settlement ending a war".to_owned(),
+                        involved_civilizations: involved_civilizations(event),
+                        notable_places: notable_places(event),
+                        notable_terms: notable_terms(event),
+                        recent_events: self.recent_world_events.iter().cloned().collect(),
+                        current_name,
+                    },
+                })
+            }
+            _ => None,
         }
     }
 
@@ -210,6 +406,44 @@ impl DirectorState {
         }
     }
 
+    fn relationship_summary_with_conflict(
+        &self,
+        first_player: i32,
+        second_player: i32,
+    ) -> Option<String> {
+        let key = RelationshipKey::new(first_player, second_player);
+        let mut memories = self
+            .relationship_memories
+            .get(&key)
+            .map(|memories| memories.iter().cloned().collect::<Vec<_>>())
+            .unwrap_or_default();
+
+        if let Some(conflict) = self.active_conflicts.get(&key) {
+            memories.push(format!(
+                "Active named conflict: {} between {} and {}.",
+                conflict.title, conflict.first_civilization, conflict.second_civilization
+            ));
+        } else if let Some(conflict) = self
+            .recent_conflicts
+            .iter()
+            .rev()
+            .find(|conflict| conflict.key == key)
+        {
+            if let Some(treaty) = &conflict.treaty_title {
+                memories.push(format!(
+                    "Recent named conflict: {} ended under {}.",
+                    conflict.title, treaty
+                ));
+            }
+        }
+
+        if memories.is_empty() {
+            None
+        } else {
+            Some(memories.join(" | "))
+        }
+    }
+
     fn recent_world_summary(&self) -> String {
         self.recent_world_events
             .iter()
@@ -222,6 +456,22 @@ impl DirectorState {
         self.world_arc
             .as_ref()
             .map(|arc| format!("{}: {}; pressure {}", arc.title, arc.theme, arc.pressure))
+    }
+}
+
+impl DirectorObservation {
+    pub fn historical_name(&self) -> Option<&HistoricalNameProposal> {
+        self.historical_name.as_ref()
+    }
+
+    pub fn world_arc(&self) -> Option<&WorldArcRequest> {
+        self.world_arc.as_ref()
+    }
+}
+
+impl HistoricalNameProposal {
+    pub fn request(&self) -> &HistoricalNameRequest {
+        &self.request
     }
 }
 
@@ -328,6 +578,23 @@ fn event_relationship_memory(event: &GameEvent, director: &DirectorState) -> Opt
     director.relationship_summary(player_id, other_id)
 }
 
+impl DirectorState {
+    fn event_conflict(&self, event: &GameEvent) -> Option<&NamedConflict> {
+        let key = match event.event_type.as_str() {
+            "war_declared" => war_relationship_key(event),
+            "peace_signed" => peace_relationship_key(event),
+            _ => event_relationship_key(event),
+        }?;
+
+        self.active_conflicts.get(&key).or_else(|| {
+            self.recent_conflicts
+                .iter()
+                .rev()
+                .find(|conflict| conflict.key == key)
+        })
+    }
+}
+
 fn world_event_summary(event: &GameEvent) -> Option<String> {
     match event.event_type.as_str() {
         "game_started" => Some("The world chronicle began.".to_owned()),
@@ -367,6 +634,53 @@ fn world_event_summary(event: &GameEvent) -> Option<String> {
         "victory" => fact_string(event, "victory_name")
             .map(|victory| format!("A victory was declared: {victory}.")),
         _ => None,
+    }
+}
+
+fn war_relationship_key(event: &GameEvent) -> Option<RelationshipKey> {
+    let first = fact_i32(event, "declaring_team_leader_player_id")
+        .or_else(|| fact_i32(event, "player_id"))?;
+    let second = fact_i32(event, "target_team_leader_player_id").or_else(|| {
+        team_leader_from_prefix(event, "target_team").or_else(|| fact_i32(event, "data1"))
+    })?;
+    Some(RelationshipKey::new(first, second))
+}
+
+fn peace_relationship_key(event: &GameEvent) -> Option<RelationshipKey> {
+    let first =
+        team_leader_from_prefix(event, "first_team").or_else(|| fact_i32(event, "player_id"))?;
+    let second =
+        team_leader_from_prefix(event, "second_team").or_else(|| fact_i32(event, "data1"))?;
+    Some(RelationshipKey::new(first, second))
+}
+
+fn event_relationship_key(event: &GameEvent) -> Option<RelationshipKey> {
+    let first = fact_i32(event, "player_id")?;
+    let second = fact_i32(event, "data1")?;
+    Some(RelationshipKey::new(first, second))
+}
+
+fn war_subject(event: &GameEvent) -> String {
+    let first = fact_string(event, "declaring_team_civilization")
+        .or_else(|| fact_string(event, "declaring_team_name"))
+        .unwrap_or_else(|| "one realm".to_owned());
+    let second = fact_string(event, "target_team_civilization")
+        .or_else(|| fact_string(event, "target_team_name"))
+        .unwrap_or_else(|| "another realm".to_owned());
+    format!("{first} declared war on {second}")
+}
+
+fn peace_subject(event: &GameEvent, current_name: Option<&str>) -> String {
+    let first = fact_string(event, "first_team_civilization")
+        .or_else(|| fact_string(event, "first_team_name"))
+        .unwrap_or_else(|| "one realm".to_owned());
+    let second = fact_string(event, "second_team_civilization")
+        .or_else(|| fact_string(event, "second_team_name"))
+        .unwrap_or_else(|| "another realm".to_owned());
+
+    match current_name {
+        Some(current_name) => format!("{first} and {second} ended {current_name}"),
+        None => format!("{first} made peace with {second}"),
     }
 }
 
@@ -519,17 +833,18 @@ mod tests {
     #[test]
     fn diplomacy_memory_records_wars_for_later_diplomacy() {
         let mut director = DirectorState::default();
-        let arc_request = director
-            .observe_event(&event(
-                "war_declared",
-                BTreeMap::from([
-                    ("declaring_team_leader_player_id".to_owned(), json!(1)),
-                    ("target_team_leader_player_id".to_owned(), json!(0)),
-                    ("declaring_team_civilization".to_owned(), json!("Rome")),
-                    ("target_team_civilization".to_owned(), json!("Egypt")),
-                ]),
-            ))
-            .unwrap();
+        let observation = director.observe_event(&event(
+            "war_declared",
+            BTreeMap::from([
+                ("declaring_team_leader_player_id".to_owned(), json!(1)),
+                ("target_team_leader_player_id".to_owned(), json!(0)),
+                ("declaring_team_civilization".to_owned(), json!("Rome")),
+                ("target_team_civilization".to_owned(), json!("Egypt")),
+            ]),
+        ));
+        let historical_name = observation.historical_name().unwrap().clone();
+        let arc_request = observation.world_arc().unwrap().clone();
+        director.apply_historical_name(&historical_name, "The Nile Iron War".to_owned());
         director.apply_world_arc_title(&arc_request, "The Roman-Egyptian War".to_owned());
 
         let request = DiplomacyTextRequest {
@@ -553,7 +868,7 @@ mod tests {
         assert!(enriched
             .diplomacy_memory
             .unwrap()
-            .contains("Rome declared war on Egypt."));
+            .contains("Active named conflict: The Nile Iron War"));
         assert!(enriched
             .world_arc
             .unwrap()
@@ -563,12 +878,11 @@ mod tests {
     #[test]
     fn world_arc_enriches_future_events() {
         let mut director = DirectorState::default();
-        let arc_request = director
-            .observe_event(&event(
-                "religion_founded",
-                BTreeMap::from([("religion_name".to_owned(), json!("Buddhism"))]),
-            ))
-            .unwrap();
+        let observation = director.observe_event(&event(
+            "religion_founded",
+            BTreeMap::from([("religion_name".to_owned(), json!("Buddhism"))]),
+        ));
+        let arc_request = observation.world_arc().unwrap().clone();
         director.apply_world_arc_title(&arc_request, "The Saffron Turning".to_owned());
 
         let enriched = director.enrich_event(&event("city_founded", BTreeMap::new()));
@@ -585,20 +899,70 @@ mod tests {
     #[test]
     fn world_arc_request_carries_relevant_game_terms() {
         let mut director = DirectorState::default();
-        let arc_request = director
-            .observe_event(&event(
-                "wonder_built",
-                BTreeMap::from([
-                    ("player_civilization".to_owned(), json!("Mali")),
-                    ("city_name".to_owned(), json!("Timbuktu")),
-                    ("building_name".to_owned(), json!("The Oracle")),
-                ]),
-            ))
-            .unwrap();
+        let observation = director.observe_event(&event(
+            "wonder_built",
+            BTreeMap::from([
+                ("player_civilization".to_owned(), json!("Mali")),
+                ("city_name".to_owned(), json!("Timbuktu")),
+                ("building_name".to_owned(), json!("The Oracle")),
+            ]),
+        ));
+        let arc_request = observation.world_arc().unwrap();
 
         assert_eq!(arc_request.fallback_title, "The Oracle Wonder");
         assert_eq!(arc_request.involved_civilizations, vec!["Mali"]);
         assert_eq!(arc_request.notable_places, vec!["Timbuktu"]);
         assert_eq!(arc_request.notable_terms, vec!["The Oracle"]);
+    }
+
+    #[test]
+    fn named_conflict_closes_with_named_treaty() {
+        let mut director = DirectorState::default();
+        let war_observation = director.observe_event(&event(
+            "war_declared",
+            BTreeMap::from([
+                ("declaring_team_leader_player_id".to_owned(), json!(1)),
+                ("target_team_leader_player_id".to_owned(), json!(0)),
+                ("declaring_team_civilization".to_owned(), json!("Rome")),
+                ("target_team_civilization".to_owned(), json!("Egypt")),
+            ]),
+        ));
+        let war_name = war_observation.historical_name().unwrap().clone();
+        director.apply_historical_name(&war_name, "The Nile Iron War".to_owned());
+
+        let peace_event = event(
+            "peace_signed",
+            BTreeMap::from([
+                ("first_team_leader_player_id".to_owned(), json!(1)),
+                ("second_team_leader_player_id".to_owned(), json!(0)),
+                ("first_team_civilization".to_owned(), json!("Rome")),
+                ("second_team_civilization".to_owned(), json!("Egypt")),
+            ]),
+        );
+        let peace_observation = director.observe_event(&peace_event);
+        let treaty_name = peace_observation.historical_name().unwrap().clone();
+
+        assert_eq!(
+            treaty_name.request().current_name.as_deref(),
+            Some("The Nile Iron War")
+        );
+
+        director.apply_historical_name(&treaty_name, "The Memphis Settlement".to_owned());
+        let enriched = director.enrich_event(&peace_event);
+
+        assert_eq!(
+            enriched
+                .facts
+                .get("named_conflict_title")
+                .and_then(|value| value.as_str()),
+            Some("The Nile Iron War")
+        );
+        assert_eq!(
+            enriched
+                .facts
+                .get("named_treaty_title")
+                .and_then(|value| value.as_str()),
+            Some("The Memphis Settlement")
+        );
     }
 }

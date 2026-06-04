@@ -2,7 +2,9 @@
 
 use std::time::Duration;
 
-use ages_beyond_protocol::{DiplomacyTextRequest, GameEvent, RequestBody, WorldArcRequest};
+use ages_beyond_protocol::{
+    DiplomacyTextRequest, GameEvent, HistoricalNameRequest, RequestBody, WorldArcRequest,
+};
 use anyhow::{anyhow, Context};
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
@@ -93,21 +95,94 @@ impl LlmClient for OllamaClient {
                     }
                 }
             }
+            RequestBody::HistoricalName { request } => {
+                match self.generate(historical_name_prompt(request)).await {
+                    Ok(text) => Ok(sanitize_title(&text, &request.fallback_title)),
+                    Err(err) => {
+                        warn!(
+                            name_kind = %request.name_kind,
+                            trigger_event_type = %request.trigger_event_type,
+                            error = %err,
+                            "using fallback historical name"
+                        );
+                        Ok(sanitize_title("", &request.fallback_title))
+                    }
+                }
+            }
             RequestBody::WorldArcTitle { request } => {
                 match self.generate(world_arc_title_prompt(request)).await {
-                    Ok(text) => Ok(sanitize_world_arc_title(&text, &request.fallback_title)),
+                    Ok(text) => Ok(sanitize_title(&text, &request.fallback_title)),
                     Err(err) => {
                         warn!(
                             trigger_event_type = %request.trigger_event_type,
                             error = %err,
                             "using fallback world arc title"
                         );
-                        Ok(sanitize_world_arc_title("", &request.fallback_title))
+                        Ok(sanitize_title("", &request.fallback_title))
                     }
                 }
             }
         }
     }
+}
+
+fn historical_name_prompt(request: &HistoricalNameRequest) -> String {
+    let involved_civilizations = request.involved_civilizations.join(", ");
+    let notable_places = request.notable_places.join(", ");
+    let notable_terms = request.notable_terms.join(", ");
+    let recent_events = request.recent_events.join(" | ");
+
+    format!(
+        "Name this Civilization IV historical subject.\n\
+         Use the supplied facts only.\n\
+         Be creative and specific to the civilizations, cities, faiths, wonders, people, or conflict in play.\n\
+         For name_kind war, return a war name. For name_kind treaty, return a treaty or peace name.\n\
+         Do not invent hidden map knowledge or mechanical consequences.\n\
+         Do not mention map coordinates, tile coordinates, x/y values, or coordinate pairs.\n\
+         Return only the name, one line, maximum 8 words.\n\
+         Use plain ASCII punctuation.\n\n\
+         Name kind: {name_kind}\n\
+         Trigger event: {trigger_event_type}\n\
+         Turn: {turn}\n\
+         Subject: {subject}\n\
+         Theme: {theme}\n\
+         Involved civilizations: {involved_civilizations}\n\
+         Notable places: {notable_places}\n\
+         Notable terms: {notable_terms}\n\
+         Recent world events: {recent_events}\n\
+         Current name: {current_name}\n\
+         Fallback name: {fallback_title}",
+        name_kind = request.name_kind,
+        trigger_event_type = request.trigger_event_type,
+        turn = request
+            .turn
+            .map(|turn| turn.to_string())
+            .unwrap_or_else(|| "unknown".to_owned()),
+        subject = request.subject,
+        theme = request.theme,
+        involved_civilizations = if involved_civilizations.is_empty() {
+            "unknown"
+        } else {
+            &involved_civilizations
+        },
+        notable_places = if notable_places.is_empty() {
+            "unknown"
+        } else {
+            &notable_places
+        },
+        notable_terms = if notable_terms.is_empty() {
+            "unknown"
+        } else {
+            &notable_terms
+        },
+        recent_events = if recent_events.is_empty() {
+            "none"
+        } else {
+            &recent_events
+        },
+        current_name = request.current_name.as_deref().unwrap_or("none"),
+        fallback_title = request.fallback_title,
+    )
 }
 
 fn world_arc_title_prompt(request: &WorldArcRequest) -> String {
@@ -239,13 +314,13 @@ fn sanitize_diplomacy_text(text: &str) -> String {
         .collect()
 }
 
-fn sanitize_world_arc_title(text: &str, fallback: &str) -> String {
-    let candidate = clean_world_arc_title(text);
+fn sanitize_title(text: &str, fallback: &str) -> String {
+    let candidate = clean_title(text);
     if !candidate.is_empty() {
         return candidate;
     }
 
-    let fallback = clean_world_arc_title(fallback);
+    let fallback = clean_title(fallback);
     if fallback.is_empty() {
         "The Turning Age".to_owned()
     } else {
@@ -253,7 +328,11 @@ fn sanitize_world_arc_title(text: &str, fallback: &str) -> String {
     }
 }
 
-fn clean_world_arc_title(text: &str) -> String {
+fn sanitize_world_arc_title(text: &str, fallback: &str) -> String {
+    sanitize_title(text, fallback)
+}
+
+fn clean_title(text: &str) -> String {
     let line = text
         .lines()
         .map(str::trim)
@@ -261,6 +340,8 @@ fn clean_world_arc_title(text: &str) -> String {
         .unwrap_or_default();
     let without_label = line
         .strip_prefix("World Arc:")
+        .or_else(|| line.strip_prefix("Historical Name:"))
+        .or_else(|| line.strip_prefix("Name:"))
         .or_else(|| line.strip_prefix("Title:"))
         .unwrap_or(line)
         .trim()
@@ -316,7 +397,7 @@ fn game_event_prompt(event: &GameEvent) -> String {
          - Historical tone, not modern UI language.\n\
          - Mention only facts provided below.\n\
          - Match tone to facts.importance: minor is restrained, major is consequential, epochal is chapter-defining.\n\
-         - If facts.world_arc_title or facts.recent_world_events are present, use them only as continuity context.\n\
+         - If facts.world_arc_title, facts.named_conflict_title, facts.named_treaty_title, or facts.recent_world_events are present, use them only as continuity context.\n\
          - If facts.diplomacy_memory is present, you may echo the historical memory without adding new accusations.\n\
          - Treat facts.data1 as target_team_id for war_declared/peace_signed, tech_id for tech_discovered, religion_id for religion_founded, and building_id for wonder_built.\n\
          - Treat facts.data1/data2 according to named facts when a clearer *_id field is present.\n\

@@ -145,6 +145,7 @@ where
 {
     match body {
         ages_beyond_protocol::RequestBody::Ping => llm.respond(body).await,
+        ages_beyond_protocol::RequestBody::HistoricalName { .. } => llm.respond(body).await,
         ages_beyond_protocol::RequestBody::WorldArcTitle { .. } => llm.respond(body).await,
         ages_beyond_protocol::RequestBody::GameEvent { event } => {
             events::process_game_event(event, llm, chronicle, notifications, &director).await

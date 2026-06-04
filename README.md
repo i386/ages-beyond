@@ -19,8 +19,8 @@ chronicle.
 - Python projects notification text into the Civ IV UI.
 - Diplomacy text can request generated replacements through the existing named
   pipe and fall back to vanilla XML text when no cached line is ready.
-- Rust maintains in-memory diplomacy memories and an LLM-named current world
-  arc director from accepted game events.
+- Rust maintains in-memory diplomacy memories, named conflicts, treaty names,
+  and an LLM-named current world arc director from accepted game events.
 - A Markdown chronicle is written to `Chronicle/AgesBeyondChronicle.md`.
 - Chronicle source events are stored in save-game state by event id.
 - Fog-of-war audience facts gate whether an event can be narrated.
@@ -77,13 +77,16 @@ The cache key includes the comment type, the two players, a coarse turn bucket,
 and the leader attitude. This keeps lines fresh enough without blocking the UI
 or writing extra diplomacy cache files.
 
-## Diplomacy memory and world arcs
+## Diplomacy memory, named conflicts, and world arcs
 
 The Rust companion observes accepted, player-legal game events and maintains
-two in-memory director systems:
+three in-memory director systems:
 
 - **Diplomacy memory** records relationship facts such as wars, peace treaties,
   captured cities, and razed cities.
+- **Named conflicts** ask Ollama to name wars when they begin, keep the name
+  active during the conflict, and ask for a treaty or peace name when the war
+  ends.
 - **World arc director** tracks recent world events and asks Ollama to name the
   current historical arc from the civilizations, places, faiths, wonders, and
   conflicts actually present in the game.
@@ -91,10 +94,10 @@ two in-memory director systems:
 These systems do not directly change game mechanics yet. They enrich later LLM
 prompts so diplomacy lines and chronicle entries can refer to what has actually
 happened in the current game. Hidden/internal events are filtered before they
-can update this memory. Rust does not reject arc titles for style; it only keeps
-them one-line, bounded, non-empty, and free of raw coordinate leaks. If title
-generation fails, Rust stores a plain fallback title derived from the triggering
-event.
+can update this memory. Rust does not reject generated names for style; it only
+keeps them one-line, bounded, non-empty, and free of raw coordinate leaks. If
+name generation fails, Rust stores a plain fallback title derived from the
+triggering event.
 
 ## Repository layout
 

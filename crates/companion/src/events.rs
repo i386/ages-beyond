@@ -50,12 +50,36 @@ where
                 "handling game event"
             );
 
-            let arc_request = {
+            let observation = {
                 let mut director = director.lock().await;
                 director.observe_event(event)
             };
 
-            if let Some(request) = arc_request {
+            if let Some(proposal) = observation.historical_name().cloned() {
+                let request = proposal.request().clone();
+                let title = match llm
+                    .respond(&RequestBody::HistoricalName {
+                        request: request.clone(),
+                    })
+                    .await
+                {
+                    Ok(title) => title,
+                    Err(err) => {
+                        warn!(
+                            listener = listener,
+                            event_type = %event.event_type,
+                            error = %err,
+                            "using fallback historical name"
+                        );
+                        request.fallback_title.clone()
+                    }
+                };
+
+                let mut director = director.lock().await;
+                director.apply_historical_name(&proposal, title);
+            }
+
+            if let Some(request) = observation.world_arc().cloned() {
                 let title = match llm
                     .respond(&RequestBody::WorldArcTitle {
                         request: request.clone(),
