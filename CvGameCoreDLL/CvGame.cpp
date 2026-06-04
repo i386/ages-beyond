@@ -270,8 +270,6 @@ void CvGame::init(HandicapTypes eHandicap)
 
 	doUpdateCacheOnTurn();
 
-	AgesBeyond::StartCompanion();
-	AgesBeyond::OnGameStarted();
 }
 
 //
@@ -4435,6 +4433,9 @@ void CvGame::setFinalInitialized(bool bNewValue)
 					GET_TEAM((TeamTypes)iI).AI_updateAreaStragies();
 				}
 			}
+
+			AgesBeyond::StartCompanion();
+			AgesBeyond::OnGameStarted();
 		}
 	}
 }

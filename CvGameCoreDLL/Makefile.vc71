@@ -19,6 +19,7 @@ LIBS = "Boost-1.32.0\libs\boost_python-vc71-mt-1_32.lib" "Python24\libs\python24
 OUTDLL = $(OUTDIR)\CvGameCoreDLL.dll
 IMPLIB = $(INTDIR)\CvGameCoreDLL.lib
 PDB = $(OUTDIR)\CvGameCoreDLL.pdb
+MAP = $(OUTDIR)\CvGameCoreDLL.map
 RES = $(INTDIR)\CvGameCoreDLL.res
 
 OBJECTS = \
@@ -131,7 +132,7 @@ dirs:
 	@if not exist "$(OUTDIR)" mkdir "$(OUTDIR)"
 
 $(OUTDLL): $(OBJECTS) $(RES)
-	$(LINK) $(LINK_FLAGS) /OUT:"$(OUTDLL)" /IMPLIB:"$(IMPLIB)" /PDB:"$(PDB)" $(OBJECTS) $(RES) $(LIBS)
+	$(LINK) $(LINK_FLAGS) /OUT:"$(OUTDLL)" /IMPLIB:"$(IMPLIB)" /PDB:"$(PDB)" /MAP:"$(MAP)" $(OBJECTS) $(RES) $(LIBS)
 
 $(RES): CvGameCoreDLL.rc resource.h
 	$(RC) /i "$(VCROOT)\include" /i "$(SDKROOT)\include" /fo"$(RES)" CvGameCoreDLL.rc

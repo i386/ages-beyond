@@ -131,6 +131,36 @@ namespace
 		return (eTeam >= 0 && eTeam < MAX_TEAMS);
 	}
 
+	bool IsValidReligion(ReligionTypes eReligion)
+	{
+		return (eReligion >= 0 && eReligion < GC.getNumReligionInfos());
+	}
+
+	bool IsValidBuilding(BuildingTypes eBuilding)
+	{
+		return (eBuilding >= 0 && eBuilding < GC.getNumBuildingInfos());
+	}
+
+	bool IsValidProject(ProjectTypes eProject)
+	{
+		return (eProject >= 0 && eProject < GC.getNumProjectInfos());
+	}
+
+	bool IsValidTech(TechTypes eTech)
+	{
+		return (eTech >= 0 && eTech < GC.getNumTechInfos());
+	}
+
+	bool IsValidEvent(EventTypes eEvent)
+	{
+		return (eEvent >= 0 && eEvent < GC.getNumEventInfos());
+	}
+
+	bool IsNarrativeReady()
+	{
+		return GC.getGameINLINE().isFinalInitialized() && !gDLL->GetWorldBuilderMode();
+	}
+
 	void AddWorldFacts(JsonFacts& kFacts, const char* szImportance, const char* szChapter, const char* szArc)
 	{
 		EraTypes eEra = GC.getGameINLINE().getCurrentEra();
@@ -219,6 +249,11 @@ namespace AgesBeyond
 {
 	void OnGameStarted()
 	{
+		if (!IsNarrativeReady())
+		{
+			return;
+		}
+
 		JsonFacts kFacts;
 		AddWorldFacts(kFacts, "major", "Genesis", "founding");
 		kFacts.addInt("world_size_id", GC.getMapINLINE().getWorldSize());
@@ -240,7 +275,7 @@ namespace AgesBeyond
 
 	void OnCityFounded(CvCity* pCity)
 	{
-		if (pCity == NULL)
+		if (!IsNarrativeReady() || pCity == NULL || !IsValidPlayer(pCity->getOwnerINLINE()))
 		{
 			return;
 		}
@@ -267,7 +302,7 @@ namespace AgesBeyond
 
 	void OnCityAcquired(PlayerTypes eOldOwner, PlayerTypes eNewOwner, CvCity* pCity, bool bConquest, bool bTrade)
 	{
-		if (pCity == NULL)
+		if (!IsNarrativeReady() || pCity == NULL || !IsValidPlayer(eNewOwner))
 		{
 			return;
 		}
@@ -297,7 +332,7 @@ namespace AgesBeyond
 
 	void OnCityRazed(CvCity* pCity, PlayerTypes eRazingPlayer)
 	{
-		if (pCity == NULL)
+		if (!IsNarrativeReady() || pCity == NULL || !IsValidPlayer(eRazingPlayer))
 		{
 			return;
 		}
@@ -325,6 +360,11 @@ namespace AgesBeyond
 
 	void OnWarDeclared(TeamTypes eDeclaringTeam, TeamTypes eTargetTeam, WarPlanTypes eWarPlan)
 	{
+		if (!IsNarrativeReady() || !IsValidTeam(eDeclaringTeam) || !IsValidTeam(eTargetTeam))
+		{
+			return;
+		}
+
 		JsonFacts kFacts;
 		AddWorldFacts(kFacts, "major", "War and Peace", "diplomacy");
 		AddTeamFacts(kFacts, "declaring_team", eDeclaringTeam);
@@ -349,6 +389,11 @@ namespace AgesBeyond
 
 	void OnPeaceSigned(TeamTypes eFirstTeam, TeamTypes eSecondTeam)
 	{
+		if (!IsNarrativeReady() || !IsValidTeam(eFirstTeam) || !IsValidTeam(eSecondTeam))
+		{
+			return;
+		}
+
 		JsonFacts kFacts;
 		AddWorldFacts(kFacts, "major", "War and Peace", "diplomacy");
 		AddTeamFacts(kFacts, "first_team", eFirstTeam);
@@ -372,6 +417,11 @@ namespace AgesBeyond
 
 	void OnTechDiscovered(TeamTypes eTeam, PlayerTypes ePlayer, TechTypes eTech)
 	{
+		if (!IsNarrativeReady() || !IsValidTeam(eTeam) || !IsValidPlayer(ePlayer) || !IsValidTech(eTech))
+		{
+			return;
+		}
+
 		JsonFacts kFacts;
 		AddWorldFacts(kFacts, "major", "Knowledge", "discovery");
 		AddTeamFacts(kFacts, "team", eTeam);
@@ -397,7 +447,7 @@ namespace AgesBeyond
 
 	void OnReligionFounded(ReligionTypes eReligion, CvCity* pHolyCity)
 	{
-		if (pHolyCity == NULL)
+		if (!IsNarrativeReady() || pHolyCity == NULL || !IsValidReligion(eReligion) || !IsValidPlayer(pHolyCity->getOwnerINLINE()))
 		{
 			return;
 		}
@@ -426,7 +476,7 @@ namespace AgesBeyond
 
 	void OnWonderBuilt(CvCity* pCity, BuildingTypes eBuilding)
 	{
-		if (pCity == NULL)
+		if (!IsNarrativeReady() || pCity == NULL || !IsValidBuilding(eBuilding) || !IsValidPlayer(pCity->getOwnerINLINE()))
 		{
 			return;
 		}
@@ -455,7 +505,7 @@ namespace AgesBeyond
 
 	void OnProjectBuilt(CvCity* pCity, ProjectTypes eProject)
 	{
-		if (pCity == NULL)
+		if (!IsNarrativeReady() || pCity == NULL || !IsValidProject(eProject) || !IsValidPlayer(pCity->getOwnerINLINE()))
 		{
 			return;
 		}
@@ -487,7 +537,7 @@ namespace AgesBeyond
 
 	void OnGoldenAgeStarted(PlayerTypes ePlayer)
 	{
-		if (!IsValidPlayer(ePlayer))
+		if (!IsNarrativeReady() || !IsValidPlayer(ePlayer))
 		{
 			return;
 		}
@@ -513,7 +563,7 @@ namespace AgesBeyond
 
 	void OnGreatPersonBorn(CvUnit* pGreatPerson, PlayerTypes ePlayer, CvCity* pCity, int iX, int iY)
 	{
-		if (pGreatPerson == NULL || !IsValidPlayer(ePlayer))
+		if (!IsNarrativeReady() || pGreatPerson == NULL || !IsValidPlayer(ePlayer))
 		{
 			return;
 		}
@@ -543,7 +593,7 @@ namespace AgesBeyond
 
 	void OnQuestStarted(PlayerTypes ePlayer, EventTypes eEvent)
 	{
-		if (!IsValidPlayer(ePlayer))
+		if (!IsNarrativeReady() || !IsValidPlayer(ePlayer) || !IsValidEvent(eEvent))
 		{
 			return;
 		}
@@ -571,7 +621,7 @@ namespace AgesBeyond
 
 	void OnVictory(TeamTypes eTeam, VictoryTypes eVictory)
 	{
-		if (!IsValidTeam(eTeam) || eVictory == NO_VICTORY)
+		if (!IsNarrativeReady() || !IsValidTeam(eTeam) || eVictory == NO_VICTORY)
 		{
 			return;
 		}
