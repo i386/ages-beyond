@@ -24,7 +24,8 @@ chronicle.
   world arc director from accepted game events.
 - A Markdown chronicle is written to `Chronicle/AgesBeyondChronicle.md`.
 - Chronicle source events are stored in save-game state by event id.
-- Fog-of-war audience facts gate whether an event can be narrated.
+- Fog-of-war audience facts gate whether an event can be narrated or reduced
+  to a vague rumor.
 
 ## LLM narrative packet
 
@@ -59,9 +60,13 @@ For contract version 3 events, the DLL includes audience fields such as:
 - `involves_active_team`
 - `is_global_announcement`
 
-The companion ignores hidden events before calling Ollama. Known global events
-can still be narrated if their location is hidden, but city and plot details are
-redacted from the prompt.
+The companion ignores hidden events before calling Ollama unless the DLL marks
+the event as `rumor_possible` with a plausible `rumor_channel`, such as
+travellers, displaced witnesses, or merchant reports. Rumors are projected as
+new sanitized `rumor` events; they do not feed hidden source facts into
+diplomacy memory, named conflicts, civilization arcs, era memory, or world
+arcs. Known global events can still be narrated if their location is hidden,
+but city and plot details are redacted from the prompt.
 
 ## Dynamic diplomacy text
 

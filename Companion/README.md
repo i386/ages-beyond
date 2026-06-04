@@ -24,10 +24,14 @@ save-game ledger keeps these structured facts; the Markdown chronicle is a
 chaptered projection of that ledger.
 
 For contract version 3 events, Rust ignores events that are not known to the
-active player before calling Ollama. Coordinates can be used as private prompt
-grounding for known events, but final player-facing text is sanitized so raw
-map coordinates are not shown. If a global announcement is known but its
-location is hidden, location facts are redacted before prompt construction.
+active player before calling Ollama unless the DLL marks the event as
+`rumor_possible` with a plausible `rumor_channel`. Rumors are projected as
+sanitized `rumor` events with vague hearsay, no coordinates, no hidden city
+names, and no hidden source facts stored in director memory. Coordinates can be
+used as private prompt grounding for known events, but final player-facing text
+is sanitized so raw map coordinates are not shown. If a global announcement is
+known but its location is hidden, location facts are redacted before prompt
+construction.
 
 Ollama is prompted to return a compact experimental narrative packet:
 

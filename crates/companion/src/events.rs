@@ -1,8 +1,10 @@
 #![cfg_attr(not(windows), allow(dead_code))]
 
+use std::collections::BTreeMap;
+
 use ages_beyond_protocol::{GameEvent, RequestBody};
 use anyhow::Context;
-use serde_json::Value;
+use serde_json::{json, Value};
 use tokio::sync::Mutex;
 use tracing::{debug, info, warn};
 
@@ -11,11 +13,16 @@ use crate::director::DirectorState;
 use crate::llm::LlmClient;
 use crate::notifications::NotificationWriter;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 enum EventHandling {
     Chronicle {
         listener: &'static str,
         heading: String,
+    },
+    Rumor {
+        listener: &'static str,
+        heading: String,
+        event: GameEvent,
     },
     Ignore {
         listener: &'static str,
@@ -42,6 +49,50 @@ where
                 "ignored game event"
             );
             Ok(format!("ignored {listener} event: {reason}"))
+        }
+        EventHandling::Rumor {
+            listener,
+            heading,
+            event: rumor_event,
+        } => {
+            info!(
+                listener = listener,
+                source_event_type = %event.event_type,
+                "projecting hidden event as rumor"
+            );
+
+            let rumor_event_for_prompt = {
+                let director = director.lock().await;
+                director.enrich_event(&rumor_event)
+            };
+
+            let text = llm
+                .respond(&RequestBody::GameEvent {
+                    event: rumor_event_for_prompt,
+                })
+                .await
+                .with_context(|| format!("failed to render {listener} rumor"))?;
+
+            if let Some(writer) = chronicle {
+                match writer.append_event(&rumor_event, &heading, &text).await? {
+                    ChronicleWrite::Appended => {}
+                    ChronicleWrite::DuplicateSkipped => {
+                        info!(
+                            listener = listener,
+                            event_type = %rumor_event.event_type,
+                            event_id = ?event_id(&rumor_event),
+                            "skipped duplicate rumor projection, keeping session notification"
+                        );
+                    }
+                }
+            }
+
+            if let Some(writer) = notifications {
+                let notification = notification_excerpt(&text);
+                writer.append_event(&rumor_event, &notification).await?;
+            }
+
+            Ok(text)
         }
         EventHandling::Chronicle { listener, heading } => {
             debug!(
@@ -178,6 +229,14 @@ where
 
 fn classify_event(event: &GameEvent) -> EventHandling {
     if let Some(reason) = audience_visibility_reason(event) {
+        if let Some(rumor_event) = rumor_event(event, &reason) {
+            return EventHandling::Rumor {
+                listener: "rumor",
+                heading: "Rumor".to_owned(),
+                event: rumor_event,
+            };
+        }
+
         return EventHandling::Ignore {
             listener: "audience",
             reason,
@@ -238,6 +297,75 @@ fn internal_diplomacy_reason(event: &GameEvent) -> Option<String> {
     }
 
     None
+}
+
+fn rumor_event(source: &GameEvent, visibility_reason: &str) -> Option<GameEvent> {
+    if fact_bool(source, "rumor_possible") != Some(true) {
+        return None;
+    }
+
+    let channel = fact_str(source, "rumor_channel")?;
+    let rumor_subject = rumor_subject(source.event_type.as_str())?;
+    let mut facts = BTreeMap::new();
+
+    facts.insert("event_id".to_owned(), json!(rumor_event_id(source)));
+    facts.insert("internal_event".to_owned(), json!(true));
+    facts.insert("contract_version".to_owned(), json!(3));
+    facts.insert("importance".to_owned(), json!("minor"));
+    facts.insert("chapter".to_owned(), json!("Rumors"));
+    facts.insert("story_arc".to_owned(), json!("rumors"));
+    facts.insert("audience".to_owned(), json!("active_player"));
+    facts.insert("visibility_scope".to_owned(), json!("rumor"));
+    facts.insert("known_to_active_player".to_owned(), json!(true));
+    facts.insert("location_known_to_active_player".to_owned(), json!(false));
+    facts.insert("plot_visibility".to_owned(), json!("rumor"));
+    facts.insert("rumor".to_owned(), json!(true));
+    facts.insert("rumor_channel".to_owned(), json!(channel));
+    facts.insert("rumor_subject".to_owned(), json!(rumor_subject));
+    facts.insert(
+        "rumor_visibility_reason".to_owned(),
+        json!(visibility_reason),
+    );
+    facts.insert(
+        "source_event_type".to_owned(),
+        json!(source.event_type.clone()),
+    );
+
+    Some(GameEvent {
+        event_type: "rumor".to_owned(),
+        turn: source.turn,
+        actors: Vec::new(),
+        summary: Some(rumor_summary(rumor_subject, channel)),
+        facts,
+    })
+}
+
+fn rumor_subject(event_type: &str) -> Option<&'static str> {
+    match event_type {
+        "city_founded" => Some("distant settlement"),
+        "city_captured" | "city_acquired" => Some("distant banners changing"),
+        "city_razed" => Some("distant devastation"),
+        "great_person_born" => Some("a distant notable life"),
+        "golden_age_started" => Some("distant flourishing"),
+        _ => None,
+    }
+}
+
+fn rumor_summary(subject: &str, channel: &str) -> String {
+    format!("{channel} carry uncertain word of {subject}.")
+}
+
+fn rumor_event_id(source: &GameEvent) -> String {
+    match source.facts.get("event_id") {
+        Some(Value::Number(value)) => format!("rumor:{value}"),
+        Some(Value::String(value)) => format!("rumor:{value}"),
+        Some(value) => format!("rumor:{value}"),
+        None => format!(
+            "rumor:{}:{}",
+            source.event_type,
+            source.turn.unwrap_or_default()
+        ),
+    }
 }
 
 fn audience_visibility_reason(event: &GameEvent) -> Option<String> {
@@ -401,6 +529,61 @@ mod tests {
                 ..
             }
         ));
+    }
+
+    #[test]
+    fn hidden_event_without_rumor_channel_is_ignored() {
+        let facts = BTreeMap::from([
+            ("contract_version".to_owned(), json!(3)),
+            ("known_to_active_player".to_owned(), json!(false)),
+            ("rumor_possible".to_owned(), json!(false)),
+        ]);
+
+        assert!(matches!(
+            classify_event(&event("city_founded", facts)),
+            EventHandling::Ignore {
+                listener: "audience",
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn hidden_rumor_event_is_sanitized() {
+        let facts = BTreeMap::from([
+            ("contract_version".to_owned(), json!(3)),
+            ("known_to_active_player".to_owned(), json!(false)),
+            ("rumor_possible".to_owned(), json!(true)),
+            ("rumor_channel".to_owned(), json!("travellers")),
+            ("event_id".to_owned(), json!(42)),
+            ("x".to_owned(), json!(10)),
+            ("y".to_owned(), json!(12)),
+            ("city_name".to_owned(), json!("Hiddenburg")),
+            ("founder_civilization".to_owned(), json!("Rome")),
+        ]);
+
+        let EventHandling::Rumor { event, .. } = classify_event(&event("city_founded", facts))
+        else {
+            panic!("expected hidden city founding to become a rumor");
+        };
+
+        assert_eq!(event.event_type, "rumor");
+        assert_eq!(
+            event.facts.get("event_id").and_then(|value| value.as_str()),
+            Some("rumor:42")
+        );
+        assert_eq!(
+            event
+                .facts
+                .get("rumor_subject")
+                .and_then(|value| value.as_str()),
+            Some("distant settlement")
+        );
+        assert!(!event.facts.contains_key("x"));
+        assert!(!event.facts.contains_key("y"));
+        assert!(!event.facts.contains_key("city_name"));
+        assert!(!event.facts.contains_key("founder_civilization"));
+        assert!(event.summary.as_deref().unwrap().contains("uncertain word"));
     }
 
     #[test]

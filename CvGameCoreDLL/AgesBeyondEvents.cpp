@@ -384,6 +384,8 @@ namespace AgesBeyond
 		AddCityFacts(kFacts, pCity);
 		kFacts.addString("dynamic_quest_seed", "settlement_identity");
 		kFacts.addString("quest_policy", "suggest_only");
+		kFacts.addBool("rumor_possible", !IsActivePlayer(pCity->getOwnerINLINE()) && ActiveTeamHasMetPlayer(pCity->getOwnerINLINE()) && !IsPlotKnownToActiveTeam(pCity->plot()));
+		kFacts.addString("rumor_channel", "travellers");
 		AddAudienceFacts(
 			kFacts,
 			"plot_event",
@@ -422,6 +424,8 @@ namespace AgesBeyond
 		kFacts.addBool("is_trade", bTrade);
 		kFacts.addString("dynamic_quest_seed", bConquest ? "occupation_aftermath" : "city_transition");
 		kFacts.addString("quest_policy", "suggest_only");
+		kFacts.addBool("rumor_possible", !(IsActivePlayer(eOldOwner) || IsActivePlayer(eNewOwner)) && ((IsValidPlayer(eOldOwner) && ActiveTeamHasMetPlayer(eOldOwner)) || ActiveTeamHasMetPlayer(eNewOwner)) && !IsPlotKnownToActiveTeam(pCity->plot()));
+		kFacts.addString("rumor_channel", bConquest ? "displaced witnesses" : "merchant reports");
 		AddAudienceFacts(
 			kFacts,
 			"plot_event",
@@ -458,6 +462,8 @@ namespace AgesBeyond
 		AddCityFacts(kFacts, pCity);
 		kFacts.addString("dynamic_quest_seed", "city_ruins_legacy");
 		kFacts.addString("quest_policy", "suggest_only");
+		kFacts.addBool("rumor_possible", !(IsActivePlayer(eRazingPlayer) || IsActivePlayer(pCity->getOwnerINLINE())) && (ActiveTeamHasMetPlayer(eRazingPlayer) || ActiveTeamHasMetPlayer(pCity->getOwnerINLINE())) && !IsPlotKnownToActiveTeam(pCity->plot()));
+		kFacts.addString("rumor_channel", "refugee tales");
 		AddAudienceFacts(
 			kFacts,
 			"plot_event",
