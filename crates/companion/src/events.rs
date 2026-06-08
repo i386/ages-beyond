@@ -11,7 +11,10 @@ use tracing::{debug, info, warn};
 use crate::chronicle::{ChronicleWrite, ChronicleWriter};
 use crate::director::DirectorState;
 use crate::llm::LlmClient;
-use crate::notifications::NotificationWriter;
+use crate::memory::{
+    MemoryWriter, QuestDecisionResponseReader, QuestJournalWriter, QuestLogWriter,
+};
+use crate::notifications::{NotificationWriter, QuestDecisionWriter, QuestRewardWriter};
 
 #[derive(Debug, Clone)]
 enum EventHandling {
@@ -35,6 +38,12 @@ pub async fn process_game_event<L>(
     llm: &L,
     chronicle: Option<&ChronicleWriter>,
     notifications: Option<&NotificationWriter>,
+    quest_notifications: Option<&NotificationWriter>,
+    quest_decisions: Option<&QuestDecisionWriter>,
+    quest_rewards: Option<&QuestRewardWriter>,
+    memory: Option<&MemoryWriter>,
+    quest_log: Option<&QuestLogWriter>,
+    quest_journal: Option<&QuestJournalWriter>,
     director: &Mutex<DirectorState>,
 ) -> anyhow::Result<String>
 where
@@ -169,7 +178,14 @@ where
 
             if let Some(writer) = chronicle {
                 match writer.append_event(event, &heading, &text).await? {
-                    ChronicleWrite::Appended => {}
+                    ChronicleWrite::Appended => {
+                        writer
+                            .append_memory_projection(event, observation.memory_projections())
+                            .await?;
+                        writer
+                            .append_quest_projection(event, observation.quest_projections())
+                            .await?;
+                    }
                     ChronicleWrite::DuplicateSkipped => {
                         info!(
                             listener = listener,
@@ -184,6 +200,24 @@ where
             if let Some(writer) = notifications {
                 let notification = notification_excerpt(&text);
                 writer.append_event(event, &notification).await?;
+            }
+
+            if let Some(writer) = quest_notifications {
+                for quest in observation.quest_projections() {
+                    writer.append_event(event, quest).await?;
+                }
+            }
+
+            if let Some(writer) = quest_decisions {
+                for decision in observation.quest_decisions() {
+                    writer.append_decision(decision).await?;
+                }
+            }
+
+            if let Some(writer) = quest_rewards {
+                for reward in observation.quest_rewards() {
+                    writer.append_reward(reward).await?;
+                }
             }
 
             if let Some(era_event) = era_transition {
@@ -222,9 +256,69 @@ where
                 }
             }
 
+            write_director_outputs(memory, quest_log, quest_journal, director).await?;
+
             Ok(text)
         }
     }
+}
+
+pub async fn apply_quest_decision_responses(
+    quest_decision_responses: Option<&QuestDecisionResponseReader>,
+    memory: Option<&MemoryWriter>,
+    quest_log: Option<&QuestLogWriter>,
+    quest_journal: Option<&QuestJournalWriter>,
+    director: &Mutex<DirectorState>,
+) -> anyhow::Result<Vec<String>> {
+    let Some(reader) = quest_decision_responses else {
+        return Ok(Vec::new());
+    };
+
+    let responses = reader.read_new().await?;
+    if responses.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let projections = {
+        let mut director = director.lock().await;
+        director.apply_quest_decision_responses(&responses)
+    };
+
+    if !projections.is_empty() {
+        write_director_outputs(memory, quest_log, quest_journal, director).await?;
+    }
+
+    Ok(projections)
+}
+
+async fn write_director_outputs(
+    memory: Option<&MemoryWriter>,
+    quest_log: Option<&QuestLogWriter>,
+    quest_journal: Option<&QuestJournalWriter>,
+    director: &Mutex<DirectorState>,
+) -> anyhow::Result<()> {
+    if memory.is_none() && quest_log.is_none() && quest_journal.is_none() {
+        return Ok(());
+    }
+
+    let snapshot = {
+        let director = director.lock().await;
+        director.memory_snapshot()
+    };
+
+    if let Some(writer) = memory {
+        writer.write_snapshot(&snapshot).await?;
+    }
+
+    if let Some(writer) = quest_log {
+        writer.write_snapshot(&snapshot).await?;
+    }
+
+    if let Some(writer) = quest_journal {
+        writer.write_snapshot(&snapshot).await?;
+    }
+
+    Ok(())
 }
 
 fn classify_event(event: &GameEvent) -> EventHandling {

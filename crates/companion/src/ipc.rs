@@ -12,12 +12,14 @@ use tokio::sync::Mutex;
 use tracing::{debug, error, info, warn};
 
 use crate::chronicle::ChronicleWriter;
-#[cfg(windows)]
 use crate::director::DirectorState;
 #[cfg(windows)]
 use crate::events;
 use crate::llm::LlmClient;
-use crate::notifications::NotificationWriter;
+use crate::memory::{
+    MemoryWriter, QuestDecisionResponseReader, QuestJournalWriter, QuestLogWriter,
+};
+use crate::notifications::{NotificationWriter, QuestDecisionWriter, QuestRewardWriter};
 
 #[cfg(windows)]
 pub async fn run_server<L>(
@@ -25,6 +27,14 @@ pub async fn run_server<L>(
     llm: L,
     chronicle: Option<ChronicleWriter>,
     notifications: Option<NotificationWriter>,
+    quest_notifications: Option<NotificationWriter>,
+    quest_decisions: Option<QuestDecisionWriter>,
+    quest_decision_responses: Option<QuestDecisionResponseReader>,
+    quest_rewards: Option<QuestRewardWriter>,
+    memory: Option<MemoryWriter>,
+    quest_log: Option<QuestLogWriter>,
+    quest_journal: Option<QuestJournalWriter>,
+    initial_director: DirectorState,
 ) -> anyhow::Result<()>
 where
     L: LlmClient,
@@ -43,12 +53,19 @@ where
     info!("DLL connected");
 
     let diplomacy_cache = Arc::new(Mutex::new(HashMap::new()));
-    let director = Arc::new(Mutex::new(DirectorState::default()));
+    let director = Arc::new(Mutex::new(initial_director));
     handle_connection(
         pipe,
         llm,
         chronicle,
         notifications,
+        quest_notifications,
+        quest_decisions,
+        quest_decision_responses,
+        quest_rewards,
+        memory,
+        quest_log,
+        quest_journal,
         diplomacy_cache,
         director,
     )
@@ -61,6 +78,14 @@ pub async fn run_server<L>(
     _llm: L,
     _chronicle: Option<ChronicleWriter>,
     _notifications: Option<NotificationWriter>,
+    _quest_notifications: Option<NotificationWriter>,
+    _quest_decisions: Option<QuestDecisionWriter>,
+    _quest_decision_responses: Option<QuestDecisionResponseReader>,
+    _quest_rewards: Option<QuestRewardWriter>,
+    _memory: Option<MemoryWriter>,
+    _quest_log: Option<QuestLogWriter>,
+    _quest_journal: Option<QuestJournalWriter>,
+    _initial_director: DirectorState,
 ) -> anyhow::Result<()>
 where
     L: LlmClient,
@@ -74,6 +99,13 @@ async fn handle_connection<S, L>(
     llm: L,
     chronicle: Option<ChronicleWriter>,
     notifications: Option<NotificationWriter>,
+    quest_notifications: Option<NotificationWriter>,
+    quest_decisions: Option<QuestDecisionWriter>,
+    quest_decision_responses: Option<QuestDecisionResponseReader>,
+    quest_rewards: Option<QuestRewardWriter>,
+    memory: Option<MemoryWriter>,
+    quest_log: Option<QuestLogWriter>,
+    quest_journal: Option<QuestJournalWriter>,
     diplomacy_cache: Arc<Mutex<HashMap<String, String>>>,
     director: Arc<Mutex<DirectorState>>,
 ) -> anyhow::Result<()>
@@ -97,6 +129,13 @@ where
                     &llm,
                     chronicle.as_ref(),
                     notifications.as_ref(),
+                    quest_notifications.as_ref(),
+                    quest_decisions.as_ref(),
+                    quest_decision_responses.as_ref(),
+                    quest_rewards.as_ref(),
+                    memory.as_ref(),
+                    quest_log.as_ref(),
+                    quest_journal.as_ref(),
                     diplomacy_cache.clone(),
                     director.clone(),
                 )
@@ -137,18 +176,56 @@ async fn handle_request<L>(
     llm: &L,
     chronicle: Option<&ChronicleWriter>,
     notifications: Option<&NotificationWriter>,
+    quest_notifications: Option<&NotificationWriter>,
+    quest_decisions: Option<&QuestDecisionWriter>,
+    quest_decision_responses: Option<&QuestDecisionResponseReader>,
+    quest_rewards: Option<&QuestRewardWriter>,
+    memory: Option<&MemoryWriter>,
+    quest_log: Option<&QuestLogWriter>,
+    quest_journal: Option<&QuestJournalWriter>,
     diplomacy_cache: Arc<Mutex<HashMap<String, String>>>,
     director: Arc<Mutex<DirectorState>>,
 ) -> anyhow::Result<String>
 where
     L: LlmClient,
 {
+    if matches!(
+        body,
+        ages_beyond_protocol::RequestBody::GameEvent { .. }
+            | ages_beyond_protocol::RequestBody::DiplomacyText { .. }
+    ) {
+        let applied = events::apply_quest_decision_responses(
+            quest_decision_responses,
+            memory,
+            quest_log,
+            quest_journal,
+            &director,
+        )
+        .await?;
+        if !applied.is_empty() {
+            diplomacy_cache.lock().await.clear();
+        }
+    }
+
     match body {
         ages_beyond_protocol::RequestBody::Ping => llm.respond(body).await,
         ages_beyond_protocol::RequestBody::HistoricalName { .. } => llm.respond(body).await,
         ages_beyond_protocol::RequestBody::WorldArcTitle { .. } => llm.respond(body).await,
         ages_beyond_protocol::RequestBody::GameEvent { event } => {
-            events::process_game_event(event, llm, chronicle, notifications, &director).await
+            events::process_game_event(
+                event,
+                llm,
+                chronicle,
+                notifications,
+                quest_notifications,
+                quest_decisions,
+                quest_rewards,
+                memory,
+                quest_log,
+                quest_journal,
+                &director,
+            )
+            .await
         }
         ages_beyond_protocol::RequestBody::DiplomacyText { request } => {
             let key = diplomacy_cache_key(request);

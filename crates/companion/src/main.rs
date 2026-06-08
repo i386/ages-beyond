@@ -1,26 +1,35 @@
+mod bridge;
 mod chronicle;
 mod director;
 mod events;
 mod ipc;
 mod llm;
+mod memory;
 mod notifications;
 
 use std::path::PathBuf;
 
 use anyhow::Context;
-use clap::Parser;
-use tracing::info;
+use clap::{Parser, ValueEnum};
+use tracing::{info, warn};
 
 use crate::chronicle::ChronicleWriter;
+use crate::director::DirectorState;
 use crate::llm::OllamaClient;
-use crate::notifications::NotificationWriter;
+use crate::memory::{
+    MemoryWriter, QuestDecisionResponseReader, QuestJournalWriter, QuestLogWriter,
+};
+use crate::notifications::{NotificationWriter, QuestDecisionWriter, QuestRewardWriter};
 
 #[derive(Debug, Parser)]
 #[command(name = "AgesBeyondCompanion")]
 #[command(about = "LLM companion process for Civilization IV: Ages Beyond")]
 struct Args {
     #[arg(long)]
-    pipe: String,
+    pipe: Option<String>,
+
+    #[arg(long, value_enum, default_value_t = EngineMode::Auto)]
+    engine: EngineMode,
 
     #[arg(long, default_value = "http://localhost:11434")]
     ollama_url: String,
@@ -30,6 +39,13 @@ struct Args {
 
     #[arg(long)]
     chronicle: Option<PathBuf>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+enum EngineMode {
+    Auto,
+    Pipe,
+    Bridge,
 }
 
 #[tokio::main]
@@ -45,14 +61,145 @@ async fn main() -> anyhow::Result<()> {
     let llm = OllamaClient::new(args.ollama_url, args.model)
         .context("failed to initialize Ollama client")?;
 
-    let chronicle_path = args.chronicle;
+    let engine = match args.engine {
+        EngineMode::Auto if args.pipe.is_some() => EngineMode::Pipe,
+        EngineMode::Auto => EngineMode::Bridge,
+        mode => mode,
+    };
+    let chronicle_path = resolve_chronicle_path(args.chronicle);
     let chronicle = chronicle_path.clone().map(ChronicleWriter::new);
     let notifications = chronicle_path
+        .clone()
         .map(|path| NotificationWriter::new(path.with_file_name("AgesBeyondNotifications.tsv")));
+    let quest_notifications = chronicle_path.clone().map(|path| {
+        NotificationWriter::new(path.with_file_name("AgesBeyondQuestNotifications.tsv"))
+    });
+    let quest_decisions = chronicle_path
+        .clone()
+        .map(|path| QuestDecisionWriter::new(path.with_file_name("AgesBeyondQuestDecisions.tsv")));
+    let quest_decision_responses = chronicle_path.clone().map(|path| {
+        QuestDecisionResponseReader::new(
+            path.with_file_name("AgesBeyondQuestDecisionResponses.tsv"),
+        )
+    });
+    let quest_rewards = chronicle_path
+        .clone()
+        .map(|path| QuestRewardWriter::new(path.with_file_name("AgesBeyondQuestRewards.tsv")));
+    let memory = chronicle_path
+        .clone()
+        .map(|path| MemoryWriter::new(path.with_file_name("AgesBeyondMemory.json")));
+    let quest_log = chronicle_path
+        .clone()
+        .map(|path| QuestLogWriter::new(path.with_file_name("AgesBeyondQuestLog.md")));
+    let quest_journal = chronicle_path
+        .map(|path| QuestJournalWriter::new(path.with_file_name("AgesBeyondQuestJournal.tsv")));
     if let Some(writer) = &notifications {
         writer.reset().await?;
     }
+    if let Some(writer) = &quest_notifications {
+        writer.reset().await?;
+    }
+    if let Some(writer) = &quest_decisions {
+        writer.reset().await?;
+    }
+    if let Some(writer) = &quest_rewards {
+        writer.reset().await?;
+    }
 
-    info!(pipe = %args.pipe, "starting Ages Beyond companion");
-    ipc::run_server(&args.pipe, llm, chronicle, notifications).await
+    let director = match &memory {
+        Some(writer) => match writer.load_director().await {
+            Ok(Some(director)) => {
+                info!("restored Ages Beyond director memory snapshot");
+                director
+            }
+            Ok(None) => DirectorState::default(),
+            Err(err) => {
+                warn!(error = %err, "failed to restore director memory snapshot; starting clean");
+                DirectorState::default()
+            }
+        },
+        None => DirectorState::default(),
+    };
+
+    let director_snapshot = director.memory_snapshot();
+    if let Some(writer) = &quest_log {
+        writer.write_snapshot(&director_snapshot).await?;
+    }
+    if let Some(writer) = &quest_journal {
+        writer.write_snapshot(&director_snapshot).await?;
+    }
+
+    match engine {
+        EngineMode::Pipe => {
+            let pipe = args
+                .pipe
+                .as_deref()
+                .context("--pipe is required when --engine pipe is selected")?;
+            info!(pipe = %pipe, "starting Ages Beyond companion pipe server");
+            ipc::run_server(
+                pipe,
+                llm,
+                chronicle,
+                notifications,
+                quest_notifications,
+                quest_decisions,
+                quest_decision_responses,
+                quest_rewards,
+                memory,
+                quest_log,
+                quest_journal,
+                director,
+            )
+            .await
+        }
+        EngineMode::Bridge | EngineMode::Auto => {
+            info!("starting Ages Beyond companion bridge client");
+            bridge::run_client(
+                llm,
+                chronicle,
+                notifications,
+                quest_notifications,
+                quest_decisions,
+                quest_decision_responses,
+                quest_rewards,
+                memory,
+                quest_log,
+                quest_journal,
+                director,
+            )
+            .await
+        }
+    }
+}
+
+fn resolve_chronicle_path(path: Option<PathBuf>) -> Option<PathBuf> {
+    if path.is_some() {
+        return path;
+    }
+
+    let exe_dir = std::env::current_exe()
+        .ok()
+        .and_then(|path| path.parent().map(PathBuf::from));
+    let current_dir = std::env::current_dir().ok();
+
+    let candidates = [
+        exe_dir.as_ref().map(|dir| {
+            dir.join("..")
+                .join("Chronicle")
+                .join("AgesBeyondChronicle.md")
+        }),
+        exe_dir
+            .as_ref()
+            .map(|dir| dir.join("Chronicle").join("AgesBeyondChronicle.md")),
+        current_dir
+            .as_ref()
+            .map(|dir| dir.join("Chronicle").join("AgesBeyondChronicle.md")),
+    ];
+
+    candidates
+        .iter()
+        .flatten()
+        .find(|path| path.parent().is_some_and(|parent| parent.exists()))
+        .cloned()
+        .or_else(|| candidates.into_iter().flatten().next())
 }
