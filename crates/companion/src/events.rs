@@ -13,8 +13,10 @@ use crate::director::DirectorState;
 use crate::llm::LlmClient;
 use crate::memory::{
     MemoryWriter, QuestDecisionResponseReader, QuestJournalWriter, QuestLogWriter,
+    QuestRewardResponseReader,
 };
 use crate::notifications::{NotificationWriter, QuestDecisionWriter, QuestRewardWriter};
+use crate::save_state::AgesBeyondSaveState;
 
 #[derive(Debug, Clone)]
 enum EventHandling {
@@ -45,7 +47,8 @@ pub async fn process_game_event<L>(
     quest_log: Option<&QuestLogWriter>,
     quest_journal: Option<&QuestJournalWriter>,
     director: &Mutex<DirectorState>,
-) -> anyhow::Result<String>
+    save_state: &mut AgesBeyondSaveState,
+) -> anyhow::Result<bool>
 where
     L: LlmClient,
 {
@@ -57,13 +60,23 @@ where
                 reason = %reason,
                 "ignored game event"
             );
-            Ok(format!("ignored {listener} event: {reason}"))
+            Ok(false)
         }
         EventHandling::Rumor {
             listener,
             heading,
             event: rumor_event,
         } => {
+            if save_state.is_event_seen(&rumor_event) {
+                debug!(
+                    listener = listener,
+                    event_type = %rumor_event.event_type,
+                    event_id = ?event_id(&rumor_event),
+                    "skipped duplicate rumor event from save state"
+                );
+                return Ok(false);
+            }
+
             info!(
                 listener = listener,
                 source_event_type = %event.event_type,
@@ -101,9 +114,19 @@ where
                 writer.append_event(&rumor_event, &notification).await?;
             }
 
-            Ok(text)
+            Ok(save_state.mark_event_seen(&rumor_event))
         }
         EventHandling::Chronicle { listener, heading } => {
+            if save_state.is_event_seen(event) {
+                debug!(
+                    listener = listener,
+                    event_type = %event.event_type,
+                    event_id = ?event_id(event),
+                    "skipped duplicate game event from save state"
+                );
+                return Ok(false);
+            }
+
             debug!(
                 listener = listener,
                 event_type = %event.event_type,
@@ -258,7 +281,11 @@ where
 
             write_director_outputs(memory, quest_log, quest_journal, director).await?;
 
-            Ok(text)
+            let mut changed = save_state.mark_event_seen(event);
+            changed |= save_state.record_pending_decisions(observation.quest_decisions());
+            changed |= save_state.record_pending_rewards(observation.quest_rewards());
+
+            Ok(changed)
         }
     }
 }
@@ -269,14 +296,19 @@ pub async fn apply_quest_decision_responses(
     quest_log: Option<&QuestLogWriter>,
     quest_journal: Option<&QuestJournalWriter>,
     director: &Mutex<DirectorState>,
-) -> anyhow::Result<Vec<String>> {
+    save_state: &mut AgesBeyondSaveState,
+) -> anyhow::Result<(Vec<String>, bool)> {
     let Some(reader) = quest_decision_responses else {
-        return Ok(Vec::new());
+        return Ok((Vec::new(), false));
     };
 
     let responses = reader.read_new().await?;
     if responses.is_empty() {
-        return Ok(Vec::new());
+        return Ok((Vec::new(), false));
+    }
+    let (responses, save_changed) = save_state.apply_decision_responses(&responses);
+    if responses.is_empty() {
+        return Ok((Vec::new(), save_changed));
     }
 
     let projections = {
@@ -288,10 +320,10 @@ pub async fn apply_quest_decision_responses(
         write_director_outputs(memory, quest_log, quest_journal, director).await?;
     }
 
-    Ok(projections)
+    Ok((projections, save_changed))
 }
 
-async fn write_director_outputs(
+pub(crate) async fn write_director_outputs(
     memory: Option<&MemoryWriter>,
     quest_log: Option<&QuestLogWriter>,
     quest_journal: Option<&QuestJournalWriter>,
@@ -319,6 +351,22 @@ async fn write_director_outputs(
     }
 
     Ok(())
+}
+
+pub async fn apply_quest_reward_responses(
+    quest_reward_responses: Option<&QuestRewardResponseReader>,
+    save_state: &mut AgesBeyondSaveState,
+) -> anyhow::Result<bool> {
+    let Some(reader) = quest_reward_responses else {
+        return Ok(false);
+    };
+
+    let responses = reader.read_new().await?;
+    if responses.is_empty() {
+        return Ok(false);
+    }
+
+    Ok(save_state.apply_reward_responses(&responses))
 }
 
 fn classify_event(event: &GameEvent) -> EventHandling {

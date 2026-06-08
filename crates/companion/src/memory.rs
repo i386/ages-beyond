@@ -16,6 +16,7 @@ use tokio::{
 use crate::director::{
     DirectorMemorySnapshot, DirectorState, LivingQuestSnapshot, QuestDecisionResponse,
 };
+use crate::save_state::QuestRewardResponse;
 
 #[derive(Clone, Debug)]
 pub struct MemoryWriter {
@@ -34,6 +35,12 @@ pub struct QuestJournalWriter {
 
 #[derive(Clone, Debug)]
 pub struct QuestDecisionResponseReader {
+    path: PathBuf,
+    offset: Arc<Mutex<u64>>,
+}
+
+#[derive(Clone, Debug)]
+pub struct QuestRewardResponseReader {
     path: PathBuf,
     offset: Arc<Mutex<u64>>,
 }
@@ -149,6 +156,82 @@ impl QuestDecisionResponseReader {
     }
 }
 
+impl QuestRewardResponseReader {
+    pub fn new(path: PathBuf) -> Self {
+        Self {
+            path,
+            offset: Arc::new(Mutex::new(0)),
+        }
+    }
+
+    pub async fn read_new(&self) -> anyhow::Result<Vec<QuestRewardResponse>> {
+        let mut offset = self.offset.lock().await;
+        let file = match tokio::fs::OpenOptions::new()
+            .read(true)
+            .open(&self.path)
+            .await
+        {
+            Ok(file) => file,
+            Err(err) if err.kind() == ErrorKind::NotFound => return Ok(Vec::new()),
+            Err(err) => {
+                return Err(err).with_context(|| {
+                    format!(
+                        "failed to open reward response file {}",
+                        self.path.display()
+                    )
+                });
+            }
+        };
+
+        let size = file
+            .metadata()
+            .await
+            .with_context(|| {
+                format!(
+                    "failed to read reward response metadata {}",
+                    self.path.display()
+                )
+            })?
+            .len();
+        if size < *offset {
+            *offset = 0;
+        }
+
+        let mut reader = BufReader::new(file);
+        reader
+            .seek(SeekFrom::Start(*offset))
+            .await
+            .with_context(|| {
+                format!(
+                    "failed to seek reward response file {}",
+                    self.path.display()
+                )
+            })?;
+
+        let mut responses = Vec::new();
+        let mut line = String::new();
+        loop {
+            line.clear();
+            let bytes = reader.read_line(&mut line).await.with_context(|| {
+                format!(
+                    "failed to read reward response file {}",
+                    self.path.display()
+                )
+            })?;
+            if bytes == 0 {
+                break;
+            }
+            *offset += bytes as u64;
+
+            if let Some(response) = parse_quest_reward_response(&line) {
+                responses.push(response);
+            }
+        }
+
+        Ok(responses)
+    }
+}
+
 impl QuestLogWriter {
     pub fn new(path: PathBuf) -> Self {
         Self { path }
@@ -211,6 +294,23 @@ fn parse_quest_decision_response(line: &str) -> Option<QuestDecisionResponse> {
         id: id.to_owned(),
         player_id,
         choice: choice.to_owned(),
+    })
+}
+
+fn parse_quest_reward_response(line: &str) -> Option<QuestRewardResponse> {
+    let mut parts = line.trim_end().split('\t');
+    let id = parts.next()?.trim().to_owned();
+    let player_id = parts.next()?.trim().parse().ok()?;
+    let status = parts.next()?.trim().to_owned();
+
+    if id.is_empty() || status.is_empty() {
+        return None;
+    }
+
+    Some(QuestRewardResponse {
+        id,
+        player_id,
+        status,
     })
 }
 

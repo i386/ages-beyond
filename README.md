@@ -16,16 +16,18 @@ generates narrative projections that appear in-game and in a saved chronicle.
 - The Rust companion filters internal/noisy events before narrative generation.
 - Ollama generates short in-world narrative text from game facts.
 - Python projects notification text into the Civ IV UI.
-- Rust maintains in-memory diplomacy memories, civilization memories, named
+- Rust maintains save-backed diplomacy memories, civilization memories, named
   conflicts, treaty names, per-civilization arcs, era transition memories, and
   an LLM-named current world arc director from accepted game events.
 - Rust creates persistent Living Quest prompts from major accepted events, such
   as razed cities, captured cities, wonders, faiths, discoveries, war aims, and
   peace settlements.
 - A Markdown chronicle is written to `Chronicle/AgesBeyondChronicle.md`.
-- A current Rust director memory snapshot is written to
-  `Chronicle/AgesBeyondMemory.json`.
-- Chronicle source events are stored in save-game state by event id.
+- The current Rust director memory snapshot, seen event ids, pending quest
+  decisions, and pending/applied quest rewards are stored in the Civ save
+  through the bridge `mod_state` blob.
+- `Chronicle/AgesBeyondMemory.json` is written as a debug projection of the
+  save-backed director state.
 - Fog-of-war audience facts gate whether an event can be narrated or reduced
   to a vague rumor.
 
@@ -123,21 +125,19 @@ six in-memory director systems:
   current historical arc from the civilizations, places, faiths, wonders, and
   conflicts actually present in the game.
 
-These systems do not directly change game mechanics yet. They enrich later LLM
-prompts so diplomacy lines and chronicle entries can refer to what has actually
-happened in the current game. Hidden/internal events are filtered before they
-can update this memory. Rust does not reject generated names for style; it only
-keeps them one-line, bounded, non-empty, and free of raw coordinate leaks. If
-name generation fails, Rust stores a plain fallback title derived from the
-triggering event.
+These systems enrich later LLM prompts so diplomacy lines and chronicle entries
+can refer to what has actually happened in the current game. Hidden/internal
+events are filtered before they can update this memory. Rust does not reject
+generated names for style; it only keeps them one-line, bounded, non-empty, and
+free of raw coordinate leaks. If name generation fails, Rust stores a plain
+fallback title derived from the triggering event.
 
-For debugging, inspection, and companion restart persistence, the companion
-loads `Chronicle/AgesBeyondMemory.json` on startup and rewrites it after
-accepted game events. The file contains recent world events, the current world
-arc, civilization memories, civilization arcs, relationship memories, active
-conflicts, living quests, and recent closed conflicts. If the file is missing,
-invalid, or from an unsupported future format, Rust starts with clean memory and
-logs the reason.
+The companion loads its authoritative `AgesBeyondSaveState` from the bridge
+`mod_state` blob stored in the Civ save. That blob contains the director
+snapshot, seen event ids, pending quest decisions, chosen quest decisions,
+pending quest rewards, and applied reward ids. `Chronicle/AgesBeyondMemory.json`
+is rewritten after accepted game events for debugging and design inspection,
+but it is not loaded as canonical state.
 
 The companion also rewrites `Chronicle/AgesBeyondQuestLog.md` after accepted
 game events. This Markdown log is a readable projection of the same persisted
@@ -156,17 +156,17 @@ with a `Quest:` label.
 
 Quest reward commands are written separately to
 `Chronicle/AgesBeyondQuestRewards.tsv`. Python applies supported active-player
-commands once per save by recording reward ids in `CyGame` script data. The
-current supported command is `gold`; Living Quest stance choices can adjust the
-final reward text and amount when a quest completes.
+commands and writes `Chronicle/AgesBeyondQuestRewardResponses.tsv` so Rust can
+record applied reward ids in the save blob. The current supported command is
+`gold`; Living Quest stance choices can adjust the final reward text and amount
+when a quest completes.
 
 Quest decision prompts are written to `Chronicle/AgesBeyondQuestDecisions.tsv`.
-Python shows supported active-player prompts as one-shot popups and records the
-chosen stance in `CyGame` script data. Python also appends
+Python shows supported active-player prompts as one-shot popups and appends
 `Chronicle/AgesBeyondQuestDecisionResponses.tsv`; Rust ingests that response
-file, stores the stance on the Living Quest, rewrites the memory/log/journal
-projections, and includes the chosen stance in later event and diplomacy
-context.
+file, stores the stance on the Living Quest and in the save blob, rewrites the
+memory/log/journal projections, and includes the chosen stance in later event
+and diplomacy context.
 
 ## Repository layout
 

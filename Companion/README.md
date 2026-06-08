@@ -9,10 +9,11 @@ looks for it at `..\mod.exe` relative to `Assets\CvGameCoreDLL.dll`.
 The first LLM provider is Ollama. The companion assumes Ollama is already running at
 `http://localhost:11434` unless a different `--ollama-url` is supplied.
 
-The DLL stores the canonical structured event ledger in the save game. The
-companion writes generated prose as a Markdown projection to
-`..\Chronicle\AgesBeyondChronicle.md` and rewrites the current director memory
-snapshot to `..\Chronicle\AgesBeyondMemory.json`.
+The DLL stores the companion's canonical `AgesBeyondSaveState` JSON in the Civ
+save through the bridge `mod_state` blob. The companion writes generated prose
+as a Markdown projection to `..\Chronicle\AgesBeyondChronicle.md` and rewrites
+the current director memory snapshot to
+`..\Chronicle\AgesBeyondMemory.json` for inspection.
 
 The companion owns event listener behavior: it classifies incoming DLL events,
 filters internal engine events such as barbarian setup diplomacy, applies
@@ -20,9 +21,9 @@ audience/fog-of-war gating, calls Ollama for chronicle-worthy events, and skips
 duplicate Markdown projections by saved event id.
 
 DLL events include names, type keys, era/chapter metadata, importance,
-audience/visibility metadata, and quest-policy hints where available. The
-save-game ledger keeps these structured facts; the Markdown chronicle is a
-chaptered projection of that ledger.
+audience/visibility metadata, and quest-policy hints where available. The save
+blob keeps seen event ids and director state; the Markdown chronicle is a
+chaptered projection of accepted events.
 
 For contract version 3 events, Rust ignores events that are not known to the
 active player before calling Ollama unless the DLL marks the event as
@@ -59,11 +60,11 @@ as a compact active/completed summary for Python to show in game when the
 journal changes. Completed active-player quests can also write
 `AgesBeyondQuestRewards.tsv` commands; Python currently supports idempotent
 `gold` rewards, with stance choices able to adjust completion reward text and
-amount. New active-player quests can write `AgesBeyondQuestDecisions.tsv`
-prompts; Python shows them as one-shot stance popups, stores the selected
-stance in save-game script data, and appends
-`AgesBeyondQuestDecisionResponses.tsv` for Rust to ingest into Living Quest
-memory. If Ollama fails, the companion emits
+amount. Python writes `AgesBeyondQuestRewardResponses.tsv` after applying a
+reward so Rust can mark it applied in the save blob. New active-player quests
+can write `AgesBeyondQuestDecisions.tsv` prompts; Python shows them as one-shot
+stance popups and appends `AgesBeyondQuestDecisionResponses.tsv` for Rust to
+ingest into Living Quest memory and save state. If Ollama fails, the companion emits
 deterministic fallback text in the same format.
 
 The companion only supports the Rust bridge connection path. It connects to the
@@ -105,14 +106,13 @@ world arc. Chronicle generation receives the current arc, conflict context,
 civilization memory, active Living Quests, civilization arc context, era memory,
 and recent world-event summaries as continuity context.
 
-`AgesBeyondMemory.json` is intended for debugging, design iteration, and
-companion restart persistence. On startup, Rust restores director memory from
-this file when it exists and matches the supported format version. If the file
-is missing, invalid, or from an unsupported future format, Rust starts with
-clean memory and logs the reason. The file contains recent world events, the
-current world arc, civilization memories, civilization arcs, relationship
-memories, active conflicts, active or completed Living Quests, and recent
-closed conflicts as currently held by the Rust companion.
+`AgesBeyondMemory.json` is intended for debugging and design iteration. On
+startup, Rust restores director memory from the Civ save through the bridge
+`mod_state` blob, then rewrites the JSON projection from that save-backed
+state. The file contains recent world events, the current world arc,
+civilization memories, civilization arcs, relationship memories, active
+conflicts, active or completed Living Quests, and recent closed conflicts as
+currently held by the Rust companion.
 
 Example:
 

@@ -13,8 +13,10 @@ use crate::events;
 use crate::llm::LlmClient;
 use crate::memory::{
     MemoryWriter, QuestDecisionResponseReader, QuestJournalWriter, QuestLogWriter,
+    QuestRewardResponseReader,
 };
 use crate::notifications::{NotificationWriter, QuestDecisionWriter, QuestRewardWriter};
+use crate::save_state::AgesBeyondSaveState;
 
 pub async fn run_client<L>(
     llm: L,
@@ -24,17 +26,17 @@ pub async fn run_client<L>(
     quest_decisions: Option<QuestDecisionWriter>,
     quest_decision_responses: Option<QuestDecisionResponseReader>,
     quest_rewards: Option<QuestRewardWriter>,
+    quest_reward_responses: Option<QuestRewardResponseReader>,
     memory: Option<MemoryWriter>,
     quest_log: Option<QuestLogWriter>,
     quest_journal: Option<QuestJournalWriter>,
-    initial_director: DirectorState,
 ) -> anyhow::Result<()>
 where
     L: LlmClient,
 {
     let (mut client, hello) = BridgeClient::connect_default_with_handshake()
         .context("failed to connect to CvGameCoreDLL bridge")?;
-    let missing = hello.missing_capabilities(&["callbacks", "queries"]);
+    let missing = hello.missing_capabilities(&["callbacks", "queries", "mod_state"]);
     if !missing.is_empty() {
         anyhow::bail!("bridge is missing capabilities: {}", missing.join(", "));
     }
@@ -45,7 +47,62 @@ where
         "connected to CvGameCoreDLL bridge"
     );
 
+    let mut save_state =
+        match tokio::task::block_in_place(|| AgesBeyondSaveState::load_from_bridge(&mut client)) {
+            Ok(Some(state)) => {
+                info!("restored Ages Beyond state from Civ4 save");
+                state
+            }
+            Ok(None) => AgesBeyondSaveState::default(),
+            Err(err) => {
+                warn!(error = %err, "failed to restore Ages Beyond save state; starting clean");
+                AgesBeyondSaveState::default()
+            }
+        };
+
+    let initial_director = match save_state.restore_director() {
+        Ok(director) => director,
+        Err(err) => {
+            warn!(error = %err, "failed to restore director from save state; starting clean");
+            DirectorState::default()
+        }
+    };
     let director = Mutex::new(initial_director);
+    let (startup_decisions, startup_decisions_changed) = events::apply_quest_decision_responses(
+        quest_decision_responses.as_ref(),
+        memory.as_ref(),
+        quest_log.as_ref(),
+        quest_journal.as_ref(),
+        &director,
+        &mut save_state,
+    )
+    .await?;
+    if !startup_decisions.is_empty() {
+        debug!(
+            count = startup_decisions.len(),
+            "applied saved quest decision responses at startup"
+        );
+    }
+    let startup_rewards_changed =
+        events::apply_quest_reward_responses(quest_reward_responses.as_ref(), &mut save_state)
+            .await?;
+    events::write_director_outputs(
+        memory.as_ref(),
+        quest_log.as_ref(),
+        quest_journal.as_ref(),
+        &director,
+    )
+    .await?;
+    write_pending_outputs(
+        quest_decisions.as_ref(),
+        quest_rewards.as_ref(),
+        &save_state,
+    )
+    .await?;
+    if startup_decisions_changed || startup_rewards_changed {
+        debug!("persisting startup quest response state");
+    }
+    persist_save_state(&mut client, &mut save_state, &director).await?;
 
     loop {
         let callback = tokio::task::block_in_place(|| client.next_callback_message())
@@ -69,12 +126,13 @@ where
             continue;
         };
 
-        let applied = events::apply_quest_decision_responses(
+        let (applied, decisions_changed) = events::apply_quest_decision_responses(
             quest_decision_responses.as_ref(),
             memory.as_ref(),
             quest_log.as_ref(),
             quest_journal.as_ref(),
             &director,
+            &mut save_state,
         )
         .await?;
         if !applied.is_empty() {
@@ -82,6 +140,12 @@ where
                 count = applied.len(),
                 "applied quest decision responses before bridge event"
             );
+        }
+        let rewards_changed =
+            events::apply_quest_reward_responses(quest_reward_responses.as_ref(), &mut save_state)
+                .await?;
+        if decisions_changed || rewards_changed {
+            persist_save_state(&mut client, &mut save_state, &director).await?;
         }
 
         match events::process_game_event(
@@ -96,10 +160,15 @@ where
             quest_log.as_ref(),
             quest_journal.as_ref(),
             &director,
+            &mut save_state,
         )
         .await
         {
-            Ok(_) => {}
+            Ok(changed) => {
+                if changed {
+                    persist_save_state(&mut client, &mut save_state, &director).await?;
+                }
+            }
             Err(err) => {
                 warn!(
                     event_type = %event.event_type,
@@ -109,6 +178,41 @@ where
             }
         }
     }
+}
+
+async fn write_pending_outputs(
+    quest_decisions: Option<&QuestDecisionWriter>,
+    quest_rewards: Option<&QuestRewardWriter>,
+    save_state: &AgesBeyondSaveState,
+) -> anyhow::Result<()> {
+    if let Some(writer) = quest_decisions {
+        for decision in save_state.pending_decisions() {
+            writer.append_decision(decision).await?;
+        }
+    }
+
+    if let Some(writer) = quest_rewards {
+        for reward in save_state.pending_rewards() {
+            writer.append_reward(reward).await?;
+        }
+    }
+
+    Ok(())
+}
+
+async fn persist_save_state(
+    client: &mut BridgeClient,
+    save_state: &mut AgesBeyondSaveState,
+    director: &Mutex<DirectorState>,
+) -> anyhow::Result<()> {
+    let snapshot = {
+        let director = director.lock().await;
+        save_state.refresh_director(&director);
+        save_state.clone()
+    };
+
+    tokio::task::block_in_place(|| snapshot.save_to_bridge(client))?;
+    Ok(())
 }
 
 fn callback_id(callback: &BridgeCallbackMessage) -> Value {

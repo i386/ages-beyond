@@ -12,10 +12,13 @@ _questDecisionPath = None
 _questDecisionResponsePath = None
 _questRewardOffset = 0
 _questRewardPath = None
+_questRewardResponsePath = None
 _questJournalPath = None
 _questJournalSignature = None
 _pendingDecisionPopups = {}
 _nextDecisionPopupId = 1
+_madeQuestDecisions = {}
+_appliedQuestRewards = {}
 _lastProbeMessage = None
 _missingNotificationChannels = {}
 _shownCount = 0
@@ -29,6 +32,8 @@ def reset():
 	global _questJournalSignature
 	global _pendingDecisionPopups
 	global _nextDecisionPopupId
+	global _madeQuestDecisions
+	global _appliedQuestRewards
 	global _missingNotificationChannels
 	_notificationOffset = 0
 	_questNotificationOffset = 0
@@ -37,6 +42,8 @@ def reset():
 	_questJournalSignature = None
 	_pendingDecisionPopups = {}
 	_nextDecisionPopupId = 1
+	_madeQuestDecisions = {}
+	_appliedQuestRewards = {}
 	_missingNotificationChannels = {}
 	writeProbe("reset")
 
@@ -191,6 +198,26 @@ def getQuestRewardPath():
 	return _questRewardPath
 
 
+def getQuestRewardResponsePath():
+	global _questRewardResponsePath
+
+	if _questRewardResponsePath is not None:
+		return _questRewardResponsePath
+
+	rewardPath = getQuestRewardPath()
+	if rewardPath:
+		_questRewardResponsePath = os.path.join(
+			os.path.dirname(rewardPath),
+			"AgesBeyondQuestRewardResponses.tsv")
+		return _questRewardResponsePath
+
+	candidates = getQuestRewardResponseCandidatePaths()
+	if candidates:
+		_questRewardResponsePath = candidates[0]
+
+	return _questRewardResponsePath
+
+
 def getQuestJournalPath():
 	global _questJournalPath
 
@@ -229,6 +256,10 @@ def getQuestDecisionResponseCandidatePaths():
 
 def getQuestRewardCandidatePaths():
 	return getCandidatePathsFor("AgesBeyondQuestRewards.tsv")
+
+
+def getQuestRewardResponseCandidatePaths():
+	return getCandidatePathsFor("AgesBeyondQuestRewardResponses.tsv")
 
 
 def getQuestJournalCandidatePaths():
@@ -479,6 +510,7 @@ def applyQuestRewardLine(line):
 	if rewardKey == "gold" and amount > 0:
 		gc.getPlayer(playerId).changeGold(amount)
 		markRewardApplied(rewardId)
+		writeQuestRewardResponse(rewardId, "applied")
 		if not text:
 			text = "Living Quest reward: +%d gold." % amount
 		showMessage(text)
@@ -488,40 +520,20 @@ def applyQuestRewardLine(line):
 	return True
 
 
-def rewardToken(rewardId):
-	return "AgesBeyondReward:%s" % rewardId
-
-
 def isRewardApplied(rewardId):
-	return CyGame().getScriptData().find(rewardToken(rewardId)) >= 0
+	return _appliedQuestRewards.has_key(rewardId)
 
 
 def markRewardApplied(rewardId):
-	data = CyGame().getScriptData()
-	token = rewardToken(rewardId)
-	if data.find(token) >= 0:
-		return
-	if data and not data.endswith("\n"):
-		data = data + "\n"
-	CyGame().setScriptData(data + token + "\n")
-
-
-def questDecisionToken(decisionId):
-	return "AgesBeyondDecision:%s:" % decisionId
+	_appliedQuestRewards[rewardId] = True
 
 
 def isQuestDecisionMade(decisionId):
-	return CyGame().getScriptData().find(questDecisionToken(decisionId)) >= 0
+	return _madeQuestDecisions.has_key(decisionId)
 
 
 def markQuestDecision(decisionId, choice):
-	data = CyGame().getScriptData()
-	token = "%s%s" % (questDecisionToken(decisionId), choice)
-	if data.find(questDecisionToken(decisionId)) >= 0:
-		return
-	if data and not data.endswith("\n"):
-		data = data + "\n"
-	CyGame().setScriptData(data + token + "\n")
+	_madeQuestDecisions[decisionId] = choice
 
 
 def writeQuestDecisionResponse(decisionId, choice):
@@ -544,6 +556,28 @@ def writeQuestDecisionResponse(decisionId, choice):
 	except Exception, e:
 		writeProbe("quest decision response write failed: %s" % e)
 		print "AgesBeyondNotifications: failed to write quest decision response"
+
+
+def writeQuestRewardResponse(rewardId, status):
+	path = getQuestRewardResponsePath()
+	if not path:
+		return
+
+	try:
+		directory = os.path.dirname(path)
+		if directory and not os.path.isdir(directory):
+			os.makedirs(directory)
+		file = open(path, "ab")
+		try:
+			file.write("%s\t%d\t%s\n" % (
+				sanitizeTsvText(rewardId),
+				CyGame().getActivePlayer(),
+				sanitizeTsvText(status)))
+		finally:
+			file.close()
+	except Exception, e:
+		writeProbe("quest reward response write failed: %s" % e)
+		print "AgesBeyondNotifications: failed to write quest reward response"
 
 
 def sanitizeTsvText(value):

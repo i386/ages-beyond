@@ -22,19 +22,22 @@ AgesBeyondQuestJournal.tsv contains a compact Living Quest summary for Python
 to show bounded in-game quest journal updates.
 
 AgesBeyondQuestRewards.tsv contains supported Living Quest reward commands.
-Python currently applies active-player gold rewards once per save.
+Python currently applies active-player gold rewards and writes applied reward
+ids back to AgesBeyondQuestRewardResponses.tsv for Rust to persist in the Civ
+save.
+
+AgesBeyondQuestRewardResponses.tsv contains reward application acknowledgements
+that Python writes back for Rust to ingest into save state.
 
 AgesBeyondQuestDecisions.tsv contains Living Quest stance prompts. Python shows
-active-player prompts as one-shot popups and stores the chosen stance in
-save-game script data.
+active-player prompts as one-shot popups.
 
 AgesBeyondQuestDecisionResponses.tsv contains the chosen Living Quest stances
-that Python writes back for Rust to ingest into quest memory.
+that Python writes back for Rust to ingest into quest memory and save state.
 
 AgesBeyondMemory.json contains the current Rust director memory snapshot for
-debugging, design iteration, and companion restart persistence. If the snapshot
-is missing, invalid, or from an unsupported future format, Rust starts with
-clean memory.
+debugging and design iteration. Rust restores canonical companion state from
+the Civ save through the bridge mod_state blob, not from this projection.
 
 The Rust companion filters hidden/internal events before generation. Known
 events can use private map context for grounding, but player-facing text should

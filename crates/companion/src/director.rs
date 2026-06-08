@@ -48,7 +48,7 @@ pub struct HistoricalNameProposal {
     target: HistoricalNameTarget,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QuestRewardCommand {
     pub id: String,
     pub player_id: i32,
@@ -57,7 +57,7 @@ pub struct QuestRewardCommand {
     pub text: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QuestDecisionPrompt {
     pub id: String,
     pub player_id: i32,
@@ -66,7 +66,7 @@ pub struct QuestDecisionPrompt {
     pub choices: Vec<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QuestDecisionResponse {
     pub id: String,
     pub player_id: i32,

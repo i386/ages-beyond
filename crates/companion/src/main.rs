@@ -5,18 +5,19 @@ mod events;
 mod llm;
 mod memory;
 mod notifications;
+mod save_state;
 
 use std::path::PathBuf;
 
 use anyhow::Context;
 use clap::Parser;
-use tracing::{info, warn};
+use tracing::info;
 
 use crate::chronicle::ChronicleWriter;
-use crate::director::DirectorState;
 use crate::llm::OllamaClient;
 use crate::memory::{
     MemoryWriter, QuestDecisionResponseReader, QuestJournalWriter, QuestLogWriter,
+    QuestRewardResponseReader,
 };
 use crate::notifications::{NotificationWriter, QuestDecisionWriter, QuestRewardWriter};
 
@@ -66,6 +67,9 @@ async fn main() -> anyhow::Result<()> {
     let quest_rewards = chronicle_path
         .clone()
         .map(|path| QuestRewardWriter::new(path.with_file_name("AgesBeyondQuestRewards.tsv")));
+    let quest_reward_responses = chronicle_path.clone().map(|path| {
+        QuestRewardResponseReader::new(path.with_file_name("AgesBeyondQuestRewardResponses.tsv"))
+    });
     let memory = chronicle_path
         .clone()
         .map(|path| MemoryWriter::new(path.with_file_name("AgesBeyondMemory.json")));
@@ -87,29 +91,6 @@ async fn main() -> anyhow::Result<()> {
         writer.reset().await?;
     }
 
-    let director = match &memory {
-        Some(writer) => match writer.load_director().await {
-            Ok(Some(director)) => {
-                info!("restored Ages Beyond director memory snapshot");
-                director
-            }
-            Ok(None) => DirectorState::default(),
-            Err(err) => {
-                warn!(error = %err, "failed to restore director memory snapshot; starting clean");
-                DirectorState::default()
-            }
-        },
-        None => DirectorState::default(),
-    };
-
-    let director_snapshot = director.memory_snapshot();
-    if let Some(writer) = &quest_log {
-        writer.write_snapshot(&director_snapshot).await?;
-    }
-    if let Some(writer) = &quest_journal {
-        writer.write_snapshot(&director_snapshot).await?;
-    }
-
     info!("starting Ages Beyond companion bridge client");
     bridge::run_client(
         llm,
@@ -119,10 +100,10 @@ async fn main() -> anyhow::Result<()> {
         quest_decisions,
         quest_decision_responses,
         quest_rewards,
+        quest_reward_responses,
         memory,
         quest_log,
         quest_journal,
-        director,
     )
     .await
 }
