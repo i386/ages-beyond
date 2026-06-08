@@ -17,9 +17,8 @@ use crate::chronicle::ChronicleWriter;
 use crate::llm::OllamaClient;
 use crate::memory::{
     MemoryWriter, QuestDecisionResponseReader, QuestJournalWriter, QuestLogWriter,
-    QuestRewardResponseReader,
 };
-use crate::notifications::{NotificationWriter, QuestDecisionWriter, QuestRewardWriter};
+use crate::notifications::{NotificationWriter, QuestDecisionWriter};
 
 #[derive(Debug, Parser)]
 #[command(name = "mod")]
@@ -64,12 +63,6 @@ async fn main() -> anyhow::Result<()> {
             path.with_file_name("AgesBeyondQuestDecisionResponses.tsv"),
         )
     });
-    let quest_rewards = chronicle_path
-        .clone()
-        .map(|path| QuestRewardWriter::new(path.with_file_name("AgesBeyondQuestRewards.tsv")));
-    let quest_reward_responses = chronicle_path.clone().map(|path| {
-        QuestRewardResponseReader::new(path.with_file_name("AgesBeyondQuestRewardResponses.tsv"))
-    });
     let memory = chronicle_path
         .clone()
         .map(|path| MemoryWriter::new(path.with_file_name("AgesBeyondMemory.json")));
@@ -87,10 +80,6 @@ async fn main() -> anyhow::Result<()> {
     if let Some(writer) = &quest_decisions {
         writer.reset().await?;
     }
-    if let Some(writer) = &quest_rewards {
-        writer.reset().await?;
-    }
-
     info!("starting Ages Beyond companion bridge client");
     bridge::run_client(
         llm,
@@ -99,8 +88,6 @@ async fn main() -> anyhow::Result<()> {
         quest_notifications,
         quest_decisions,
         quest_decision_responses,
-        quest_rewards,
-        quest_reward_responses,
         memory,
         quest_log,
         quest_journal,

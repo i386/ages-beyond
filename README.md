@@ -57,7 +57,7 @@ TSV so Python can show them in game without mixing them into ordinary chronicle
 notifications. These are structured narrative objectives with progress,
 reward, and consequence metadata. Completed active-player quests can emit a
 reward command; the first implemented mechanical reward is an idempotent gold
-grant applied by Python.
+grant applied by Rust through the bridge.
 
 If Ollama fails or times out, the Rust companion produces deterministic
 fallback text in the same packet format.
@@ -154,12 +154,9 @@ Quest notifications are written separately to
 file independently from `AgesBeyondNotifications.tsv` and shows quest messages
 with a `Quest:` label.
 
-Quest reward commands are written separately to
-`Chronicle/AgesBeyondQuestRewards.tsv`. Python applies supported active-player
-commands and writes `Chronicle/AgesBeyondQuestRewardResponses.tsv` so Rust can
-record applied reward ids in the save blob. The current supported command is
-`gold`; Living Quest stance choices can adjust the final reward text and amount
-when a quest completes.
+Quest rewards are stored in the save blob and applied by Rust through the
+bridge. The current supported command is `gold`; Living Quest stance choices
+can adjust the final reward text and amount when a quest completes.
 
 Quest decision prompts are written to `Chronicle/AgesBeyondQuestDecisions.tsv`.
 Python shows supported active-player prompts as one-shot popups and appends

@@ -21,13 +21,9 @@ by the Rust companion after accepted game events.
 AgesBeyondQuestJournal.tsv contains a compact Living Quest summary for Python
 to show bounded in-game quest journal updates.
 
-AgesBeyondQuestRewards.tsv contains supported Living Quest reward commands.
-Python currently applies active-player gold rewards and writes applied reward
-ids back to AgesBeyondQuestRewardResponses.tsv for Rust to persist in the Civ
-save.
-
-AgesBeyondQuestRewardResponses.tsv contains reward application acknowledgements
-that Python writes back for Rust to ingest into save state.
+Living Quest rewards are applied by Rust through the bridge and persisted in
+the Civ save. This directory contains projections and UI handoff files, not
+mechanical reward command state.
 
 AgesBeyondQuestDecisions.tsv contains Living Quest stance prompts. Python shows
 active-player prompts as one-shot popups.

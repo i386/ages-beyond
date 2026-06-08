@@ -13,9 +13,8 @@ use crate::events;
 use crate::llm::LlmClient;
 use crate::memory::{
     MemoryWriter, QuestDecisionResponseReader, QuestJournalWriter, QuestLogWriter,
-    QuestRewardResponseReader,
 };
-use crate::notifications::{NotificationWriter, QuestDecisionWriter, QuestRewardWriter};
+use crate::notifications::{NotificationWriter, QuestDecisionWriter};
 use crate::save_state::AgesBeyondSaveState;
 
 pub async fn run_client<L>(
@@ -25,8 +24,6 @@ pub async fn run_client<L>(
     quest_notifications: Option<NotificationWriter>,
     quest_decisions: Option<QuestDecisionWriter>,
     quest_decision_responses: Option<QuestDecisionResponseReader>,
-    quest_rewards: Option<QuestRewardWriter>,
-    quest_reward_responses: Option<QuestRewardResponseReader>,
     memory: Option<MemoryWriter>,
     quest_log: Option<QuestLogWriter>,
     quest_journal: Option<QuestJournalWriter>,
@@ -83,9 +80,7 @@ where
             "applied saved quest decision responses at startup"
         );
     }
-    let startup_rewards_changed =
-        events::apply_quest_reward_responses(quest_reward_responses.as_ref(), &mut save_state)
-            .await?;
+    let startup_rewards_changed = apply_pending_rewards(&mut client, &mut save_state)?;
     events::write_director_outputs(
         memory.as_ref(),
         quest_log.as_ref(),
@@ -93,12 +88,7 @@ where
         &director,
     )
     .await?;
-    write_pending_outputs(
-        quest_decisions.as_ref(),
-        quest_rewards.as_ref(),
-        &save_state,
-    )
-    .await?;
+    write_pending_outputs(quest_decisions.as_ref(), &save_state).await?;
     if startup_decisions_changed || startup_rewards_changed {
         debug!("persisting startup quest response state");
     }
@@ -107,6 +97,27 @@ where
     loop {
         let callback = tokio::task::block_in_place(|| client.next_callback_message())
             .context("failed to read bridge callback")?;
+
+        if callback.event().name() == "pre_save" {
+            flush_companion_state(
+                &mut client,
+                quest_decision_responses.as_ref(),
+                memory.as_ref(),
+                quest_log.as_ref(),
+                quest_journal.as_ref(),
+                &director,
+                &mut save_state,
+            )
+            .await
+            .context("failed to flush Ages Beyond state before save")?;
+
+            if let Some(request_id) = callback.request_id() {
+                client
+                    .write_callback_success(request_id, &json!({ "consume": false }))
+                    .context("failed to write pre_save bridge callback reply")?;
+            }
+            continue;
+        }
 
         if let Some(request_id) = callback.request_id() {
             client
@@ -126,7 +137,8 @@ where
             continue;
         };
 
-        let (applied, decisions_changed) = events::apply_quest_decision_responses(
+        flush_companion_state(
+            &mut client,
             quest_decision_responses.as_ref(),
             memory.as_ref(),
             quest_log.as_ref(),
@@ -135,18 +147,6 @@ where
             &mut save_state,
         )
         .await?;
-        if !applied.is_empty() {
-            debug!(
-                count = applied.len(),
-                "applied quest decision responses before bridge event"
-            );
-        }
-        let rewards_changed =
-            events::apply_quest_reward_responses(quest_reward_responses.as_ref(), &mut save_state)
-                .await?;
-        if decisions_changed || rewards_changed {
-            persist_save_state(&mut client, &mut save_state, &director).await?;
-        }
 
         match events::process_game_event(
             &event,
@@ -155,7 +155,6 @@ where
             notifications.as_ref(),
             quest_notifications.as_ref(),
             quest_decisions.as_ref(),
-            quest_rewards.as_ref(),
             memory.as_ref(),
             quest_log.as_ref(),
             quest_journal.as_ref(),
@@ -166,6 +165,7 @@ where
         {
             Ok(changed) => {
                 if changed {
+                    apply_pending_rewards(&mut client, &mut save_state)?;
                     persist_save_state(&mut client, &mut save_state, &director).await?;
                 }
             }
@@ -182,7 +182,6 @@ where
 
 async fn write_pending_outputs(
     quest_decisions: Option<&QuestDecisionWriter>,
-    quest_rewards: Option<&QuestRewardWriter>,
     save_state: &AgesBeyondSaveState,
 ) -> anyhow::Result<()> {
     if let Some(writer) = quest_decisions {
@@ -191,13 +190,87 @@ async fn write_pending_outputs(
         }
     }
 
-    if let Some(writer) = quest_rewards {
-        for reward in save_state.pending_rewards() {
-            writer.append_reward(reward).await?;
+    Ok(())
+}
+
+async fn flush_companion_state(
+    client: &mut BridgeClient,
+    quest_decision_responses: Option<&QuestDecisionResponseReader>,
+    memory: Option<&MemoryWriter>,
+    quest_log: Option<&QuestLogWriter>,
+    quest_journal: Option<&QuestJournalWriter>,
+    director: &Mutex<DirectorState>,
+    save_state: &mut AgesBeyondSaveState,
+) -> anyhow::Result<bool> {
+    let (applied, decisions_changed) = events::apply_quest_decision_responses(
+        quest_decision_responses,
+        memory,
+        quest_log,
+        quest_journal,
+        director,
+        save_state,
+    )
+    .await?;
+    if !applied.is_empty() {
+        debug!(
+            count = applied.len(),
+            "applied quest decision responses before bridge event"
+        );
+    }
+
+    let rewards_changed = apply_pending_rewards(client, save_state)?;
+    if decisions_changed || rewards_changed {
+        persist_save_state(client, save_state, director).await?;
+        return Ok(true);
+    }
+
+    Ok(false)
+}
+
+fn apply_pending_rewards(
+    client: &mut BridgeClient,
+    save_state: &mut AgesBeyondSaveState,
+) -> anyhow::Result<bool> {
+    let rewards = save_state.pending_rewards_to_apply();
+    let mut changed = false;
+
+    for reward in rewards {
+        if reward.reward_key == "gold" && reward.amount > 0 {
+            let result = tokio::task::block_in_place(|| {
+                client.change_player_gold(reward.player_id, reward.amount)
+            });
+            match result {
+                Ok(_) => {
+                    changed |= save_state.mark_reward_applied(&reward.id);
+                    info!(
+                        reward_id = %reward.id,
+                        player_id = reward.player_id,
+                        amount = reward.amount,
+                        "applied quest gold reward through bridge"
+                    );
+                }
+                Err(err) => {
+                    warn!(
+                        reward_id = %reward.id,
+                        player_id = reward.player_id,
+                        amount = reward.amount,
+                        error = %err,
+                        "failed to apply quest gold reward; leaving pending"
+                    );
+                }
+            }
+        } else {
+            warn!(
+                reward_id = %reward.id,
+                reward_key = %reward.reward_key,
+                amount = reward.amount,
+                "skipping unsupported quest reward"
+            );
+            changed |= save_state.mark_reward_applied(&reward.id);
         }
     }
 
-    Ok(())
+    Ok(changed)
 }
 
 async fn persist_save_state(

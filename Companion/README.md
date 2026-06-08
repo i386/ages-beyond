@@ -57,15 +57,14 @@ normal chronicle popup behavior. The companion also rewrites
 `AgesBeyondQuestLog.md` as an inspectable active/completed quest log generated
 from the same persisted director snapshot, plus `AgesBeyondQuestJournal.tsv`
 as a compact active/completed summary for Python to show in game when the
-journal changes. Completed active-player quests can also write
-`AgesBeyondQuestRewards.tsv` commands; Python currently supports idempotent
-`gold` rewards, with stance choices able to adjust completion reward text and
-amount. Python writes `AgesBeyondQuestRewardResponses.tsv` after applying a
-reward so Rust can mark it applied in the save blob. New active-player quests
-can write `AgesBeyondQuestDecisions.tsv` prompts; Python shows them as one-shot
-stance popups and appends `AgesBeyondQuestDecisionResponses.tsv` for Rust to
-ingest into Living Quest memory and save state. If Ollama fails, the companion emits
-deterministic fallback text in the same format.
+journal changes. Completed active-player quests can apply supported rewards
+directly through the bridge; the current supported reward is `gold`, with
+stance choices able to adjust completion reward text and amount. New
+active-player quests can write `AgesBeyondQuestDecisions.tsv` prompts; Python
+shows them as one-shot stance popups and appends
+`AgesBeyondQuestDecisionResponses.tsv` for Rust to ingest into Living Quest
+memory and save state. If Ollama fails, the companion emits deterministic
+fallback text in the same format.
 
 The companion only supports the Rust bridge connection path. It connects to the
 DLL bridge using the default bridge pipe names. The bridge DLL auto-enables and
@@ -84,7 +83,7 @@ and peace settlement prompts. Quests complete from later structured milestones
 such as city restoration, peace, conquest, wonders, projects, discoveries,
 golden ages, great people, and victories. Each quest carries objective text,
 numeric progress, reward text, and consequence text. Completed active-player
-quests can now apply supported reward commands through Python, and new
+quests can apply supported reward commands through the bridge, and new
 active-player quests can ask the player to choose a remembered stance. When war
 starts, Rust asks Ollama to name the conflict and keeps that name active for
 later chronicle and diplomacy prompts. When peace is signed, Rust asks for a

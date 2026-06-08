@@ -7,15 +7,10 @@ use anyhow::Context;
 use serde_json::Value;
 use tokio::io::AsyncWriteExt;
 
-use crate::director::{QuestDecisionPrompt, QuestRewardCommand};
+use crate::director::QuestDecisionPrompt;
 
 #[derive(Clone, Debug)]
 pub struct NotificationWriter {
-    path: PathBuf,
-}
-
-#[derive(Clone, Debug)]
-pub struct QuestRewardWriter {
     path: PathBuf,
 }
 
@@ -80,68 +75,6 @@ impl NotificationWriter {
             .await
             .context("failed to append notification")?;
         file.flush().await.context("failed to flush notification")?;
-
-        Ok(())
-    }
-}
-
-impl QuestRewardWriter {
-    pub fn new(path: PathBuf) -> Self {
-        Self { path }
-    }
-
-    pub async fn reset(&self) -> anyhow::Result<()> {
-        if let Some(parent) = self.path.parent() {
-            tokio::fs::create_dir_all(parent).await.with_context(|| {
-                format!(
-                    "failed to create quest reward directory {}",
-                    parent.display()
-                )
-            })?;
-        }
-
-        tokio::fs::OpenOptions::new()
-            .create(true)
-            .write(true)
-            .truncate(true)
-            .open(&self.path)
-            .await
-            .with_context(|| {
-                format!("failed to reset quest reward file {}", self.path.display())
-            })?;
-
-        Ok(())
-    }
-
-    pub async fn append_reward(&self, reward: &QuestRewardCommand) -> anyhow::Result<()> {
-        if let Some(parent) = self.path.parent() {
-            tokio::fs::create_dir_all(parent).await.with_context(|| {
-                format!(
-                    "failed to create quest reward directory {}",
-                    parent.display()
-                )
-            })?;
-        }
-
-        let mut file = tokio::fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&self.path)
-            .await
-            .with_context(|| format!("failed to open quest reward file {}", self.path.display()))?;
-
-        let line = format!(
-            "{}\t{}\t{}\t{}\t{}\n",
-            sanitize_text(&reward.id),
-            reward.player_id,
-            sanitize_text(&reward.reward_key),
-            reward.amount,
-            sanitize_text(&reward.text)
-        );
-        file.write_all(line.as_bytes())
-            .await
-            .context("failed to append quest reward")?;
-        file.flush().await.context("failed to flush quest reward")?;
 
         Ok(())
     }
@@ -256,43 +189,16 @@ fn fact_i64(event: &GameEvent, key: &str) -> Option<i64> {
 mod tests {
     use super::*;
 
-    fn reward_path(label: &str) -> PathBuf {
+    fn notification_path(label: &str) -> PathBuf {
         std::env::temp_dir().join(format!(
-            "ages-beyond-reward-test-{}-{label}.tsv",
+            "ages-beyond-notification-test-{}-{label}.tsv",
             std::process::id()
         ))
     }
 
     #[tokio::test]
-    async fn writes_quest_reward_command() {
-        let path = reward_path("command");
-        let _ = tokio::fs::remove_file(&path).await;
-        let writer = QuestRewardWriter::new(path.clone());
-
-        writer.reset().await.unwrap();
-        writer
-            .append_reward(&QuestRewardCommand {
-                id: "reward:test".to_owned(),
-                player_id: 0,
-                reward_key: "gold".to_owned(),
-                amount: 75,
-                text: "Living Quest reward:\n+75 gold.".to_owned(),
-            })
-            .await
-            .unwrap();
-
-        let text = tokio::fs::read_to_string(&path).await.unwrap();
-        assert_eq!(
-            text,
-            "reward:test\t0\tgold\t75\tLiving Quest reward: +75 gold.\n"
-        );
-
-        let _ = tokio::fs::remove_file(&path).await;
-    }
-
-    #[tokio::test]
     async fn writes_quest_decision_prompt() {
-        let path = reward_path("decision");
+        let path = notification_path("decision");
         let _ = tokio::fs::remove_file(&path).await;
         let writer = QuestDecisionWriter::new(path.clone());
 

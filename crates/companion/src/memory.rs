@@ -13,10 +13,7 @@ use tokio::{
     sync::Mutex,
 };
 
-use crate::director::{
-    DirectorMemorySnapshot, DirectorState, LivingQuestSnapshot, QuestDecisionResponse,
-};
-use crate::save_state::QuestRewardResponse;
+use crate::director::{DirectorMemorySnapshot, LivingQuestSnapshot, QuestDecisionResponse};
 
 #[derive(Clone, Debug)]
 pub struct MemoryWriter {
@@ -39,37 +36,9 @@ pub struct QuestDecisionResponseReader {
     offset: Arc<Mutex<u64>>,
 }
 
-#[derive(Clone, Debug)]
-pub struct QuestRewardResponseReader {
-    path: PathBuf,
-    offset: Arc<Mutex<u64>>,
-}
-
 impl MemoryWriter {
     pub fn new(path: PathBuf) -> Self {
         Self { path }
-    }
-
-    pub async fn load_director(&self) -> anyhow::Result<Option<DirectorState>> {
-        let bytes = match tokio::fs::read(&self.path).await {
-            Ok(bytes) => bytes,
-            Err(err) if err.kind() == ErrorKind::NotFound => return Ok(None),
-            Err(err) => {
-                return Err(err).with_context(|| {
-                    format!("failed to read memory snapshot {}", self.path.display())
-                });
-            }
-        };
-
-        let snapshot: DirectorMemorySnapshot = serde_json::from_slice(&bytes)
-            .with_context(|| format!("failed to parse memory snapshot {}", self.path.display()))?;
-        let director = DirectorState::from_memory_snapshot(snapshot)
-            .map_err(anyhow::Error::msg)
-            .with_context(|| {
-                format!("failed to restore memory snapshot {}", self.path.display())
-            })?;
-
-        Ok(Some(director))
     }
 
     pub async fn write_snapshot(&self, snapshot: &DirectorMemorySnapshot) -> anyhow::Result<()> {
@@ -156,82 +125,6 @@ impl QuestDecisionResponseReader {
     }
 }
 
-impl QuestRewardResponseReader {
-    pub fn new(path: PathBuf) -> Self {
-        Self {
-            path,
-            offset: Arc::new(Mutex::new(0)),
-        }
-    }
-
-    pub async fn read_new(&self) -> anyhow::Result<Vec<QuestRewardResponse>> {
-        let mut offset = self.offset.lock().await;
-        let file = match tokio::fs::OpenOptions::new()
-            .read(true)
-            .open(&self.path)
-            .await
-        {
-            Ok(file) => file,
-            Err(err) if err.kind() == ErrorKind::NotFound => return Ok(Vec::new()),
-            Err(err) => {
-                return Err(err).with_context(|| {
-                    format!(
-                        "failed to open reward response file {}",
-                        self.path.display()
-                    )
-                });
-            }
-        };
-
-        let size = file
-            .metadata()
-            .await
-            .with_context(|| {
-                format!(
-                    "failed to read reward response metadata {}",
-                    self.path.display()
-                )
-            })?
-            .len();
-        if size < *offset {
-            *offset = 0;
-        }
-
-        let mut reader = BufReader::new(file);
-        reader
-            .seek(SeekFrom::Start(*offset))
-            .await
-            .with_context(|| {
-                format!(
-                    "failed to seek reward response file {}",
-                    self.path.display()
-                )
-            })?;
-
-        let mut responses = Vec::new();
-        let mut line = String::new();
-        loop {
-            line.clear();
-            let bytes = reader.read_line(&mut line).await.with_context(|| {
-                format!(
-                    "failed to read reward response file {}",
-                    self.path.display()
-                )
-            })?;
-            if bytes == 0 {
-                break;
-            }
-            *offset += bytes as u64;
-
-            if let Some(response) = parse_quest_reward_response(&line) {
-                responses.push(response);
-            }
-        }
-
-        Ok(responses)
-    }
-}
-
 impl QuestLogWriter {
     pub fn new(path: PathBuf) -> Self {
         Self { path }
@@ -294,23 +187,6 @@ fn parse_quest_decision_response(line: &str) -> Option<QuestDecisionResponse> {
         id: id.to_owned(),
         player_id,
         choice: choice.to_owned(),
-    })
-}
-
-fn parse_quest_reward_response(line: &str) -> Option<QuestRewardResponse> {
-    let mut parts = line.trim_end().split('\t');
-    let id = parts.next()?.trim().to_owned();
-    let player_id = parts.next()?.trim().parse().ok()?;
-    let status = parts.next()?.trim().to_owned();
-
-    if id.is_empty() || status.is_empty() {
-        return None;
-    }
-
-    Some(QuestRewardResponse {
-        id,
-        player_id,
-        status,
     })
 }
 
@@ -546,6 +422,8 @@ mod tests {
     use ages_beyond_protocol::GameEvent;
     use serde_json::json;
 
+    use crate::director::DirectorState;
+
     use super::*;
 
     fn memory_path(label: &str) -> PathBuf {
@@ -556,17 +434,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn missing_snapshot_loads_as_none() {
-        let path = memory_path("missing");
-        let _ = tokio::fs::remove_file(&path).await;
-        let writer = MemoryWriter::new(path);
-
-        assert!(writer.load_director().await.unwrap().is_none());
-    }
-
-    #[tokio::test]
-    async fn writes_and_restores_director_snapshot() {
-        let path = memory_path("roundtrip");
+    async fn writes_director_snapshot_projection() {
+        let path = memory_path("projection");
         let _ = tokio::fs::remove_file(&path).await;
         let writer = MemoryWriter::new(path.clone());
         let mut director = DirectorState::default();
@@ -587,15 +456,10 @@ mod tests {
             .write_snapshot(&director.memory_snapshot())
             .await
             .unwrap();
-        let restored = writer.load_director().await.unwrap().unwrap();
-        let restored_snapshot = restored.memory_snapshot();
+        let text = tokio::fs::read_to_string(&path).await.unwrap();
 
-        assert!(restored_snapshot.civilizations[0]
-            .memories
-            .contains(&"Mali completed The Oracle.".to_owned()));
-        assert!(restored_snapshot.living_quests[0]
-            .title
-            .contains("The Oracle"));
+        assert!(text.contains("Mali completed The Oracle."));
+        assert!(text.contains("The Oracle"));
 
         let _ = tokio::fs::remove_file(&path).await;
     }

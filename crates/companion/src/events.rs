@@ -13,9 +13,8 @@ use crate::director::DirectorState;
 use crate::llm::LlmClient;
 use crate::memory::{
     MemoryWriter, QuestDecisionResponseReader, QuestJournalWriter, QuestLogWriter,
-    QuestRewardResponseReader,
 };
-use crate::notifications::{NotificationWriter, QuestDecisionWriter, QuestRewardWriter};
+use crate::notifications::{NotificationWriter, QuestDecisionWriter};
 use crate::save_state::AgesBeyondSaveState;
 
 #[derive(Debug, Clone)]
@@ -42,7 +41,6 @@ pub async fn process_game_event<L>(
     notifications: Option<&NotificationWriter>,
     quest_notifications: Option<&NotificationWriter>,
     quest_decisions: Option<&QuestDecisionWriter>,
-    quest_rewards: Option<&QuestRewardWriter>,
     memory: Option<&MemoryWriter>,
     quest_log: Option<&QuestLogWriter>,
     quest_journal: Option<&QuestJournalWriter>,
@@ -237,12 +235,6 @@ where
                 }
             }
 
-            if let Some(writer) = quest_rewards {
-                for reward in observation.quest_rewards() {
-                    writer.append_reward(reward).await?;
-                }
-            }
-
             if let Some(era_event) = era_transition {
                 let era_event_for_prompt = {
                     let director = director.lock().await;
@@ -351,22 +343,6 @@ pub(crate) async fn write_director_outputs(
     }
 
     Ok(())
-}
-
-pub async fn apply_quest_reward_responses(
-    quest_reward_responses: Option<&QuestRewardResponseReader>,
-    save_state: &mut AgesBeyondSaveState,
-) -> anyhow::Result<bool> {
-    let Some(reader) = quest_reward_responses else {
-        return Ok(false);
-    };
-
-    let responses = reader.read_new().await?;
-    if responses.is_empty() {
-        return Ok(false);
-    }
-
-    Ok(save_state.apply_reward_responses(&responses))
 }
 
 fn classify_event(event: &GameEvent) -> EventHandling {

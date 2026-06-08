@@ -10,15 +10,11 @@ _questNotificationPath = None
 _questDecisionOffset = 0
 _questDecisionPath = None
 _questDecisionResponsePath = None
-_questRewardOffset = 0
-_questRewardPath = None
-_questRewardResponsePath = None
 _questJournalPath = None
 _questJournalSignature = None
 _pendingDecisionPopups = {}
 _nextDecisionPopupId = 1
 _madeQuestDecisions = {}
-_appliedQuestRewards = {}
 _lastProbeMessage = None
 _missingNotificationChannels = {}
 _shownCount = 0
@@ -28,22 +24,18 @@ def reset():
 	global _notificationOffset
 	global _questNotificationOffset
 	global _questDecisionOffset
-	global _questRewardOffset
 	global _questJournalSignature
 	global _pendingDecisionPopups
 	global _nextDecisionPopupId
 	global _madeQuestDecisions
-	global _appliedQuestRewards
 	global _missingNotificationChannels
 	_notificationOffset = 0
 	_questNotificationOffset = 0
 	_questDecisionOffset = 0
-	_questRewardOffset = 0
 	_questJournalSignature = None
 	_pendingDecisionPopups = {}
 	_nextDecisionPopupId = 1
 	_madeQuestDecisions = {}
-	_appliedQuestRewards = {}
 	_missingNotificationChannels = {}
 	writeProbe("reset")
 
@@ -55,7 +47,6 @@ def poll(iUpdate=0):
 	pollChannel("chronicle", getNotificationPath, "_notificationOffset", False)
 	pollChannel("quest", getQuestNotificationPath, "_questNotificationOffset", True)
 	pollQuestDecisions()
-	pollQuestRewards()
 	pollQuestJournal()
 
 
@@ -178,46 +169,6 @@ def getQuestDecisionResponsePath():
 	return _questDecisionResponsePath
 
 
-def getQuestRewardPath():
-	global _questRewardPath
-
-	if _questRewardPath is not None and os.path.exists(_questRewardPath):
-		return _questRewardPath
-
-	for path in getQuestRewardCandidatePaths():
-		if os.path.exists(path):
-			_questRewardPath = path
-			writeProbe("using quest reward file: %s" % path)
-			return _questRewardPath
-
-	if _questRewardPath is None:
-		candidates = getQuestRewardCandidatePaths()
-		if candidates:
-			_questRewardPath = candidates[0]
-
-	return _questRewardPath
-
-
-def getQuestRewardResponsePath():
-	global _questRewardResponsePath
-
-	if _questRewardResponsePath is not None:
-		return _questRewardResponsePath
-
-	rewardPath = getQuestRewardPath()
-	if rewardPath:
-		_questRewardResponsePath = os.path.join(
-			os.path.dirname(rewardPath),
-			"AgesBeyondQuestRewardResponses.tsv")
-		return _questRewardResponsePath
-
-	candidates = getQuestRewardResponseCandidatePaths()
-	if candidates:
-		_questRewardResponsePath = candidates[0]
-
-	return _questRewardResponsePath
-
-
 def getQuestJournalPath():
 	global _questJournalPath
 
@@ -252,14 +203,6 @@ def getQuestDecisionCandidatePaths():
 
 def getQuestDecisionResponseCandidatePaths():
 	return getCandidatePathsFor("AgesBeyondQuestDecisionResponses.tsv")
-
-
-def getQuestRewardCandidatePaths():
-	return getCandidatePathsFor("AgesBeyondQuestRewards.tsv")
-
-
-def getQuestRewardResponseCandidatePaths():
-	return getCandidatePathsFor("AgesBeyondQuestRewardResponses.tsv")
 
 
 def getQuestJournalCandidatePaths():
@@ -444,90 +387,6 @@ def onQuestDecisionClicked(argsList):
 	return 0
 
 
-def pollQuestRewards():
-	global _questRewardOffset
-
-	path = getQuestRewardPath()
-	if not path or not os.path.exists(path):
-		if not _missingNotificationChannels.get("quest-reward", False):
-			_missingNotificationChannels["quest-reward"] = True
-			writeProbe("missing quest reward file")
-		return
-	_missingNotificationChannels["quest-reward"] = False
-
-	try:
-		size = os.path.getsize(path)
-		if size < _questRewardOffset:
-			_questRewardOffset = 0
-
-		file = open(path, "rb")
-		try:
-			file.seek(_questRewardOffset)
-			while True:
-				lineStart = file.tell()
-				line = file.readline()
-				if not line:
-					break
-				if applyQuestRewardLine(line):
-					_questRewardOffset = file.tell()
-				else:
-					file.seek(lineStart)
-					break
-		finally:
-			file.close()
-	except Exception, e:
-		writeProbe("quest reward poll failed: %s" % e)
-		print "AgesBeyondNotifications: failed to poll quest reward file"
-
-
-def applyQuestRewardLine(line):
-	line = line.strip()
-	if not line:
-		return True
-
-	if not canShowMessage():
-		return False
-
-	parts = line.split("\t", 4)
-	if len(parts) != 5:
-		return True
-
-	rewardId = parts[0].strip()
-	playerId = toInt(parts[1], -1)
-	rewardKey = parts[2].strip()
-	amount = toInt(parts[3], 0)
-	text = parts[4].strip()
-
-	if not rewardId:
-		return True
-	if isRewardApplied(rewardId):
-		return True
-
-	if playerId != CyGame().getActivePlayer():
-		writeProbe("ignored non-active quest reward %s" % rewardId)
-		return True
-
-	if rewardKey == "gold" and amount > 0:
-		gc.getPlayer(playerId).changeGold(amount)
-		markRewardApplied(rewardId)
-		writeQuestRewardResponse(rewardId, "applied")
-		if not text:
-			text = "Living Quest reward: +%d gold." % amount
-		showMessage(text)
-		return True
-
-	writeProbe("ignored unsupported quest reward %s" % rewardKey)
-	return True
-
-
-def isRewardApplied(rewardId):
-	return _appliedQuestRewards.has_key(rewardId)
-
-
-def markRewardApplied(rewardId):
-	_appliedQuestRewards[rewardId] = True
-
-
 def isQuestDecisionMade(decisionId):
 	return _madeQuestDecisions.has_key(decisionId)
 
@@ -556,28 +415,6 @@ def writeQuestDecisionResponse(decisionId, choice):
 	except Exception, e:
 		writeProbe("quest decision response write failed: %s" % e)
 		print "AgesBeyondNotifications: failed to write quest decision response"
-
-
-def writeQuestRewardResponse(rewardId, status):
-	path = getQuestRewardResponsePath()
-	if not path:
-		return
-
-	try:
-		directory = os.path.dirname(path)
-		if directory and not os.path.isdir(directory):
-			os.makedirs(directory)
-		file = open(path, "ab")
-		try:
-			file.write("%s\t%d\t%s\n" % (
-				sanitizeTsvText(rewardId),
-				CyGame().getActivePlayer(),
-				sanitizeTsvText(status)))
-		finally:
-			file.close()
-	except Exception, e:
-		writeProbe("quest reward response write failed: %s" % e)
-		print "AgesBeyondNotifications: failed to write quest reward response"
 
 
 def sanitizeTsvText(value):

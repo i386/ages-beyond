@@ -60,17 +60,16 @@ This package includes:
 - Assets\Python\EntryPoints\CvEventInterface.py
 - Assets\Python\EntryPoints\CvScreenUtilsInterface.py
 - Chronicle\AgesBeyondChronicle.md, created at runtime
-- Chronicle\AgesBeyondMemory.json, created at runtime for director memory persistence and inspection
+- Chronicle\AgesBeyondMemory.json, created at runtime as a save-backed director memory projection
 - Chronicle\AgesBeyondNotifications.tsv, created at runtime for in-game messages
 - Chronicle\AgesBeyondQuestNotifications.tsv, created at runtime for in-game quest messages
 - Chronicle\AgesBeyondQuestLog.md, created at runtime for Living Quest inspection
 - Chronicle\AgesBeyondQuestJournal.tsv, created at runtime for in-game Living Quest journal summaries
-- Chronicle\AgesBeyondQuestRewards.tsv, created at runtime for supported Living Quest reward commands
 - Chronicle\AgesBeyondQuestDecisions.tsv, created at runtime for Living Quest stance popups
 - Chronicle\AgesBeyondQuestDecisionResponses.tsv, created at runtime for chosen Living Quest stances
 
 The companion expects Ollama to already be running at http://localhost:11434.
-Structured chronicle events and story metadata are stored in the save game; the Markdown chronicle is regenerated/appended as readable chaptered prose. Rust-owned Living Quests are persisted in AgesBeyondMemory.json, projected to the Markdown chronicle, shown in game through the quest notification TSV, summarized through AgesBeyondQuestJournal.tsv, can apply supported active-player reward commands through AgesBeyondQuestRewards.tsv, can ask for player stances through AgesBeyondQuestDecisions.tsv, ingest chosen stances from AgesBeyondQuestDecisionResponses.tsv, and are rewritten into AgesBeyondQuestLog.md for inspection.
+Structured chronicle events, story metadata, Living Quest state, and applied reward ids are stored in the Civ save through the bridge. Markdown and TSV files in Chronicle are projections or UI handoff files: prose goes to AgesBeyondChronicle.md, quest messages go through AgesBeyondQuestNotifications.tsv, journal summaries go through AgesBeyondQuestJournal.tsv, player stances go through AgesBeyondQuestDecisions.tsv and AgesBeyondQuestDecisionResponses.tsv, and AgesBeyondQuestLog.md is rewritten for inspection.
 "@ | Set-Content -Path $readmePath -Encoding ASCII
 
 if (Test-Path $zipPath) {

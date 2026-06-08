@@ -31,13 +31,6 @@ pub struct AgesBeyondSaveState {
     pub applied_reward_ids: BTreeSet<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct QuestRewardResponse {
-    pub id: String,
-    pub player_id: i32,
-    pub status: String,
-}
-
 impl Default for AgesBeyondSaveState {
     fn default() -> Self {
         Self {
@@ -150,25 +143,22 @@ impl AgesBeyondSaveState {
         changed
     }
 
-    pub fn apply_reward_responses(&mut self, responses: &[QuestRewardResponse]) -> bool {
-        let mut changed = false;
-        for response in responses {
-            if response.id.trim().is_empty() || response.status.trim() != "applied" {
-                continue;
-            }
-
-            self.pending_rewards.remove(&response.id);
-            changed |= self.applied_reward_ids.insert(response.id.clone());
-        }
-        changed
-    }
-
     pub fn pending_decisions(&self) -> impl Iterator<Item = &QuestDecisionPrompt> {
         self.pending_decisions.values()
     }
 
-    pub fn pending_rewards(&self) -> impl Iterator<Item = &QuestRewardCommand> {
-        self.pending_rewards.values()
+    pub fn pending_rewards_to_apply(&self) -> Vec<QuestRewardCommand> {
+        self.pending_rewards.values().cloned().collect()
+    }
+
+    pub fn mark_reward_applied(&mut self, reward_id: &str) -> bool {
+        let reward_id = reward_id.trim();
+        if reward_id.is_empty() {
+            return false;
+        }
+
+        self.pending_rewards.remove(reward_id);
+        self.applied_reward_ids.insert(reward_id.to_owned())
     }
 
     fn validate(&self) -> anyhow::Result<()> {
@@ -240,7 +230,7 @@ mod tests {
     }
 
     #[test]
-    fn reward_responses_clear_pending_reward() {
+    fn applied_rewards_clear_pending_reward() {
         let mut state = AgesBeyondSaveState::default();
         let reward = QuestRewardCommand {
             id: "reward:1".to_owned(),
@@ -252,11 +242,7 @@ mod tests {
 
         assert!(state.record_pending_rewards(&[reward]));
         assert!(state.pending_rewards.contains_key("reward:1"));
-        assert!(state.apply_reward_responses(&[QuestRewardResponse {
-            id: "reward:1".to_owned(),
-            player_id: 0,
-            status: "applied".to_owned(),
-        }]));
+        assert!(state.mark_reward_applied("reward:1"));
         assert!(!state.pending_rewards.contains_key("reward:1"));
         assert!(state.applied_reward_ids.contains("reward:1"));
     }
