@@ -29,6 +29,14 @@ pub struct AgesBeyondSaveState {
     pub pending_rewards: BTreeMap<String, QuestRewardCommand>,
     #[serde(default)]
     pub applied_reward_ids: BTreeSet<String>,
+    #[serde(default)]
+    pub pending_event_jobs: BTreeMap<String, PendingEventJob>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PendingEventJob {
+    pub id: String,
+    pub event: GameEvent,
 }
 
 impl Default for AgesBeyondSaveState {
@@ -41,6 +49,7 @@ impl Default for AgesBeyondSaveState {
             chosen_decisions: BTreeMap::new(),
             pending_rewards: BTreeMap::new(),
             applied_reward_ids: BTreeSet::new(),
+            pending_event_jobs: BTreeMap::new(),
         }
     }
 }
@@ -86,6 +95,38 @@ impl AgesBeyondSaveState {
             return false;
         };
         self.seen_event_ids.insert(key)
+    }
+
+    pub fn is_event_seen_or_pending(&self, event: &GameEvent) -> bool {
+        event_key(event).as_ref().is_some_and(|key| {
+            self.seen_event_ids.contains(key) || self.pending_event_jobs.contains_key(key)
+        })
+    }
+
+    pub fn enqueue_event_job(&mut self, event: GameEvent) -> bool {
+        let Some(key) = event_key(&event) else {
+            return false;
+        };
+        if self.seen_event_ids.contains(&key) || self.pending_event_jobs.contains_key(&key) {
+            return false;
+        }
+
+        self.pending_event_jobs
+            .insert(key.clone(), PendingEventJob { id: key, event });
+        true
+    }
+
+    pub fn pending_event_jobs_to_process(&self) -> Vec<PendingEventJob> {
+        self.pending_event_jobs.values().cloned().collect()
+    }
+
+    pub fn mark_event_job_completed(&mut self, event: &GameEvent) -> bool {
+        let Some(key) = event_key(event) else {
+            return false;
+        };
+
+        let removed = self.pending_event_jobs.remove(&key).is_some();
+        self.seen_event_ids.insert(key) || removed
     }
 
     pub fn record_pending_decisions(&mut self, decisions: &[QuestDecisionPrompt]) -> bool {
@@ -208,6 +249,23 @@ mod tests {
         assert!(state.mark_event_seen(&event));
         assert!(state.is_event_seen(&event));
         assert!(!state.mark_event_seen(&event));
+    }
+
+    #[test]
+    fn event_jobs_are_durable_until_completed() {
+        let mut state = AgesBeyondSaveState::default();
+        let event = event(json!("bridge:8"));
+
+        assert!(state.enqueue_event_job(event.clone()));
+        assert!(state.is_event_seen_or_pending(&event));
+        assert!(!state.is_event_seen(&event));
+        assert!(!state.enqueue_event_job(event.clone()));
+        assert_eq!(state.pending_event_jobs_to_process().len(), 1);
+
+        assert!(state.mark_event_job_completed(&event));
+        assert!(state.is_event_seen(&event));
+        assert!(state.pending_event_jobs.is_empty());
+        assert!(!state.enqueue_event_job(event));
     }
 
     #[test]

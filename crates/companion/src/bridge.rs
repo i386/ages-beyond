@@ -1,10 +1,13 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, sync::Arc, thread};
 
 use ages_beyond_protocol::GameEvent;
 use anyhow::Context;
-use civ4::{BridgeCallbackMessage, BridgeClient, BridgeEvent, CityRef, InfoKind, Plot, TeamId};
+use civ4::{
+    BridgeCallbackMessage, BridgeCallbackReader, BridgeClient, BridgeEvent, CityRef, InfoKind,
+    Plot, TeamId,
+};
 use serde_json::{json, Value};
-use tokio::sync::Mutex;
+use tokio::sync::{mpsc, Mutex};
 use tracing::{debug, info, warn};
 
 use crate::chronicle::ChronicleWriter;
@@ -44,7 +47,7 @@ where
         "connected to CvGameCoreDLL bridge"
     );
 
-    let mut save_state =
+    let save_state =
         match tokio::task::block_in_place(|| AgesBeyondSaveState::load_from_bridge(&mut client)) {
             Ok(Some(state)) => {
                 info!("restored Ages Beyond state from Civ4 save");
@@ -64,23 +67,27 @@ where
             DirectorState::default()
         }
     };
-    let director = Mutex::new(initial_director);
-    let (startup_decisions, startup_decisions_changed) = events::apply_quest_decision_responses(
-        quest_decision_responses.as_ref(),
-        memory.as_ref(),
-        quest_log.as_ref(),
-        quest_journal.as_ref(),
-        &director,
-        &mut save_state,
-    )
-    .await?;
+    let save_state = Arc::new(Mutex::new(save_state));
+    let director = Arc::new(Mutex::new(initial_director));
+    let (startup_decisions, startup_decisions_changed) = {
+        let mut save_state = save_state.lock().await;
+        events::apply_quest_decision_responses(
+            quest_decision_responses.as_ref(),
+            memory.as_ref(),
+            quest_log.as_ref(),
+            quest_journal.as_ref(),
+            &director,
+            &mut save_state,
+        )
+        .await?
+    };
     if !startup_decisions.is_empty() {
         debug!(
             count = startup_decisions.len(),
             "applied saved quest decision responses at startup"
         );
     }
-    let startup_rewards_changed = apply_pending_rewards(&mut client, &mut save_state)?;
+    let startup_rewards_changed = apply_pending_rewards(&mut client, &save_state).await?;
     events::write_director_outputs(
         memory.as_ref(),
         quest_log.as_ref(),
@@ -92,100 +99,236 @@ where
     if startup_decisions_changed || startup_rewards_changed {
         debug!("persisting startup quest response state");
     }
-    persist_save_state(&mut client, &mut save_state, &director).await?;
+    persist_save_state(&mut client, &save_state, &director).await?;
+
+    let callback_reader = client
+        .try_clone_callback_reader()
+        .context("failed to clone bridge callback reader")?;
+    let mut callback_rx = spawn_callback_reader(callback_reader);
+    let (event_tx, mut event_result_rx) = spawn_event_processor(
+        llm,
+        chronicle.clone(),
+        notifications.clone(),
+        quest_notifications.clone(),
+        quest_decisions.clone(),
+        memory.clone(),
+        quest_log.clone(),
+        quest_journal.clone(),
+        Arc::clone(&director),
+        Arc::clone(&save_state),
+    );
+
+    for pending in save_state.lock().await.pending_event_jobs_to_process() {
+        event_tx
+            .send(pending.event)
+            .await
+            .context("failed to enqueue restored Ages Beyond event job")?;
+    }
 
     loop {
-        let callback = tokio::task::block_in_place(|| client.next_callback_message())
-            .context("failed to read bridge callback")?;
-
-        if callback.event().name() == "pre_save" {
-            flush_companion_state(
-                &mut client,
-                quest_decision_responses.as_ref(),
-                memory.as_ref(),
-                quest_log.as_ref(),
-                quest_journal.as_ref(),
-                &director,
-                &mut save_state,
-            )
-            .await
-            .context("failed to flush Ages Beyond state before save")?;
-
-            if let Some(request_id) = callback.request_id() {
-                client
-                    .write_callback_success(request_id, &json!({ "consume": false }))
-                    .context("failed to write pre_save bridge callback reply")?;
+        tokio::select! {
+            Some(callback_result) = callback_rx.recv() => {
+                let callback = callback_result.context("failed to read bridge callback")?;
+                handle_callback(
+                    callback,
+                    &mut client,
+                    &event_tx,
+                    quest_decision_responses.as_ref(),
+                    quest_decisions.as_ref(),
+                    memory.as_ref(),
+                    quest_log.as_ref(),
+                    quest_journal.as_ref(),
+                    &director,
+                    &save_state,
+                )
+                .await?;
             }
-            continue;
-        }
-
-        if let Some(request_id) = callback.request_id() {
-            client
-                .write_callback_success(request_id, &json!({ "consume": false }))
-                .context("failed to write bridge callback reply")?;
-            continue;
-        }
-
-        let callback_id = callback_id(&callback);
-        let bridge_event = callback.event().clone();
-        let Some(event) = tokio::task::block_in_place(|| {
-            bridge_event_to_game_event(&mut client, &bridge_event, callback_id)
-        })
-        .context("failed to adapt bridge callback")?
-        else {
-            debug!(event = bridge_event.name(), "ignored bridge callback");
-            continue;
-        };
-
-        flush_companion_state(
-            &mut client,
-            quest_decision_responses.as_ref(),
-            memory.as_ref(),
-            quest_log.as_ref(),
-            quest_journal.as_ref(),
-            &director,
-            &mut save_state,
-        )
-        .await?;
-
-        match events::process_game_event(
-            &event,
-            &llm,
-            chronicle.as_ref(),
-            notifications.as_ref(),
-            quest_notifications.as_ref(),
-            quest_decisions.as_ref(),
-            memory.as_ref(),
-            quest_log.as_ref(),
-            quest_journal.as_ref(),
-            &director,
-            &mut save_state,
-        )
-        .await
-        {
-            Ok(changed) => {
-                if changed {
-                    apply_pending_rewards(&mut client, &mut save_state)?;
-                    persist_save_state(&mut client, &mut save_state, &director).await?;
+            Some(result) = event_result_rx.recv() => {
+                if result.changed {
+                    apply_pending_rewards(&mut client, &save_state).await?;
+                    persist_save_state(&mut client, &save_state, &director).await?;
                 }
             }
-            Err(err) => {
-                warn!(
-                    event_type = %event.event_type,
-                    error = %err,
-                    "failed to process bridge event"
-                );
-            }
+            else => anyhow::bail!("bridge callback and event worker channels closed"),
         }
     }
 }
 
+struct EventProcessingResult {
+    changed: bool,
+}
+
+fn spawn_callback_reader(
+    mut callback_reader: BridgeCallbackReader,
+) -> mpsc::UnboundedReceiver<anyhow::Result<BridgeCallbackMessage>> {
+    let (tx, rx) = mpsc::unbounded_channel();
+    thread::spawn(move || loop {
+        let result = callback_reader
+            .next_callback_message()
+            .map_err(anyhow::Error::from);
+        let should_stop = result.is_err();
+        if tx.send(result).is_err() || should_stop {
+            break;
+        }
+    });
+    rx
+}
+
+fn spawn_event_processor<L>(
+    llm: L,
+    chronicle: Option<ChronicleWriter>,
+    notifications: Option<NotificationWriter>,
+    quest_notifications: Option<NotificationWriter>,
+    quest_decisions: Option<QuestDecisionWriter>,
+    memory: Option<MemoryWriter>,
+    quest_log: Option<QuestLogWriter>,
+    quest_journal: Option<QuestJournalWriter>,
+    director: Arc<Mutex<DirectorState>>,
+    save_state: Arc<Mutex<AgesBeyondSaveState>>,
+) -> (
+    mpsc::Sender<GameEvent>,
+    mpsc::Receiver<EventProcessingResult>,
+)
+where
+    L: LlmClient,
+{
+    let (event_tx, mut event_rx) = mpsc::channel::<GameEvent>(64);
+    let (result_tx, result_rx) = mpsc::channel::<EventProcessingResult>(64);
+
+    tokio::spawn(async move {
+        while let Some(event) = event_rx.recv().await {
+            match events::process_game_event(
+                &event,
+                &llm,
+                chronicle.as_ref(),
+                notifications.as_ref(),
+                quest_notifications.as_ref(),
+                quest_decisions.as_ref(),
+                memory.as_ref(),
+                quest_log.as_ref(),
+                quest_journal.as_ref(),
+                &director,
+                &save_state,
+            )
+            .await
+            {
+                Ok(changed) => {
+                    if result_tx
+                        .send(EventProcessingResult { changed })
+                        .await
+                        .is_err()
+                    {
+                        break;
+                    }
+                }
+                Err(err) => {
+                    warn!(
+                        event_type = %event.event_type,
+                        error = %err,
+                        "failed to process queued bridge event"
+                    );
+                }
+            }
+        }
+    });
+
+    (event_tx, result_rx)
+}
+
+async fn handle_callback(
+    callback: BridgeCallbackMessage,
+    client: &mut BridgeClient,
+    event_tx: &mpsc::Sender<GameEvent>,
+    quest_decision_responses: Option<&QuestDecisionResponseReader>,
+    quest_decisions: Option<&QuestDecisionWriter>,
+    memory: Option<&MemoryWriter>,
+    quest_log: Option<&QuestLogWriter>,
+    quest_journal: Option<&QuestJournalWriter>,
+    director: &Arc<Mutex<DirectorState>>,
+    save_state: &Arc<Mutex<AgesBeyondSaveState>>,
+) -> anyhow::Result<()> {
+    if callback.event().name() == "pre_save" {
+        flush_companion_state(
+            client,
+            quest_decision_responses,
+            memory,
+            quest_log,
+            quest_journal,
+            quest_decisions,
+            director,
+            save_state,
+        )
+        .await
+        .context("failed to flush Ages Beyond state before save")?;
+
+        if let Some(request_id) = callback.request_id() {
+            client
+                .write_callback_success(request_id, &json!({ "consume": false }))
+                .context("failed to write pre_save bridge callback reply")?;
+        }
+        return Ok(());
+    }
+
+    if let Some(request_id) = callback.request_id() {
+        client
+            .write_callback_success(request_id, &json!({ "consume": false }))
+            .context("failed to write bridge callback reply")?;
+        return Ok(());
+    }
+
+    let callback_id = callback_id(&callback);
+    let bridge_event = callback.event().clone();
+    let Some(event) = tokio::task::block_in_place(|| {
+        bridge_event_to_game_event(client, &bridge_event, callback_id)
+    })
+    .context("failed to adapt bridge callback")?
+    else {
+        debug!(event = bridge_event.name(), "ignored bridge callback");
+        return Ok(());
+    };
+
+    flush_companion_state(
+        client,
+        quest_decision_responses,
+        memory,
+        quest_log,
+        quest_journal,
+        quest_decisions,
+        director,
+        save_state,
+    )
+    .await?;
+
+    let queued = {
+        let mut save_state = save_state.lock().await;
+        save_state.enqueue_event_job(event.clone())
+    };
+    if queued {
+        persist_save_state(client, save_state, director).await?;
+        event_tx
+            .send(event)
+            .await
+            .context("failed to enqueue Ages Beyond event job")?;
+    } else {
+        debug!(
+            event = bridge_event.name(),
+            "skipped duplicate or already pending bridge event"
+        );
+    }
+
+    Ok(())
+}
+
 async fn write_pending_outputs(
     quest_decisions: Option<&QuestDecisionWriter>,
-    save_state: &AgesBeyondSaveState,
+    save_state: &Arc<Mutex<AgesBeyondSaveState>>,
 ) -> anyhow::Result<()> {
     if let Some(writer) = quest_decisions {
-        for decision in save_state.pending_decisions() {
+        let decisions = {
+            let save_state = save_state.lock().await;
+            save_state.pending_decisions().cloned().collect::<Vec<_>>()
+        };
+        for decision in &decisions {
             writer.append_decision(decision).await?;
         }
     }
@@ -199,26 +342,33 @@ async fn flush_companion_state(
     memory: Option<&MemoryWriter>,
     quest_log: Option<&QuestLogWriter>,
     quest_journal: Option<&QuestJournalWriter>,
-    director: &Mutex<DirectorState>,
-    save_state: &mut AgesBeyondSaveState,
+    quest_decisions: Option<&QuestDecisionWriter>,
+    director: &Arc<Mutex<DirectorState>>,
+    save_state: &Arc<Mutex<AgesBeyondSaveState>>,
 ) -> anyhow::Result<bool> {
-    let (applied, decisions_changed) = events::apply_quest_decision_responses(
-        quest_decision_responses,
-        memory,
-        quest_log,
-        quest_journal,
-        director,
-        save_state,
-    )
-    .await?;
+    let (applied, decisions_changed) = {
+        let mut save_state = save_state.lock().await;
+        events::apply_quest_decision_responses(
+            quest_decision_responses,
+            memory,
+            quest_log,
+            quest_journal,
+            director,
+            &mut save_state,
+        )
+        .await?
+    };
     if !applied.is_empty() {
         debug!(
             count = applied.len(),
             "applied quest decision responses before bridge event"
         );
     }
+    if decisions_changed {
+        write_pending_outputs(quest_decisions, save_state).await?;
+    }
 
-    let rewards_changed = apply_pending_rewards(client, save_state)?;
+    let rewards_changed = apply_pending_rewards(client, save_state).await?;
     if decisions_changed || rewards_changed {
         persist_save_state(client, save_state, director).await?;
         return Ok(true);
@@ -227,11 +377,11 @@ async fn flush_companion_state(
     Ok(false)
 }
 
-fn apply_pending_rewards(
+async fn apply_pending_rewards(
     client: &mut BridgeClient,
-    save_state: &mut AgesBeyondSaveState,
+    save_state: &Arc<Mutex<AgesBeyondSaveState>>,
 ) -> anyhow::Result<bool> {
-    let rewards = save_state.pending_rewards_to_apply();
+    let rewards = save_state.lock().await.pending_rewards_to_apply();
     let mut changed = false;
 
     for reward in rewards {
@@ -241,7 +391,7 @@ fn apply_pending_rewards(
             });
             match result {
                 Ok(_) => {
-                    changed |= save_state.mark_reward_applied(&reward.id);
+                    changed |= save_state.lock().await.mark_reward_applied(&reward.id);
                     info!(
                         reward_id = %reward.id,
                         player_id = reward.player_id,
@@ -266,7 +416,7 @@ fn apply_pending_rewards(
                 amount = reward.amount,
                 "skipping unsupported quest reward"
             );
-            changed |= save_state.mark_reward_applied(&reward.id);
+            changed |= save_state.lock().await.mark_reward_applied(&reward.id);
         }
     }
 
@@ -275,12 +425,13 @@ fn apply_pending_rewards(
 
 async fn persist_save_state(
     client: &mut BridgeClient,
-    save_state: &mut AgesBeyondSaveState,
-    director: &Mutex<DirectorState>,
+    save_state: &Arc<Mutex<AgesBeyondSaveState>>,
+    director: &Arc<Mutex<DirectorState>>,
 ) -> anyhow::Result<()> {
+    let director_snapshot = director.lock().await.memory_snapshot();
     let snapshot = {
-        let director = director.lock().await;
-        save_state.refresh_director(&director);
+        let mut save_state = save_state.lock().await;
+        save_state.director = director_snapshot;
         save_state.clone()
     };
 

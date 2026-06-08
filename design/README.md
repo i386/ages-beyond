@@ -3,7 +3,8 @@
 This directory holds forward-looking design docs for deepening the Living
 Quests system. The docs assume the current Rust companion owns director memory,
 Living Quest state, chronicle projections, quest notifications, quest rewards,
-quest decisions, and restart persistence through `AgesBeyondMemory.json`.
+quest decisions, async LLM event jobs, and restart persistence through the
+bridge `mod_state` save blob.
 
 ## Recommended Build Order
 
@@ -23,13 +24,15 @@ prompts, diplomacy, and quest generation.
 
 ## Shared Principles
 
-- Rust owns canonical state. Python only polls projections, displays UI, and
-  applies explicitly supported active-player commands.
+- Rust owns canonical state. Python only polls projections and displays UI.
+- The DLL stays LLM-agnostic: it exposes structured facts, generic
+  queries/commands, callback pipes, companion launch, and opaque mod-state
+  storage.
 - LLM output can name, summarize, and color the world, but it should not be the
   sole source of game-state truth.
 - Every generated narrative artifact should trace back to structured event
   facts, stored decisions, or durable director memory.
-- New state should survive companion restarts through the director memory
-  snapshot, with versioned defaults for old snapshots.
+- New state should survive companion restarts through the save-backed
+  `AgesBeyondSaveState`, with versioned/defaulted fields for old saves.
 - Quest and memory projections should remain readable outside the game through
   Markdown or TSV inspection files.

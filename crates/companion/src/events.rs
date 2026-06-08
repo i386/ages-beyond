@@ -45,7 +45,7 @@ pub async fn process_game_event<L>(
     quest_log: Option<&QuestLogWriter>,
     quest_journal: Option<&QuestJournalWriter>,
     director: &Mutex<DirectorState>,
-    save_state: &mut AgesBeyondSaveState,
+    save_state: &Mutex<AgesBeyondSaveState>,
 ) -> anyhow::Result<bool>
 where
     L: LlmClient,
@@ -58,18 +58,19 @@ where
                 reason = %reason,
                 "ignored game event"
             );
-            Ok(false)
+            let changed = save_state.lock().await.mark_event_job_completed(event);
+            Ok(changed)
         }
         EventHandling::Rumor {
             listener,
             heading,
             event: rumor_event,
         } => {
-            if save_state.is_event_seen(&rumor_event) {
+            if save_state.lock().await.is_event_seen(event) {
                 debug!(
                     listener = listener,
-                    event_type = %rumor_event.event_type,
-                    event_id = ?event_id(&rumor_event),
+                    event_type = %event.event_type,
+                    event_id = ?event_id(event),
                     "skipped duplicate rumor event from save state"
                 );
                 return Ok(false);
@@ -112,10 +113,10 @@ where
                 writer.append_event(&rumor_event, &notification).await?;
             }
 
-            Ok(save_state.mark_event_seen(&rumor_event))
+            Ok(save_state.lock().await.mark_event_job_completed(event))
         }
         EventHandling::Chronicle { listener, heading } => {
-            if save_state.is_event_seen(event) {
+            if save_state.lock().await.is_event_seen(event) {
                 debug!(
                     listener = listener,
                     event_type = %event.event_type,
@@ -273,7 +274,8 @@ where
 
             write_director_outputs(memory, quest_log, quest_journal, director).await?;
 
-            let mut changed = save_state.mark_event_seen(event);
+            let mut save_state = save_state.lock().await;
+            let mut changed = save_state.mark_event_job_completed(event);
             changed |= save_state.record_pending_decisions(observation.quest_decisions());
             changed |= save_state.record_pending_rewards(observation.quest_rewards());
 

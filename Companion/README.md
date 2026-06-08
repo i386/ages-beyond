@@ -17,13 +17,14 @@ the current director memory snapshot to
 
 The companion owns event listener behavior: it classifies incoming DLL events,
 filters internal engine events such as barbarian setup diplomacy, applies
-audience/fog-of-war gating, calls Ollama for chronicle-worthy events, and skips
-duplicate Markdown projections by saved event id.
+audience/fog-of-war gating, queues chronicle-worthy events as save-backed LLM
+jobs, calls Ollama from the companion worker, and skips duplicate Markdown
+projections by saved event id.
 
 DLL events include names, type keys, era/chapter metadata, importance,
 audience/visibility metadata, and quest-policy hints where available. The save
-blob keeps seen event ids and director state; the Markdown chronicle is a
-chaptered projection of accepted events.
+blob keeps seen event ids, pending LLM event jobs, and director state; the
+Markdown chronicle is a chaptered projection of accepted events.
 
 For contract version 3 events, Rust ignores events that are not known to the
 active player before calling Ollama unless the DLL marks the event as
@@ -69,6 +70,13 @@ fallback text in the same format.
 The companion only supports the Rust bridge connection path. It connects to the
 DLL bridge using the default bridge pipe names. The bridge DLL auto-enables and
 launches it when the packaged `mod.exe` is present.
+
+The DLL remains unaware of LLMs, quests, and narrative policy. It emits generic
+callbacks, accepts generic queries/commands, and stores the companion's
+`mod_state` blob. The companion clones the bridge callback reader, queues
+accepted events durably, processes LLM/director/projection work asynchronously,
+and sends only validated bridge commands such as supported rewards back to the
+DLL.
 
 The companion also keeps an in-memory director state. Accepted game events feed
 relationship memories, civilization memories, named conflicts,

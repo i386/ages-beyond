@@ -14,6 +14,8 @@ generates narrative projections that appear in-game and in a saved chronicle.
 - DLL startup launches `mod.exe` from the mod root.
 - The Rust bridge DLL sends structured callbacks over the bridge callback pipe.
 - The Rust companion filters internal/noisy events before narrative generation.
+- The Rust companion queues accepted bridge events as save-backed LLM jobs, so
+  callback handling can continue while Ollama works.
 - Ollama generates short in-world narrative text from game facts.
 - Python projects notification text into the Civ IV UI.
 - Rust maintains save-backed diplomacy memories, civilization memories, named
@@ -23,9 +25,9 @@ generates narrative projections that appear in-game and in a saved chronicle.
   as razed cities, captured cities, wonders, faiths, discoveries, war aims, and
   peace settlements.
 - A Markdown chronicle is written to `Chronicle/AgesBeyondChronicle.md`.
-- The current Rust director memory snapshot, seen event ids, pending quest
-  decisions, and pending/applied quest rewards are stored in the Civ save
-  through the bridge `mod_state` blob.
+- The current Rust director memory snapshot, seen event ids, pending LLM event
+  jobs, pending quest decisions, and pending/applied quest rewards are stored in
+  the Civ save through the bridge `mod_state` blob.
 - `Chronicle/AgesBeyondMemory.json` is written as a debug projection of the
   save-backed director state.
 - Fog-of-war audience facts gate whether an event can be narrated or reduced
@@ -92,7 +94,10 @@ diplomacy now belongs on the Rust bridge path; the companion no longer supports
 the old Ages Beyond companion pipe protocol.
 
 The companion connects with `civ4::BridgeClient::connect_default_with_handshake()`,
-then adapts high-signal bridge callbacks into the Rust director pipeline.
+then adapts high-signal bridge callbacks into a save-backed event-job queue. A
+companion worker handles LLM/director/projection work asynchronously, and the
+main bridge task remains responsible for generic bridge commands, reward
+application, callback replies, and `mod_state` persistence.
 
 ## Diplomacy memory, quests, named conflicts, and arcs
 
@@ -134,10 +139,10 @@ fallback title derived from the triggering event.
 
 The companion loads its authoritative `AgesBeyondSaveState` from the bridge
 `mod_state` blob stored in the Civ save. That blob contains the director
-snapshot, seen event ids, pending quest decisions, chosen quest decisions,
-pending quest rewards, and applied reward ids. `Chronicle/AgesBeyondMemory.json`
-is rewritten after accepted game events for debugging and design inspection,
-but it is not loaded as canonical state.
+snapshot, seen event ids, pending LLM event jobs, pending quest decisions,
+chosen quest decisions, pending quest rewards, and applied reward ids.
+`Chronicle/AgesBeyondMemory.json` is rewritten after accepted game events for
+debugging and design inspection, but it is not loaded as canonical state.
 
 The companion also rewrites `Chronicle/AgesBeyondQuestLog.md` after accepted
 game events. This Markdown log is a readable projection of the same persisted
@@ -214,6 +219,6 @@ checkout or build artifact lives elsewhere.
 ## Current design rule
 
 Keep engine changes in the separate bridge repository. The DLL should expose
-structured, safe facts. Ages Beyond Rust should own listener behavior, LLM
-prompting, narrative policy, fallbacks, filtering, and most future experiment
-logic.
+structured, safe facts and generic game-state commands. Ages Beyond Rust should
+own listener behavior, async LLM job scheduling, LLM prompting, narrative
+policy, fallbacks, filtering, and most future experiment logic.

@@ -87,8 +87,8 @@ directly for leader speech.
 After text-only behavior is stable, Rust can emit suggested mechanical hooks:
 
 - no direct attitude mutation by default
-- possible TSV command file for future Python application
-- commands must be idempotent and active-player safe
+- validated bridge effect commands for future Rust application
+- commands must be idempotent, save-backed, and active-player safe
 
 Examples:
 
