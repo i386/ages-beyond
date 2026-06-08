@@ -1,6 +1,6 @@
-use std::{collections::BTreeMap, sync::Arc, thread};
+use std::{collections::BTreeMap, sync::Arc, thread, time::Duration};
 
-use ages_beyond_protocol::GameEvent;
+use ages_beyond_protocol::{DiplomacyTextRequest, GameEvent, RequestBody};
 use anyhow::Context;
 use civ4::{
     BridgeCallbackMessage, BridgeCallbackReader, BridgeClient, BridgeEvent, CityRef, InfoKind,
@@ -8,6 +8,7 @@ use civ4::{
 };
 use serde_json::{json, Value};
 use tokio::sync::{mpsc, Mutex};
+use tokio::time::timeout;
 use tracing::{debug, info, warn};
 
 use crate::chronicle::ChronicleWriter;
@@ -19,6 +20,8 @@ use crate::memory::{
 };
 use crate::notifications::{NotificationWriter, QuestDecisionWriter};
 use crate::save_state::AgesBeyondSaveState;
+
+const UI_TEXT_LLM_TIMEOUT: Duration = Duration::from_millis(1600);
 
 pub async fn run_client<L>(
     llm: L,
@@ -106,7 +109,7 @@ where
         .context("failed to clone bridge callback reader")?;
     let mut callback_rx = spawn_callback_reader(callback_reader);
     let (event_tx, mut event_result_rx) = spawn_event_processor(
-        llm,
+        llm.clone(),
         chronicle.clone(),
         notifications.clone(),
         quest_notifications.clone(),
@@ -138,6 +141,7 @@ where
                     memory.as_ref(),
                     quest_log.as_ref(),
                     quest_journal.as_ref(),
+                    &llm,
                     &director,
                     &save_state,
                 )
@@ -244,6 +248,7 @@ async fn handle_callback(
     memory: Option<&MemoryWriter>,
     quest_log: Option<&QuestLogWriter>,
     quest_journal: Option<&QuestJournalWriter>,
+    llm: &impl LlmClient,
     director: &Arc<Mutex<DirectorState>>,
     save_state: &Arc<Mutex<AgesBeyondSaveState>>,
 ) -> anyhow::Result<()> {
@@ -265,6 +270,13 @@ async fn handle_callback(
             client
                 .write_callback_success(request_id, &json!({ "consume": false }))
                 .context("failed to write pre_save bridge callback reply")?;
+        }
+        return Ok(());
+    }
+
+    if callback.event().name() == "ui_text" {
+        if let Some(request_id) = callback.request_id() {
+            handle_ui_text_callback(request_id, callback.event(), client, llm, director).await?;
         }
         return Ok(());
     }
@@ -317,6 +329,103 @@ async fn handle_callback(
     }
 
     Ok(())
+}
+
+async fn handle_ui_text_callback(
+    request_id: u64,
+    event: &BridgeEvent,
+    client: &mut BridgeClient,
+    llm: &impl LlmClient,
+    director: &Arc<Mutex<DirectorState>>,
+) -> anyhow::Result<()> {
+    let fallback = ui_text_fallback(event).unwrap_or_default();
+    let text = match ui_text_response(event, llm, director).await {
+        Ok(text) if !text.trim().is_empty() => text,
+        Ok(_) => fallback.clone(),
+        Err(err) => {
+            warn!(
+                event = event.name(),
+                error = %err,
+                "using fallback bridge UI text"
+            );
+            fallback.clone()
+        }
+    };
+
+    client
+        .write_callback_success(request_id, &json!({ "text": text }))
+        .context("failed to write bridge UI text callback reply")?;
+    Ok(())
+}
+
+async fn ui_text_response(
+    event: &BridgeEvent,
+    llm: &impl LlmClient,
+    director: &Arc<Mutex<DirectorState>>,
+) -> anyhow::Result<String> {
+    let args = ui_text_args(event).context("missing ui_text payload")?;
+    let surface = json_string(args, "surface").unwrap_or_default();
+    if surface != "diplomacy_comment" {
+        return Ok(json_string(args, "fallback_text").unwrap_or_default());
+    }
+
+    let request = diplomacy_text_request(args)?;
+    let enriched = director.lock().await.enrich_diplomacy_request(&request);
+    let body = RequestBody::DiplomacyText { request: enriched };
+    match timeout(UI_TEXT_LLM_TIMEOUT, llm.respond(&body)).await {
+        Ok(Ok(text)) => Ok(text),
+        Ok(Err(err)) => Err(err),
+        Err(_) => Ok(json_string(args, "fallback_text").unwrap_or_default()),
+    }
+}
+
+fn ui_text_args(event: &BridgeEvent) -> Option<&Value> {
+    match event {
+        BridgeEvent::UiText { args } => Some(args),
+        BridgeEvent::Unknown { name, args } if name == "ui_text" => Some(args),
+        _ => None,
+    }
+}
+
+fn ui_text_fallback(event: &BridgeEvent) -> Option<String> {
+    ui_text_args(event).and_then(|args| json_string(args, "fallback_text"))
+}
+
+fn diplomacy_text_request(args: &Value) -> anyhow::Result<DiplomacyTextRequest> {
+    Ok(DiplomacyTextRequest {
+        comment_type: json_string(args, "comment_type").context("missing comment_type")?,
+        active_player_id: json_i32(args, "active_player_id").context("missing active_player_id")?,
+        leader_player_id: json_i32(args, "leader_player_id").context("missing leader_player_id")?,
+        turn: json_i32(args, "turn"),
+        active_player_name: json_string(args, "active_player_name"),
+        active_civilization: json_string(args, "active_civilization"),
+        leader_name: json_string(args, "leader_name"),
+        leader_civilization: json_string(args, "leader_civilization"),
+        attitude: json_string(args, "attitude"),
+        at_war: json_bool(args, "at_war").unwrap_or(false),
+        power_relation: json_string(args, "power_relation"),
+        fallback_text: json_string(args, "fallback_text"),
+        diplomacy_memory: None,
+        world_arc: None,
+    })
+}
+
+fn json_string(args: &Value, key: &str) -> Option<String> {
+    args.get(key)
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_owned)
+}
+
+fn json_i32(args: &Value, key: &str) -> Option<i32> {
+    args.get(key)
+        .and_then(Value::as_i64)
+        .and_then(|value| i32::try_from(value).ok())
+}
+
+fn json_bool(args: &Value, key: &str) -> Option<bool> {
+    args.get(key).and_then(Value::as_bool)
 }
 
 async fn write_pending_outputs(

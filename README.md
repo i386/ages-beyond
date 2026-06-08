@@ -90,8 +90,11 @@ but city and plot details are redacted from the prompt.
 ## Dynamic diplomacy text
 
 `CvDiplomacy.py` keeps the normal XML diplomacy line as the fallback. Generated
-diplomacy now belongs on the Rust bridge path; the companion no longer supports
-the old Ages Beyond companion pipe protocol.
+diplomacy now uses the Rust bridge `ui_text` callback request. The DLL supplies
+the diplomacy surface and game context, while the companion enriches that request
+with director memory and asks the configured LLM for the replacement line. If the
+LLM is slow, unavailable, or returns no text, the companion replies with the XML
+fallback.
 
 The companion connects with `civ4::BridgeClient::connect_default_with_handshake()`,
 then adapts high-signal bridge callbacks into a save-backed event-job queue. A

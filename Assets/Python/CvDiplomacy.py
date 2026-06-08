@@ -388,7 +388,7 @@ class CvDiplomacy:
 			powerRelation = self.getPowerRelationLabel(activePlayer.getPower(), leaderPlayer.getPower())
 			atWar = activeTeam.isAtWar(leaderPlayer.getTeam())
 
-			return game.getAgesBeyondDiplomacyText(
+			return game.getBridgeDiplomacyText(
 				commentType,
 				iActivePlayer,
 				iLeader,
