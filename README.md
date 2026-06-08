@@ -182,8 +182,9 @@ and diplomacy context.
 - `Mod/` - packaged mod-side files.
 
 The DLL/bridge source lives in the separate `CvGameCoreDLL` repository. Ages
-Beyond consumes its built `CvGameCoreDLL.dll` and the Rust `civ4` crate from the
-`feature/civ4-bridge` branch.
+Beyond bundles `CvGameCoreDLL.dll` from that repository's latest successful
+`main` branch `CvGameCoreDLL-win32` build artifact. The Rust companion consumes
+the bridge crate through Cargo.
 
 ## Running locally
 
@@ -204,9 +205,9 @@ mod.exe --chronicle ..\Chronicle\AgesBeyondChronicle.md --model llama3.1
 
 ## Build and package
 
-Build the bridge DLL in the separate `CvGameCoreDLL` checkout, then build the
-Rust companion, package the mod, and copy that external bridge DLL into
-`Assets\CvGameCoreDLL.dll`.
+CI downloads the latest successful `main` build artifact from `i386/CvGameCoreDLL`,
+then packages that DLL into `Assets\CvGameCoreDLL.dll` alongside the Rust
+companion.
 
 Local validation is usually split into:
 
@@ -215,9 +216,9 @@ cargo fmt --all
 cargo test --workspace
 ```
 
-`scripts/package_mod.ps1` defaults to copying the DLL from
-`..\CvGameCoreDLL\artifacts\CvGameCoreDLL.dll`; pass `-DllPath` if your bridge
-checkout or build artifact lives elsewhere.
+`scripts/package_mod.ps1` defaults to copying the downloaded CI artifact from
+`CvGameCoreDLL-build\CvGameCoreDLL.dll`; pass `-DllPath` if your local bridge
+build artifact lives elsewhere.
 
 ## Current design rule
 

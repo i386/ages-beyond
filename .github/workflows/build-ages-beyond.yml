@@ -5,6 +5,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  actions: read
+  contents: read
+
 jobs:
   build-mod:
     name: Build bridge DLL, companion, and mod zip
@@ -18,73 +22,27 @@ jobs:
       - name: Check out sources
         uses: actions/checkout@v6
 
-      - name: Check out CvGameCoreDLL bridge
-        uses: actions/checkout@v6
-        with:
-          repository: i386/CvGameCoreDLL
-          ref: feature/civ4-bridge
-          path: CvGameCoreDLL
-
-      - name: Restore VC7.1 source archive cache
-        id: restore-vc71-downloads
-        uses: actions/cache/restore@v5
-        with:
-          path: ${{ runner.temp }}\vc71-downloads
-          key: vc71-downloads-${{ runner.os }}-vs2003-sdk-v1
-          restore-keys: |
-            vc71-downloads-${{ runner.os }}-
-
-      - name: Download VC7.1 source archives
-        if: steps.restore-vc71-downloads.outputs.cache-hit != 'true'
+      - name: Download main CvGameCoreDLL build
+        shell: pwsh
         env:
-          VC71_TOOLCHAIN_URL: ${{ secrets.VC71_TOOLCHAIN_URL }}
-          VS2003_ISO_URL: ${{ vars.VS2003_ISO_URL }}
-          VCTOOLKIT2003_URL: ${{ vars.VCTOOLKIT2003_URL }}
-          PLATFORM_SDK_URL: ${{ vars.PLATFORM_SDK_URL }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          powershell -NoProfile -ExecutionPolicy Bypass -File CvGameCoreDLL\scripts\prepare_vc71_toolchain.ps1 -OutputDir "%RUNNER_TEMP%\vc71" -DownloadCacheDir "%RUNNER_TEMP%\vc71-downloads" -DownloadOnly
+          $runId = gh run list --repo i386/CvGameCoreDLL --branch main --workflow "Build CvGameCoreDLL" --status success --limit 1 --json databaseId --jq '.[0].databaseId'
+          if (-not $runId) {
+              throw "No successful main-branch CvGameCoreDLL build found."
+          }
 
-      - name: Save VC7.1 source archive cache
-        if: steps.restore-vc71-downloads.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v5
-        with:
-          path: ${{ runner.temp }}\vc71-downloads
-          key: vc71-downloads-${{ runner.os }}-vs2003-sdk-v1
-
-      - name: Restore prepared VC7.1 toolchain cache
-        id: restore-vc71-toolchain
-        uses: actions/cache/restore@v5
-        with:
-          path: ${{ runner.temp }}\vc71
-          key: vc71-toolchain-${{ runner.os }}-${{ hashFiles('CvGameCoreDLL/scripts/prepare_vc71_toolchain.ps1') }}-v1
-          restore-keys: |
-            vc71-toolchain-${{ runner.os }}-
-
-      - name: Prepare VC7.1 toolchain
-        if: steps.restore-vc71-toolchain.outputs.cache-hit != 'true'
-        env:
-          VC71_TOOLCHAIN_URL: ${{ secrets.VC71_TOOLCHAIN_URL }}
-          VS2003_ISO_URL: ${{ vars.VS2003_ISO_URL }}
-          VCTOOLKIT2003_URL: ${{ vars.VCTOOLKIT2003_URL }}
-          PLATFORM_SDK_URL: ${{ vars.PLATFORM_SDK_URL }}
-        run: |
-          powershell -NoProfile -ExecutionPolicy Bypass -File CvGameCoreDLL\scripts\prepare_vc71_toolchain.ps1 -OutputDir "%RUNNER_TEMP%\vc71" -DownloadCacheDir "%RUNNER_TEMP%\vc71-downloads"
-
-      - name: Save prepared VC7.1 toolchain cache
-        if: steps.restore-vc71-toolchain.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v5
-        with:
-          path: ${{ runner.temp }}\vc71
-          key: vc71-toolchain-${{ runner.os }}-${{ hashFiles('CvGameCoreDLL/scripts/prepare_vc71_toolchain.ps1') }}-v1
-
-      - name: Build bridge CvGameCoreDLL
-        run: CvGameCoreDLL\scripts\build_vc71_nmake.bat "%RUNNER_TEMP%\vc71"
+          Write-Host "Downloading CvGameCoreDLL-win32 from i386/CvGameCoreDLL run $runId"
+          gh run download $runId --repo i386/CvGameCoreDLL --name CvGameCoreDLL-win32 --dir CvGameCoreDLL-build
+          if (-not (Test-Path "CvGameCoreDLL-build\CvGameCoreDLL.dll")) {
+              throw "Downloaded CvGameCoreDLL artifact did not contain CvGameCoreDLL.dll"
+          }
 
       - name: Build mod companion
         run: cargo build --release --package ages-beyond-companion
 
       - name: Package mod zip
-        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\package_mod.ps1 -DllPath CvGameCoreDLL\CvGameCoreDLL\artifacts\CvGameCoreDLL.dll
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\package_mod.ps1 -DllPath CvGameCoreDLL-build\CvGameCoreDLL.dll
 
       - name: Upload packaged mod
         uses: actions/upload-artifact@v7
@@ -98,6 +56,6 @@ jobs:
         with:
           name: CvGameCoreDLL-win32
           path: |
-            CvGameCoreDLL\CvGameCoreDLL\artifacts\CvGameCoreDLL.dll
-            CvGameCoreDLL\CvGameCoreDLL\artifacts\CvGameCoreDLL.map
+            CvGameCoreDLL-build\CvGameCoreDLL.dll
+            CvGameCoreDLL-build\CvGameCoreDLL.map
           if-no-files-found: error
