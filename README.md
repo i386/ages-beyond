@@ -1,24 +1,21 @@
 # Ages Beyond
 
-Ages Beyond is a Civilization IV: Beyond the Sword mod built on the MMod
-`CvGameCoreDLL`. The goal is to make the game feel like it has continued
-beyond its original edges: richer chronicles, dynamic story hooks, and
-LLM-assisted flavor that reacts to real game events.
+Ages Beyond is a Civilization IV: Beyond the Sword mod layered on the separate
+Rust-bridge `CvGameCoreDLL` project. The goal is to make the game feel like it
+has continued beyond its original edges: richer chronicles, dynamic story
+hooks, and LLM-assisted flavor that reacts to real game events.
 
-The current experiment keeps the original game rules intact. The DLL captures
-structured events, a Rust companion listens over a Windows named pipe, and
-Ollama generates narrative projections that appear in-game and in a saved
-chronicle.
+The current experiment keeps the original game rules intact. The bridge DLL
+captures structured callbacks, launches the Rust companion, and Ollama
+generates narrative projections that appear in-game and in a saved chronicle.
 
 ## What is working now
 
-- DLL startup launches `AgesBeyondCompanion.exe`.
-- The DLL sends structured game events over a named pipe.
+- DLL startup launches `mod.exe` from the mod root.
+- The Rust bridge DLL sends structured callbacks over the bridge callback pipe.
 - The Rust companion filters internal/noisy events before narrative generation.
 - Ollama generates short in-world narrative text from game facts.
 - Python projects notification text into the Civ IV UI.
-- Diplomacy text can request generated replacements through the existing named
-  pipe and fall back to vanilla XML text when no cached line is ready.
 - Rust maintains in-memory diplomacy memories, civilization memories, named
   conflicts, treaty names, per-civilization arcs, era transition memories, and
   an LLM-named current world arc director from accepted game events.
@@ -88,25 +85,12 @@ but city and plot details are redacted from the prompt.
 
 ## Dynamic diplomacy text
 
-`CvDiplomacy.py` keeps the normal XML diplomacy line as the fallback. When a
-leader comment is shown, Python asks the DLL for an Ages Beyond replacement.
-The DLL sends a `diplomacy_text` request over the existing companion named pipe.
+`CvDiplomacy.py` keeps the normal XML diplomacy line as the fallback. Generated
+diplomacy now belongs on the Rust bridge path; the companion no longer supports
+the old Ages Beyond companion pipe protocol.
 
-Rust keeps generated diplomacy lines in memory. On a cache hit, the generated
-line is returned quickly and replaces the XML line. On a cache miss, Rust starts
-background Ollama generation and immediately returns an empty response, so the
-diplomacy screen uses the vanilla XML line for that encounter.
-
-The cache key includes the comment type, the two players, a coarse turn bucket,
-and the leader attitude. This keeps lines fresh enough without blocking the UI
-or writing extra diplomacy cache files.
-
-The companion also has a bridge-client runtime for the newer Rust
-`CvGameCoreDLL` bridge. If `AgesBeyondCompanion.exe` starts without `--pipe`, it
-connects with `civ4::BridgeClient::connect_from_env_with_handshake()` and
-adapts high-signal bridge callbacks into the same Rust director pipeline. Use
-`--engine pipe` to force the legacy companion pipe or `--engine bridge` to force
-the new bridge.
+The companion connects with `civ4::BridgeClient::connect_default_with_handshake()`,
+then adapts high-signal bridge callbacks into the Rust director pipeline.
 
 ## Diplomacy memory, quests, named conflicts, and arcs
 
@@ -186,32 +170,38 @@ context.
 
 ## Repository layout
 
-- `CvGameCoreDLL/` - C++ DLL source and Ages Beyond event hooks.
 - `crates/protocol/` - Rust protocol types shared by the companion.
-- `crates/companion/` - Rust named-pipe listener and Ollama integration.
+- `crates/companion/` - Rust bridge client, director, and Ollama integration.
 - `Assets/Python/` - Python notification projection loaded by the mod.
-- `Companion/` - packaged companion documentation.
+- `Companion/` - companion documentation.
 - `Mod/` - packaged mod-side files.
+
+The DLL/bridge source lives in the separate `CvGameCoreDLL` repository. Ages
+Beyond consumes its built `CvGameCoreDLL.dll` and the Rust `civ4` crate from the
+`feature/civ4-bridge` branch.
 
 ## Running locally
 
-The game launches the companion automatically from the mod install. Ollama is
-assumed to already be running at:
+The game launches the companion automatically from the mod install. The package
+places the companion at `Ages Beyond\mod.exe`, and the bridge DLL auto-enables
+when that executable is present. Ollama is assumed to already be running at:
 
 ```text
 http://localhost:11434
 ```
 
-The companion can also be run manually for debugging:
+The companion can also be run manually for debugging after the bridge has
+created its default pipes:
 
 ```cmd
-AgesBeyondCompanion.exe --pipe \\.\pipe\AgesBeyond-12345 --chronicle ..\Chronicle\AgesBeyondChronicle.md --model llama3.1
+mod.exe --chronicle ..\Chronicle\AgesBeyondChronicle.md --model llama3.1
 ```
 
 ## Build and package
 
-The GitHub Actions workflow builds the legacy 32-bit `CvGameCoreDLL.dll`, builds
-the Rust companion, packages the mod, and uploads a downloadable zip artifact.
+Build the bridge DLL in the separate `CvGameCoreDLL` checkout, then build the
+Rust companion, package the mod, and copy that external bridge DLL into
+`Assets\CvGameCoreDLL.dll`.
 
 Local validation is usually split into:
 
@@ -220,11 +210,13 @@ cargo fmt --all
 cargo test --workspace
 ```
 
-The DLL itself requires the Visual C++ 7.1 toolchain; see
-`CvGameCoreDLL/README.md` for details.
+`scripts/package_mod.ps1` defaults to copying the DLL from
+`..\CvGameCoreDLL\artifacts\CvGameCoreDLL.dll`; pass `-DllPath` if your bridge
+checkout or build artifact lives elsewhere.
 
 ## Current design rule
 
-Keep C++ changes small and engine-facing. The DLL should expose structured,
-safe facts. Rust should own listener behavior, LLM prompting, narrative policy,
-fallbacks, filtering, and most future experiment logic.
+Keep engine changes in the separate bridge repository. The DLL should expose
+structured, safe facts. Ages Beyond Rust should own listener behavior, LLM
+prompting, narrative policy, fallbacks, filtering, and most future experiment
+logic.

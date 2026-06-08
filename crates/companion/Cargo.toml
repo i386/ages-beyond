@@ -4,13 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "AgesBeyondCompanion"
+name = "mod"
 path = "src/main.rs"
 
 [dependencies]
 ages-beyond-protocol = { path = "../protocol" }
 anyhow = "1"
-civ4 = { path = "../../../../.codex/worktrees/d72b/CvGameCoreDLL/crates/civ4" }
+civ4 = { git = "https://github.com/i386/CvGameCoreDLL.git", branch = "feature/civ4-bridge" }
 clap = { version = "4", features = ["derive"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 serde = { version = "1", features = ["derive"] }

@@ -146,6 +146,7 @@ checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
 [[package]]
 name = "civ4"
 version = "0.1.0"
+source = "git+https://github.com/i386/CvGameCoreDLL.git?branch=feature%2Fciv4-bridge#cda27d24112c85b0166671f20308cbbf326ab341"
 dependencies = [
  "serde",
  "serde_json",

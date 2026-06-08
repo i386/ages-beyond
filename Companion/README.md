@@ -1,10 +1,10 @@
 # Ages Beyond Companion
 
-`AgesBeyondCompanion.exe` is built from `crates/companion` and is launched by
-the Civ IV DLL over a Windows named pipe.
+`mod.exe` is built from `crates/companion` and is launched by the Rust bridge
+`CvGameCoreDLL`.
 
-The DLL searches for the executable next to `CvGameCoreDLL.dll`, in
-`..\Companion\AgesBeyondCompanion.exe`, and in `..\AgesBeyondCompanion.exe`.
+The packaged mod installs the companion as `mod.exe` at the mod root. The DLL
+looks for it at `..\mod.exe` relative to `Assets\CvGameCoreDLL.dll`.
 
 The first LLM provider is Ollama. The companion assumes Ollama is already running at
 `http://localhost:11434` unless a different `--ollama-url` is supplied.
@@ -66,18 +66,9 @@ stance in save-game script data, and appends
 memory. If Ollama fails, the companion emits
 deterministic fallback text in the same format.
 
-The same named pipe also supports cache-first generated diplomacy text. The DLL
-sends `diplomacy_text` requests when Python shows a leader comment. Rust returns
-an in-memory cached line if one is ready; otherwise it starts background Ollama
-generation and returns an empty string so the diplomacy screen keeps its vanilla
-XML fallback.
-
-The companion can also run against the newer `CvGameCoreDLL` Rust bridge. When
-started without `--pipe`, or with `--engine bridge`, it connects to the DLL
-bridge using `CVGAME_BRIDGE_PIPE_PREFIX`, `CVGAME_BRIDGE_CONTROL_PIPE`, and
-`CVGAME_BRIDGE_CALLBACK_PIPE`. This is the mode used by the bridge DLL's
-`CVGAME_BRIDGE_AUTOLAUNCH=1` companion hook. The legacy `--pipe` path remains
-available as `--engine pipe`.
+The companion only supports the Rust bridge connection path. It connects to the
+DLL bridge using the default bridge pipe names. The bridge DLL auto-enables and
+launches it when the packaged `mod.exe` is present.
 
 The companion also keeps an in-memory director state. Accepted game events feed
 relationship memories, civilization memories, named conflicts,
@@ -126,5 +117,5 @@ closed conflicts as currently held by the Rust companion.
 Example:
 
 ```cmd
-AgesBeyondCompanion.exe --pipe \\.\pipe\AgesBeyond-12345 --chronicle ..\Chronicle\AgesBeyondChronicle.md --model llama3.1
+mod.exe --chronicle ..\Chronicle\AgesBeyondChronicle.md --model llama3.1
 ```

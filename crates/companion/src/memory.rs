@@ -217,9 +217,7 @@ fn parse_quest_decision_response(line: &str) -> Option<QuestDecisionResponse> {
 fn render_quest_log(snapshot: &DirectorMemorySnapshot) -> String {
     let mut output = String::new();
     output.push_str("# Ages Beyond Living Quests\n\n");
-    output.push_str(
-        "This file is rewritten by AgesBeyondCompanion.exe from the Rust director state.\n\n",
-    );
+    output.push_str("This file is rewritten by mod.exe from the Rust director state.\n\n");
 
     let active = snapshot
         .living_quests

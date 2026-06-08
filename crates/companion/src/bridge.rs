@@ -32,7 +32,7 @@ pub async fn run_client<L>(
 where
     L: LlmClient,
 {
-    let (mut client, hello) = BridgeClient::connect_from_env_with_handshake()
+    let (mut client, hello) = BridgeClient::connect_default_with_handshake()
         .context("failed to connect to CvGameCoreDLL bridge")?;
     let missing = hello.missing_capabilities(&["callbacks", "queries"]);
     if !missing.is_empty() {

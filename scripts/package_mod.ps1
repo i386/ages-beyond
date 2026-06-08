@@ -1,6 +1,6 @@
 param(
-    [string] $DllPath = "CvGameCoreDLL\artifacts\CvGameCoreDLL.dll",
-    [string] $CompanionPath = "target\release\AgesBeyondCompanion.exe",
+    [string] $DllPath = "..\CvGameCoreDLL\artifacts\CvGameCoreDLL.dll",
+    [string] $CompanionPath = "target\release\mod.exe",
     [string] $OutputDir = "dist",
     [string] $ModName = "Ages Beyond"
 )
@@ -21,19 +21,17 @@ function Resolve-RequiredFile {
 }
 
 $dll = Resolve-RequiredFile -Path $DllPath -Description "CvGameCoreDLL.dll"
-$companion = Resolve-RequiredFile -Path $CompanionPath -Description "AgesBeyondCompanion.exe"
+$companion = Resolve-RequiredFile -Path $CompanionPath -Description "mod.exe"
 
 $stageRoot = Join-Path $OutputDir "stage"
 $modRoot = Join-Path $stageRoot $ModName
 $assetsDir = Join-Path $modRoot "Assets"
-$companionDir = Join-Path $modRoot "Companion"
 $zipPath = Join-Path $OutputDir "Civilization-IV-Ages-Beyond.zip"
 
 if (Test-Path $stageRoot) {
     Remove-Item -Path $stageRoot -Recurse -Force
 }
 New-Item -ItemType Directory -Force -Path $assetsDir | Out-Null
-New-Item -ItemType Directory -Force -Path $companionDir | Out-Null
 
 if (Test-Path "Mod") {
     Get-ChildItem -Path "Mod" -Force | ForEach-Object {
@@ -42,7 +40,7 @@ if (Test-Path "Mod") {
 }
 
 Copy-Item -Path $dll -Destination (Join-Path $assetsDir "CvGameCoreDLL.dll") -Force
-Copy-Item -Path $companion -Destination (Join-Path $companionDir "AgesBeyondCompanion.exe") -Force
+Copy-Item -Path $companion -Destination (Join-Path $modRoot "mod.exe") -Force
 
 $readmePath = Join-Path $modRoot "README.txt"
 @"
@@ -50,13 +48,17 @@ Civilization IV: Ages Beyond
 
 Install by placing the "Ages Beyond" folder in your Civilization IV Beyond the Sword Mods directory.
 
+The packaged DLL is built by the separate CvGameCoreDLL Rust bridge repository.
+This package script copies the latest bridge build from:
+$dll
+
 This package includes:
 - Assets\CvGameCoreDLL.dll
+- mod.exe
 - Assets\Python\AgesBeyondNotifications.py
 - Assets\Python\AgesBeyondScreenUtils.py
 - Assets\Python\EntryPoints\CvEventInterface.py
 - Assets\Python\EntryPoints\CvScreenUtilsInterface.py
-- Companion\AgesBeyondCompanion.exe
 - Chronicle\AgesBeyondChronicle.md, created at runtime
 - Chronicle\AgesBeyondMemory.json, created at runtime for director memory persistence and inspection
 - Chronicle\AgesBeyondNotifications.tsv, created at runtime for in-game messages

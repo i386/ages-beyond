@@ -2,7 +2,6 @@ mod bridge;
 mod chronicle;
 mod director;
 mod events;
-mod ipc;
 mod llm;
 mod memory;
 mod notifications;
@@ -10,7 +9,7 @@ mod notifications;
 use std::path::PathBuf;
 
 use anyhow::Context;
-use clap::{Parser, ValueEnum};
+use clap::Parser;
 use tracing::{info, warn};
 
 use crate::chronicle::ChronicleWriter;
@@ -22,15 +21,9 @@ use crate::memory::{
 use crate::notifications::{NotificationWriter, QuestDecisionWriter, QuestRewardWriter};
 
 #[derive(Debug, Parser)]
-#[command(name = "AgesBeyondCompanion")]
+#[command(name = "mod")]
 #[command(about = "LLM companion process for Civilization IV: Ages Beyond")]
 struct Args {
-    #[arg(long)]
-    pipe: Option<String>,
-
-    #[arg(long, value_enum, default_value_t = EngineMode::Auto)]
-    engine: EngineMode,
-
     #[arg(long, default_value = "http://localhost:11434")]
     ollama_url: String,
 
@@ -39,13 +32,6 @@ struct Args {
 
     #[arg(long)]
     chronicle: Option<PathBuf>,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
-enum EngineMode {
-    Auto,
-    Pipe,
-    Bridge,
 }
 
 #[tokio::main]
@@ -61,11 +47,6 @@ async fn main() -> anyhow::Result<()> {
     let llm = OllamaClient::new(args.ollama_url, args.model)
         .context("failed to initialize Ollama client")?;
 
-    let engine = match args.engine {
-        EngineMode::Auto if args.pipe.is_some() => EngineMode::Pipe,
-        EngineMode::Auto => EngineMode::Bridge,
-        mode => mode,
-    };
     let chronicle_path = resolve_chronicle_path(args.chronicle);
     let chronicle = chronicle_path.clone().map(ChronicleWriter::new);
     let notifications = chronicle_path
@@ -129,47 +110,21 @@ async fn main() -> anyhow::Result<()> {
         writer.write_snapshot(&director_snapshot).await?;
     }
 
-    match engine {
-        EngineMode::Pipe => {
-            let pipe = args
-                .pipe
-                .as_deref()
-                .context("--pipe is required when --engine pipe is selected")?;
-            info!(pipe = %pipe, "starting Ages Beyond companion pipe server");
-            ipc::run_server(
-                pipe,
-                llm,
-                chronicle,
-                notifications,
-                quest_notifications,
-                quest_decisions,
-                quest_decision_responses,
-                quest_rewards,
-                memory,
-                quest_log,
-                quest_journal,
-                director,
-            )
-            .await
-        }
-        EngineMode::Bridge | EngineMode::Auto => {
-            info!("starting Ages Beyond companion bridge client");
-            bridge::run_client(
-                llm,
-                chronicle,
-                notifications,
-                quest_notifications,
-                quest_decisions,
-                quest_decision_responses,
-                quest_rewards,
-                memory,
-                quest_log,
-                quest_journal,
-                director,
-            )
-            .await
-        }
-    }
+    info!("starting Ages Beyond companion bridge client");
+    bridge::run_client(
+        llm,
+        chronicle,
+        notifications,
+        quest_notifications,
+        quest_decisions,
+        quest_decision_responses,
+        quest_rewards,
+        memory,
+        quest_log,
+        quest_journal,
+        director,
+    )
+    .await
 }
 
 fn resolve_chronicle_path(path: Option<PathBuf>) -> Option<PathBuf> {
