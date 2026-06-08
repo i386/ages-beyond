@@ -1,5 +1,5 @@
 param(
-    [string] $DllPath = "..\CvGameCoreDLL\artifacts\CvGameCoreDLL.dll",
+    [string] $DllPath = "CvGameCoreDLL\CvGameCoreDLL\artifacts\CvGameCoreDLL.dll",
     [string] $CompanionPath = "target\release\mod.exe",
     [string] $OutputDir = "dist",
     [string] $ModName = "Ages Beyond"

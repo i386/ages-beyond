@@ -84,7 +84,7 @@ jobs:
         run: cargo build --release --package ages-beyond-companion
 
       - name: Package mod zip
-        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\package_mod.ps1 -DllPath CvGameCoreDLL\artifacts\CvGameCoreDLL.dll
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\package_mod.ps1 -DllPath CvGameCoreDLL\CvGameCoreDLL\artifacts\CvGameCoreDLL.dll
 
       - name: Upload packaged mod
         uses: actions/upload-artifact@v7
@@ -98,6 +98,6 @@ jobs:
         with:
           name: CvGameCoreDLL-win32
           path: |
-            CvGameCoreDLL\artifacts\CvGameCoreDLL.dll
-            CvGameCoreDLL\artifacts\CvGameCoreDLL.map
+            CvGameCoreDLL\CvGameCoreDLL\artifacts\CvGameCoreDLL.dll
+            CvGameCoreDLL\CvGameCoreDLL\artifacts\CvGameCoreDLL.map
           if-no-files-found: error
